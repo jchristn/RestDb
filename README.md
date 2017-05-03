@@ -26,6 +26,7 @@ RestDb :: Starting Watson Webserver at http://localhost:8000
 ```
 
 2) Verify Connectivity
+
 Point your browser to http://localhost:8000.  You should see:
 ```
 RestDb
@@ -101,8 +102,9 @@ Resp:
 
 ### Create an object.
 Be sure to use timestamps appropriate to your database type, for instance:
-MSSQL: MM/dd/yyyy HH:mm:ss
-MySQL: yyyy-MM-dd HH:mm:ss
+
+- MSSQL: MM/dd/yyyy HH:mm:ss
+- MySQL: yyyy-MM-dd HH:mm:ss
 ```
 POST http://localhost:8000/test/person
 Data: { first_name: 'joel', last_name: 'christner', age: 40, created: '05/03/2017' }
@@ -185,7 +187,7 @@ Resp:
     "first_name": "joel",
     "last_name": "christner",
     "age": 18,
-  "created": "05/03/2017 00:00:00"
+    "created": "05/03/2017 00:00:00"
   }
 ]
 ```
