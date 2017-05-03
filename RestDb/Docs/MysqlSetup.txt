@@ -1,0 +1,10 @@
+﻿CREATE SCHEMA `test`;
+
+CREATE TABLE `test`.`person` (
+  `person_id` INT NOT NULL AUTO_INCREMENT,
+  `first_name` VARCHAR(32) NOT NULL,
+  `last_name` VARCHAR(32) NULL,
+  `age` INT NOT NULL,
+  `created` DATETIME NOT NULL,
+  PRIMARY KEY (`person_id`),
+  UNIQUE INDEX `person_id_UNIQUE` (`person_id` ASC));
