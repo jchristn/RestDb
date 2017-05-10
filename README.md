@@ -5,8 +5,8 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server and MySQL database tables wri
 ## Description
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server and MySQL.
  
-## New in v1.0.0
-- Initial release
+## New in v1.0.1
+- Authentication via API key
 
 ## Running in Mono
 Before starting in Linux or Mac environments, you should run the Mono AOT.
@@ -44,7 +44,7 @@ Resp:
 ]
 ```
 
-### Retrieve a database.
+### Retrieve a Database.
 ```
 GET http://localhost:8000/test
 Resp:
@@ -61,7 +61,7 @@ Resp:
 }
 ```
 
-### Describe a table.
+### Describe a Table.
 ```
 GET http://localhost:8000/test/person?_describe=true
 Resp:
@@ -100,7 +100,7 @@ Resp:
 }
 ```
 
-### Create an object.
+### Create an Object.
 Be sure to use timestamps appropriate to your database type, for instance:
 
 - MSSQL: MM/dd/yyyy HH:mm:ss
@@ -118,7 +118,7 @@ Resp:
 }
 ```
 
-### Retrieve objects.
+### Retrieve Objects.
 You can retrieve all of a table's contents, retrieve by a specific ID, and filter by key-value pairs (using the querystring).
 ```
 GET http://localhost:8000/test/person 
@@ -137,7 +137,7 @@ GET http://localhost:8000/test/person?_max_results=1
 ]
 ```
 
-### Retrieve objects with pagination.
+### Retrieve Objects with Pagination.
 You can retrieve results and use pagination to return only a subset.  Include _index_start and _order_by in the querystring.  Note that _order_by MUST be URL-encoded and should be the entire SQL ```ORDER BY``` clause.
 ```
 GET http://localhost:8000/test/person?_max_results=1&_index_start=1&_order_by=ORDER%20BY%20created%20DESC
@@ -155,7 +155,7 @@ Resp:
 ]
 ```
 
-### Update an object.
+### Update an Object.
 Supply the ID in the URL and include the key-value pairs to change in the request body.
 ```
 PUT http://localhost:8000/test/person/1
@@ -170,7 +170,7 @@ Resp:
 }
 ```
 
-### Search for an object.
+### Search for an Object.
 Uses the Expression syntax found in DatabaseWrapper (refer to examples here: https://github.com/jchristn/DatabaseWrapper).  These can be nested in a hierarchical manner.
 ```
 PUT http://localhost:8000/test/person
@@ -192,11 +192,60 @@ Resp:
 ]
 ```
 
-### Delete an object.
+### Delete an Object.
 ```
 DELETE http://localhost:8000/test/person/1
 Resp: 200/OK (no data)
 ```
 
-## Version history
+## Enabling Authentication
+To enable authentication, set ```Server.RequireAuthentication``` to ```true``` and specify an API key header in ```Server.ApiKeyHeader``` in the ```System.Json``` file.  Then, add a section called ```ApiKeys``` with each of the keys you wish to allow or disallow.  An example with one API key is below.
+```
+{
+  "Version": "1.0.1.0",
+  "Server": {
+    "ListenerHostname": "localhost",
+    "ListenerPort": 8000,
+    "Ssl": false,
+    "Debug": false,
+    "RequireAuthentication": true,
+    "ApiKeyHeader": "x-api-key"
+  },
+  "Logging": { 
+    "ServerIp": "127.0.0.1",
+    "ServerPort": 514,
+    "MinimumLevel": 1,
+    "LogHttpRequests": false,
+    "LogHttpResponses": false,
+    "ConsoleLogging": true
+  },
+  "Databases": [
+    {
+      "Name": "test",
+      "Type": "mssql",
+      "Hostname": "localhost",
+      "Port": 1433,
+      "Instance": "SQLEXPRESS",
+      "Username": "root",
+      "Password": "password",
+      "Debug": false
+    }
+  ],
+  "ApiKeys": [
+    {
+      "Key": "default",
+      "AllowGet": true,
+      "AllowPost": true,
+      "AllowPut": true,
+      "AllowDelete": true
+    }
+  ]
+}
+```
+
+## Version History
 Notes from previous versions (starting with v1.0.0) will be moved here.
+
+v1.0.0
+- Initial release
+

@@ -38,9 +38,14 @@ namespace RestDb
             #region General
 
             if (Console.WindowWidth < 79) Console.WindowWidth = 79;
+
             Settings ret = new Settings();
-            ret.Version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion; 
+            ret.Version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
+
             ret.Logging = LoggingSettings.Default();
+
+            ret.ApiKeys = new List<ApiKey>();
+            ret.ApiKeys.Add(ApiKey.Default());
 
             #endregion
 
@@ -62,6 +67,8 @@ namespace RestDb
             ret.Server.ListenerPort = Common.InputInteger("Port number?", 8000, true, false);
             ret.Server.Ssl = Common.InputBoolean("Require SSL?", false);
             ret.Server.Debug = false;
+            ret.Server.ApiKeyHeader = "x-api-key";
+
             Console.WriteLine("");
 
             #endregion
@@ -138,7 +145,12 @@ namespace RestDb
 
             //                 0        1         2         3         4         5         6         7
             //                 1234567890123456789012345678901234567890123456789012345678901234567890123456789
-            Console.WriteLine("All set!  We're writing your configuration to System.Json.");
+            Console.WriteLine("All set!  We're writing your configuration to System.Json.  It is important");
+            Console.WriteLine("to note that, by default, authentication via API key is **DISABLED**.  You");
+            Console.WriteLine("should modify your System.Json file to add API keys to the 'ApiKeys' section.");
+            Console.WriteLine("Then, set 'RequireAuthentication' to true in the 'Server' section.");
+            Console.WriteLine("Once API keys are added and authentication is set to required, requests will");
+            Console.WriteLine("need to be made including the x-api-key header.");
             Console.WriteLine("");
 
             ret.ToFile("System.Json");

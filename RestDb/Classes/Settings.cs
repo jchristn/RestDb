@@ -37,6 +37,7 @@ namespace RestDb
         public ServerSettings Server { get; set; }
         public LoggingSettings Logging { get; set; }
         public List<Database> Databases { get; set; }
+        public List<ApiKey> ApiKeys { get; set; }
 
         #endregion
 
@@ -90,6 +91,9 @@ namespace RestDb
         public bool Ssl;
         public bool Debug;
 
+        public bool RequireAuthentication;
+        public string ApiKeyHeader;
+
         public static ServerSettings Default()
         {
             ServerSettings ret = new ServerSettings();
@@ -97,6 +101,9 @@ namespace RestDb
             ret.ListenerPort = 8000;
             ret.Ssl = false;
             ret.Debug = false;
+
+            ret.RequireAuthentication = false;
+            ret.ApiKeyHeader = "x-api-key";
             return ret;
         }
     }

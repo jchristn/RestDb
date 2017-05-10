@@ -16,6 +16,7 @@ namespace RestDb
         static LoggingModule _Logging;
         static Server _Server;
         static DatabaseManager _Databases;
+        static AuthManager _Auth;
 
         static void Main(string[] args)
         {
@@ -55,6 +56,8 @@ namespace RestDb
 
             _Databases = new DatabaseManager(_Settings, _Logging);
 
+            _Auth = new AuthManager(_Settings, _Logging);
+
             Console.Write("RestDb :: ");
             _Server = new Server(
                 _Settings.Server.ListenerHostname,
@@ -70,6 +73,8 @@ namespace RestDb
 
         static HttpResponse Router(HttpRequest req)
         {
+            #region Setup
+
             DateTime startTime = DateTime.Now;
             string ipPort = SourceIpPort(req);
             _Logging.Log(LoggingModule.Severity.Debug, "Router " + ipPort + " " + req.Method + " " + req.RawUrlWithoutQuery);
@@ -77,8 +82,14 @@ namespace RestDb
             HttpResponse resp = new HttpResponse(req, false, 500, null, null, 
                 Common.SerializeJson(new ErrorResponse("Internal server error", null), true), true);
 
+            #endregion
+
+            #region APIs
+
             try
             {
+                #region Unauthenticated-Methods
+
                 switch (req.Method.ToLower())
                 {
                     case "get":
@@ -96,7 +107,62 @@ namespace RestDb
                             resp = new HttpResponse(req, true, 200, null, null, null, true);
                             return resp;
                         }
+                        break;
 
+                    #endregion
+
+                    case "put":
+                        #region put
+                         
+                        break;
+
+                    #endregion
+
+                    case "post":
+                        #region post
+                         
+                        break;
+
+                    #endregion
+
+                    case "delete":
+                        #region delete
+                         
+                        break;
+
+                    #endregion
+
+                    default:
+                        _Logging.Log(LoggingModule.Severity.Warn, "Router " + ipPort + " unknown method: " + req.Method);
+                        resp = new HttpResponse(req, false, 400, null, null,
+                            Common.SerializeJson(new ErrorResponse("Unknown method", null), true), true);
+                        return resp;
+                }
+
+                #endregion
+
+                #region Authenticate
+
+                if (_Settings.Server.RequireAuthentication)
+                {
+                    if (!_Auth.Authenticate(req))
+                    {
+                        _Logging.Log(LoggingModule.Severity.Warn, "Router " + ipPort + " authentication failed");
+                        resp = new HttpResponse(req, false, 401, null, null,
+                            Common.SerializeJson(new ErrorResponse("Unauthorized", null), true), true);
+                        return resp;
+                    }
+                }
+
+                #endregion
+
+                #region Authenticated-Methods
+
+                switch (req.Method.ToLower())
+                {
+                    case "get":
+                        #region get
+                         
                         if (req.RawUrlWithoutQuery.Equals("/_databaseclients"))
                         {
                             resp = GetDatabaseClients(req);
@@ -167,6 +233,8 @@ namespace RestDb
                         return resp;
                 }
 
+                #endregion
+
                 resp = new HttpResponse(req, false, 404, null, null, 
                     Common.SerializeJson(new ErrorResponse("Unknown API", null), true), true);
                 return resp;
@@ -182,6 +250,8 @@ namespace RestDb
             {
                 _Logging.Log(LoggingModule.Severity.Info, "Router " + ipPort + " " + req.Method + " " + req.RawUrlWithoutQuery + " " + Common.TotalMsFrom(startTime) + "ms " + resp.StatusCode);
             }
+
+            #endregion
         }
 
         static string SourceIpPort(HttpRequest req)

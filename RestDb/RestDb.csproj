@@ -80,6 +80,8 @@
     <Compile Include="APIs\Post\PostTable.cs" />
     <Compile Include="APIs\Put\PutTable.cs" />
     <Compile Include="APIs\Support\DeserializeExpression.cs" />
+    <Compile Include="Classes\AuthManager.cs" />
+    <Compile Include="Classes\ApiKey.cs" />
     <Compile Include="ControlQueryKeys.cs" />
     <Compile Include="Classes\ErrorResponse.cs" />
     <Compile Include="Classes\Column.cs" />
