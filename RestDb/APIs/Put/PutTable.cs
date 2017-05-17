@@ -42,12 +42,11 @@ namespace RestDb
             }
 
             if (idVal == null 
-                && req.RawUrlEntries.Count == 2 
-                && (req.QuerystringEntries == null || req.QuerystringEntries.Count < 1))
+                && req.RawUrlEntries.Count == 2)
             {
                 #region Search-Table
 
-                Expression e = DeserializeExpression(req.Data, false);
+                Expression e = DeserializeExpression(req.Data, Common.IsTrue(req.RetrieveHeaderValue("_debug")));
 
                 int? indexStart = null;
                 int? maxResults = null;

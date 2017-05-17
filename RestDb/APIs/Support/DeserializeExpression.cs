@@ -54,7 +54,7 @@ namespace RestDb
                     Dictionary<string, object> temp = (Dictionary<string, object>)deser.LeftTerm;
                     ret.LeftTerm = ParseExpressionDict(temp, verbose);
                 }
-                else if (deser.LeftTerm is string)
+                else if (deser.LeftTerm is string || deser.LeftTerm is int || deser.LeftTerm is long || deser.LeftTerm is decimal)
                 {
                     ret.LeftTerm = deser.LeftTerm.ToString();
                 }
@@ -63,7 +63,11 @@ namespace RestDb
                     if (verbose) Console.WriteLine("Unable to discern type of LeftTerm: " + deser.LeftTerm.GetType());
                 }
 
-                if (verbose) Console.WriteLine("LeftTerm after parse: " + ret.LeftTerm.ToString());
+                if (verbose)
+                {
+                    if (ret.LeftTerm != null) Console.WriteLine("LeftTerm after parse: " + ret.LeftTerm.ToString());
+                    else Console.WriteLine("LeftTerm after parse: (null)");
+                }
             }
             else
             {
@@ -86,16 +90,20 @@ namespace RestDb
                     Dictionary<string, object> temp = (Dictionary<string, object>)deser.RightTerm;
                     ret.RightTerm = ParseExpressionDict(temp, verbose);
                 }
-                else if (deser.RightTerm is string)
+                else if (deser.RightTerm is string || deser.RightTerm is int || deser.RightTerm is long || deser.RightTerm is decimal)
                 {
                     ret.RightTerm = deser.RightTerm.ToString();
                 }
                 else
                 {
-                    if (verbose) Console.WriteLine("Unable to discern type of RightTerm: " + deser.LeftTerm.GetType());
+                    if (verbose) Console.WriteLine("Unable to discern type of RightTerm: " + deser.RightTerm.GetType());
                 }
 
-                if (verbose) Console.WriteLine("RightTerm after parse: " + ret.RightTerm.ToString());
+                if (verbose)
+                {
+                    if (ret.RightTerm != null) Console.WriteLine("RightTerm after parse: " + ret.RightTerm.ToString());
+                    else Console.WriteLine("RightTerm after parse: (null)");
+                }
             }
             else
             {

@@ -113,10 +113,10 @@ namespace RestDb
                     break;
                 }
 
-                string currType = Common.InputString("Database type [mssql|mysql]?", "mssql", false);
-                if (!currType.Equals("mssql") && !currType.Equals("mysql"))
+                string currType = Common.InputString("Database type [mssql|mysql|pgsql]?", "mssql", false);
+                if (!currType.Equals("mssql") && !currType.Equals("mysql") && !currType.Equals("pgsql"))
                 {
-                    Console.WriteLine("Error: Use either mssql or mysql for the database type.");
+                    Console.WriteLine("Error: Use mssql, mysql, or pgsql for the database type.");
                     Console.WriteLine("");
                     continue;
                 }
@@ -125,7 +125,8 @@ namespace RestDb
                 curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
 
                 if (curr.Type.Equals("mssql")) curr.Port = Common.InputInteger("Server port?", 1433, true, false);
-                else curr.Port = Common.InputInteger("Server port?", 3306, true, false);
+                else if (curr.Type.Equals("mysql")) curr.Port = Common.InputInteger("Server port?", 3306, true, false);
+                else curr.Port = Common.InputInteger("Server port?", 5432, true, false);
 
                 curr.Instance = null;
                 if (curr.Type.Equals("mssql")) curr.Instance = Common.InputString("Instance name?", "SQLEXPRESS", true);

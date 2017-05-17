@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("RestDb")]
-[assembly: AssemblyDescription("RESTful HTTP/HTTPS server and API platform for Microsoft SQL Server and MySQL")]
+[assembly: AssemblyDescription("RESTful HTTP/HTTPS server and API platform for Microsoft SQL Server, MySQL, and PostgreSQL")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Marauder Software Inc.")]
 [assembly: AssemblyProduct("RestDb")]
@@ -32,5 +32,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.0.2.0")]
+[assembly: AssemblyFileVersion("1.0.2.0")]
