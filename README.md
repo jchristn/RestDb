@@ -1,12 +1,12 @@
 # RestDb
 
-RESTful HTTP/HTTPS server for Microsoft SQL Server and MySQL database tables written in C#.  
+RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL database tables written in C#.  
 
 ## Description
-RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server and MySQL.
+RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server, MySQL, and PostgreSQL.
  
-## New in v1.0.1
-- Authentication via API key
+## New in v1.0.2
+- PostgreSQL support
 
 ## Running in Mono
 Before starting in Linux or Mac environments, you should run the Mono AOT.
@@ -105,6 +105,7 @@ Be sure to use timestamps appropriate to your database type, for instance:
 
 - MSSQL: MM/dd/yyyy HH:mm:ss
 - MySQL: yyyy-MM-dd HH:mm:ss
+- PGSQL: MM/dd/yyyy HH:mm:ss
 ```
 POST http://localhost:8000/test/person
 Data: { first_name: 'joel', last_name: 'christner', age: 40, created: '05/03/2017' }
@@ -246,6 +247,7 @@ To enable authentication, set ```Server.RequireAuthentication``` to ```true``` a
 ## Version History
 Notes from previous versions (starting with v1.0.0) will be moved here.
 
-v1.0.0
+v1.0.x
+- Authentication via API key
 - Initial release
 
