@@ -5,11 +5,34 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 ## Description
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server, MySQL, and PostgreSQL.
  
-## New in v1.0.2
-- PostgreSQL support
+## New in v1.0.3
+- Retarget to .NET Core and .NET Framework
 
-## Running in Mono
-Before starting in Linux or Mac environments, you should run the Mono AOT.
+## Important Notes
+- If you specify a listener other than ```localhost``` or ```127.0.0.1```, you may have to run with elevated privileges.
+- The HTTP HOST header MUST match the listener hostname, otherwise you'll get ```Bad Request``` errors back.
+- By default, access to RestDb is UNAUTHENTICATED.  Configure ```System.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
+
+## Execution
+In Windows, using .NET Framework
+```
+> cd RestDb\bin\debug\net462
+> RestDb.exe
+```
+
+In Windows, using .NET Core
+```
+> cd RestDb\bin\debug\netcoreapp2.2
+> dotnet RestDb.dll
+```
+
+In Linux/Mac, using .NET Core
+```
+$ cd RestDb/bin/debug/netcoreapp2.2
+$ dotnet RestDb.dll
+```
+
+In Mono with .NET Framework environments, you should run the Mono AOT.
 ```
 mono --aot=nrgctx-trampolines=8096,nimt-trampolines=8096,ntrampolines=4048 --server RestDb.exe
 mono --server RestDb.exe
@@ -18,10 +41,8 @@ mono --server RestDb.exe
 ## Setup
 Simply compile from source, run ```RestDb.exe```, and a system configuration file will be created for you.  Setup scripts for both MSSQL and MySQL are included in the Docs directory of the project, which create the test database and person table used in the examples below.  
 
-1) Start RestDb.exe
+1) Start RestDb.exe (.NET Framework) or RestDb.dll (.NET Core) as described above.
 ```
-Windows   : C:\RestDb\RestDb.exe
-Linux/Mac : $ mono --server RestDb.exe
 RestDb :: Starting Watson Webserver at http://localhost:8000
 ```
 
@@ -248,6 +269,7 @@ To enable authentication, set ```Server.RequireAuthentication``` to ```true``` a
 Notes from previous versions (starting with v1.0.0) will be moved here.
 
 v1.0.x
+- PostgreSQL support
 - Authentication via API key
 - Initial release
 

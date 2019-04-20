@@ -70,19 +70,19 @@ namespace RestDb
                     if (String.IsNullOrEmpty(curr.Key)) continue;
                     if (curr.Key.ToLower().Equals(apiKey.ToLower()))
                     {
-                        switch (req.Method)
+                        switch (req.Method.ToLower())
                         {
-                            case HttpMethod.GET:
-                            case HttpMethod.HEAD:
+                            case "get":
+                            case "head":
                                 return curr.AllowGet;
 
-                            case HttpMethod.PUT:
+                            case "put":
                                 return curr.AllowPut;
 
-                            case HttpMethod.POST:
+                            case "post":
                                 return curr.AllowPost;
 
-                            case HttpMethod.DELETE:
+                            case "delete":
                                 return curr.AllowDelete;
 
                             default:

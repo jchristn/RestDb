@@ -63,9 +63,8 @@ namespace RestDb
                 _Settings.Server.ListenerHostname,
                 _Settings.Server.ListenerPort,
                 _Settings.Server.Ssl,
-                Router);
-
-            _Server.Debug = _Settings.Server.Debug;
+                Router,
+                _Settings.Server.Debug);
 
             #endregion
 
@@ -91,9 +90,9 @@ namespace RestDb
             {
                 #region Unauthenticated-Methods
 
-                switch (req.Method)
+                switch (req.Method.ToLower())
                 {
-                    case HttpMethod.GET:
+                    case "get":
                         #region get
 
                         if (req.RawUrlWithoutQuery.Equals("/"))
@@ -112,21 +111,21 @@ namespace RestDb
 
                     #endregion
 
-                    case HttpMethod.PUT:
+                    case "put":
                         #region put
                          
                         break;
 
                     #endregion
 
-                    case HttpMethod.POST:
+                    case "post":
                         #region post
                          
                         break;
 
                     #endregion
 
-                    case HttpMethod.DELETE:
+                    case "delete":
                         #region delete
                          
                         break;
@@ -159,9 +158,9 @@ namespace RestDb
 
                 #region Authenticated-Methods
 
-                switch (req.Method)
+                switch (req.Method.ToLower())
                 {
-                    case HttpMethod.GET:
+                    case "get":
                         #region get
                          
                         if (req.RawUrlWithoutQuery.Equals("/_databaseclients"))
@@ -191,7 +190,7 @@ namespace RestDb
 
                     #endregion
 
-                    case HttpMethod.PUT:
+                    case "put":
                         #region put
 
                         if (req.RawUrlEntries.Count == 2 || req.RawUrlEntries.Count == 3)
@@ -203,7 +202,7 @@ namespace RestDb
 
                     #endregion
 
-                    case HttpMethod.POST:
+                    case "post":
                         #region post
 
                         if (req.RawUrlEntries.Count == 2)
@@ -215,7 +214,7 @@ namespace RestDb
 
                     #endregion
 
-                    case HttpMethod.DELETE:
+                    case "delete":
                         #region delete
 
                         if (req.RawUrlEntries.Count == 2 || req.RawUrlEntries.Count == 3)

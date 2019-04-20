@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -83,7 +82,7 @@ namespace RestDb
 
             if (req.QuerystringEntries.ContainsKey("_index_start")) indexStart = Convert.ToInt32(req.QuerystringEntries["_index_start"]);
             if (req.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(req.QuerystringEntries["_max_results"]);
-            if (req.QuerystringEntries.ContainsKey("_order_by")) orderBy = WebUtility.UrlDecode(req.QuerystringEntries["_order_by"]); 
+            if (req.QuerystringEntries.ContainsKey("_order_by")) orderBy = HttpUtility.UrlDecode(req.QuerystringEntries["_order_by"]); 
             if (req.QuerystringEntries.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(req.QuerystringEntries["_return_fields"]);
 
             result = db.Select(tableName, indexStart, maxResults, returnFields, filter, orderBy);

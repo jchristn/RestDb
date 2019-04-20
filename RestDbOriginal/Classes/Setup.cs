@@ -57,12 +57,9 @@ namespace RestDb
             Console.WriteLine("------------");
             Console.WriteLine("We'll collect some values and put together your initial configuration.");
             Console.WriteLine("");
-            Console.WriteLine("On which hostname should this node listen?  The hostname supplied here MUST");
+            Console.WriteLine("On which hostname should this node listen?  The hostname supplied here must");
             Console.WriteLine("match the host header received on incoming RESTful HTTP requests.  It is");
             Console.WriteLine("recommended that you use the DNS hostname of the machine.");
-            Console.WriteLine("");
-            Console.WriteLine("NOTE: using anything other than 127.0.0.1 or localhost may require that you");
-            Console.WriteLine("run RestDb with elevated/admin privileges.");
             Console.WriteLine("");
 
             ret.Server = new ServerSettings();
