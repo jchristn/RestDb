@@ -14,6 +14,7 @@
     <PackageTags>rest,database,api,db</PackageTags>
     <PackageReleaseNotes>Update dependencies, async</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageIconUrl>https://github.com/jchristn/RestDb/raw/master/assets/database-icon.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
