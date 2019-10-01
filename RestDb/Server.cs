@@ -58,55 +58,55 @@ namespace RestDb
 
             _Auth = new AuthManager(_Settings, _Logging);
 
-            Console.Write("RestDb :: ");
+            Console.WriteLine(Logo());
+
             _Server = new Server(
                 _Settings.Server.ListenerHostname,
                 _Settings.Server.ListenerPort,
                 _Settings.Server.Ssl,
-                Router);
+                DefaultRoute);
 
-            _Server.Debug = _Settings.Server.Debug;
+            string header = "http";
+            if (_Settings.Server.Ssl) header += "s";
+            header += "://" + _Settings.Server.ListenerHostname + ":" + _Settings.Server.ListenerPort;
+            Console.WriteLine("Listening for requests on " + header);
 
             #endregion
 
             Terminator.WaitOne();
         }
 
-        static HttpResponse Router(HttpRequest req)
-        {
-            #region Setup
-
+        static async Task DefaultRoute(HttpContext ctx)
+        { 
             DateTime startTime = DateTime.Now;
-            string ipPort = SourceIpPort(req);
-            _Logging.Log(LoggingModule.Severity.Debug, "Router " + ipPort + " " + req.Method + " " + req.RawUrlWithoutQuery);
-
-            HttpResponse resp = new HttpResponse(req, false, 500, null, null, 
-                Common.SerializeJson(new ErrorResponse("Internal server error", null), true), true);
-
-            #endregion
-
+            string header = ctx.Request.SourceIp + ":" + ctx.Request.SourcePort + " "; 
+            _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.RawUrlWithoutQuery);
+             
             #region APIs
 
             try
             {
                 #region Unauthenticated-Methods
 
-                switch (req.Method)
+                switch (ctx.Request.Method)
                 {
                     case HttpMethod.GET:
                         #region get
 
-                        if (req.RawUrlWithoutQuery.Equals("/"))
+                        if (ctx.Request.RawUrlWithoutQuery.Equals("/"))
                         {
-                            resp = GetHelloWorld(req);
-                            return resp;
+                            ctx.Response.StatusCode = 200;
+                            ctx.Response.ContentType = "text/html; charset=utf8";
+                            await ctx.Response.Send(RootHtml());
+                            return;
                         }
 
-                        if (req.RawUrlWithoutQuery.Equals("/favicon.ico")
-                            || req.RawUrlWithoutQuery.Equals("/robots.txt"))
+                        if (ctx.Request.RawUrlWithoutQuery.Equals("/favicon.ico")
+                            || ctx.Request.RawUrlWithoutQuery.Equals("/robots.txt"))
                         {
-                            resp = new HttpResponse(req, true, 200, null, null, null, true);
-                            return resp;
+                            ctx.Response.StatusCode = 200;
+                            await ctx.Response.Send();
+                            return;
                         }
                         break;
 
@@ -134,10 +134,10 @@ namespace RestDb
                     #endregion
 
                     default:
-                        _Logging.Log(LoggingModule.Severity.Warn, "Router " + ipPort + " unknown method: " + req.Method);
-                        resp = new HttpResponse(req, false, 400, null, null,
-                            Common.SerializeJson(new ErrorResponse("Unknown method", null), true), true);
-                        return resp;
+                        ctx.Response.StatusCode = 400;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unknown method", null), true));
+                        return;
                 }
 
                 #endregion
@@ -146,12 +146,13 @@ namespace RestDb
 
                 if (_Settings.Server.RequireAuthentication)
                 {
-                    if (!_Auth.Authenticate(req))
+                    if (!_Auth.Authenticate(ctx))
                     {
-                        _Logging.Log(LoggingModule.Severity.Warn, "Router " + ipPort + " authentication failed");
-                        resp = new HttpResponse(req, false, 401, null, null,
-                            Common.SerializeJson(new ErrorResponse("Unauthorized", null), true), true);
-                        return resp;
+                        _Logging.Warn(header + "authentication failed");
+                        ctx.Response.StatusCode = 401;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unauthorized", null), true));
+                        return;
                     }
                 }
 
@@ -159,33 +160,33 @@ namespace RestDb
 
                 #region Authenticated-Methods
 
-                switch (req.Method)
+                switch (ctx.Request.Method)
                 {
                     case HttpMethod.GET:
                         #region get
                          
-                        if (req.RawUrlWithoutQuery.Equals("/_databaseclients"))
+                        if (ctx.Request.RawUrlWithoutQuery.Equals("/_databaseclients"))
                         {
-                            resp = GetDatabaseClients(req);
-                            return resp;
+                            await GetDatabaseClients(ctx);
+                            return;
                         }
 
-                        if (req.RawUrlWithoutQuery.Equals("/_databases"))
+                        if (ctx.Request.RawUrlWithoutQuery.Equals("/_databases"))
                         {
-                            resp = GetDatabases(req);
-                            return resp;
+                            await GetDatabases(ctx);
+                            return;
                         }
 
-                        if (req.RawUrlEntries.Count == 1)
+                        if (ctx.Request.RawUrlEntries.Count == 1)
                         {
-                            resp = GetDatabase(req); 
-                            return resp;
+                            await GetDatabase(ctx);
+                            return;
                         }
 
-                        if (req.RawUrlEntries.Count == 2 || req.RawUrlEntries.Count == 3)
+                        if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
                         {
-                            resp = GetTable(req);
-                            return resp;
+                            await GetTable(ctx);
+                            return;
                         }
                         break;
 
@@ -194,10 +195,10 @@ namespace RestDb
                     case HttpMethod.PUT:
                         #region put
 
-                        if (req.RawUrlEntries.Count == 2 || req.RawUrlEntries.Count == 3)
+                        if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
                         {
-                            resp = PutTable(req);
-                            return resp;
+                            await PutTable(ctx);
+                            return;
                         }
                         break;
 
@@ -206,10 +207,10 @@ namespace RestDb
                     case HttpMethod.POST:
                         #region post
 
-                        if (req.RawUrlEntries.Count == 2)
+                        if (ctx.Request.RawUrlEntries.Count == 2)
                         {
-                            resp = PostTable(req);
-                            return resp;
+                            await PostTable(ctx);
+                            return;
                         }
                         break;
 
@@ -218,46 +219,72 @@ namespace RestDb
                     case HttpMethod.DELETE:
                         #region delete
 
-                        if (req.RawUrlEntries.Count == 2 || req.RawUrlEntries.Count == 3)
+                        if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
                         {
-                            resp = DeleteTable(req);
-                            return resp;
+                            await DeleteTable(ctx);
+                            return;
                         }
                         break;
 
                     #endregion
 
                     default:
-                        _Logging.Log(LoggingModule.Severity.Warn, "Router " + ipPort + " unknown method: " + req.Method);
-                        resp = new HttpResponse(req, false, 400, null, null, 
-                            Common.SerializeJson(new ErrorResponse("Unknown method", null), true), true);
-                        return resp;
+                        ctx.Response.StatusCode = 400;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unknown method", null), true));
+                        return;
                 }
 
                 #endregion
 
-                resp = new HttpResponse(req, false, 404, null, null, 
-                    Common.SerializeJson(new ErrorResponse("Unknown API", null), true), true);
-                return resp;
+                ctx.Response.StatusCode = 400;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unknown API", null), true)); 
             }
             catch (Exception e)
             {
-                _Logging.LogException("RestDbServer", "Router", e);
-                resp = new HttpResponse(req, false, 500, null, null, 
-                    Common.SerializeJson(new ErrorResponse("Internal server error", e.Message), true), true);
-                return resp;
+                _Logging.Exception("RestDb", "Router", e);
+                ctx.Response.StatusCode = 500;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Internal server error", e.Message), true));
             }
             finally
             {
-                _Logging.Log(LoggingModule.Severity.Info, "Router " + ipPort + " " + req.Method + " " + req.RawUrlWithoutQuery + " " + Common.TotalMsFrom(startTime) + "ms " + resp.StatusCode);
+                _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.RawUrlWithoutQuery + " " + Common.TotalMsFrom(startTime) + "ms: " + ctx.Response.StatusCode);
             }
 
             #endregion
         }
 
-        static string SourceIpPort(HttpRequest req)
+        private static string Logo()
         {
-            return req.SourceIp + ":" + req.SourcePort;
+            return
+                Environment.NewLine +
+                Environment.NewLine +
+                "  █▀▀█ █▀▀ █▀▀ ▀▀█▀▀ █▀▀▄ █▀▀▄  " + Environment.NewLine +
+                "  █▄▄▀ █▀▀ ▀▀█ ░░█░░ █░░█ █▀▀▄  " + Environment.NewLine +
+                "  ▀░▀▀ ▀▀▀ ▀▀▀ ░░▀░░ ▀▀▀░ ▀▀▀░  " + Environment.NewLine +
+                Environment.NewLine;
+        }
+
+        private static string RootHtml()
+        {
+            string ret =
+                "<html>" +
+                "  <head>" +
+                "    <title>RestDb</title>" +
+                "  </head>" +
+                "  <body>" +
+                "    <pre>";
+
+            ret += Logo();
+            ret += "RestDb is running." + Environment.NewLine;
+            ret += "Documentation and source code: <a href='https://github.com/jchristn/restdb' target='_blank'>https://github.com/jchristn/restdb</a>" + Environment.NewLine;
+            ret +=
+                "    </pre>" +
+                "  </body>" +
+                "</html>";
+            return ret;
         }
     }
 }

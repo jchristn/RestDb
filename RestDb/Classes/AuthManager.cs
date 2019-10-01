@@ -8,11 +8,11 @@ using SyslogLogging;
 
 namespace RestDb
 {
-    public class AuthManager
+    internal class AuthManager
     {
         #region Constructors-and-Factories
 
-        public AuthManager(Settings settings, LoggingModule logging)
+        internal AuthManager(Settings settings, LoggingModule logging)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (logging == null) throw new ArgumentNullException(nameof(logging));
@@ -32,30 +32,21 @@ namespace RestDb
 
         private Settings _Settings;
         private LoggingModule _Logging;
-        private List<ApiKey> _Keys;
+        private readonly object _KeysLock = new object();
+        private List<ApiKey> _Keys = new List<ApiKey>();
 
         #endregion
 
         #region Public-Methods
 
-        public bool Authenticate(HttpRequest req)
-        {
-            #region Check-for-Null-Values
-
-            if (req == null)
-            {
-                _Logging.Log(LoggingModule.Severity.Warn, "Authenticate null HTTP request supplied, returning false");
-                return false;
-            }
-
-            #endregion
-
+        internal bool Authenticate(HttpContext ctx)
+        { 
             #region Extract-API-Key
 
-            string apiKey = req.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
+            string apiKey = ctx.Request.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
             if (String.IsNullOrEmpty(apiKey))
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "Authenticate unable to retrieve API key from headers");
+                _Logging.Warn("Authenticate unable to retrieve API key from headers");
                 return false;
             }
 
@@ -65,12 +56,12 @@ namespace RestDb
 
             if (_Keys != null && _Keys.Count > 0)
             {
-                foreach (ApiKey curr in _Keys)
+                lock (_KeysLock)
                 {
-                    if (String.IsNullOrEmpty(curr.Key)) continue;
-                    if (curr.Key.ToLower().Equals(apiKey.ToLower()))
+                    if (_Keys.Exists(k => k.Key.Equals(apiKey)))
                     {
-                        switch (req.Method)
+                        ApiKey curr = _Keys.Where(k => k.Key.Equals(apiKey)).First();
+                        switch (ctx.Request.Method)
                         {
                             case HttpMethod.GET:
                             case HttpMethod.HEAD:
@@ -86,18 +77,18 @@ namespace RestDb
                                 return curr.AllowDelete;
 
                             default:
-                                _Logging.Log(LoggingModule.Severity.Warn, "Authenticate unknown HTTP method " + req.Method);
+                                _Logging.Warn("Authenticate unknown HTTP method " + ctx.Request.Method);
                                 return false;
                         }
                     }
                 }
 
-                _Logging.Log(LoggingModule.Severity.Warn, "Authenticate unknown API key " + apiKey);
+                _Logging.Warn("Authenticate unknown API key " + apiKey);
                 return false;
             }
             else
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "Authenticate no API keys defined in configuration");
+                _Logging.Warn("Authenticate no API keys defined in configuration");
                 return false;
             }
 

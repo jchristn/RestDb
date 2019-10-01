@@ -9,47 +9,54 @@ using WatsonWebserver;
 using DatabaseWrapper;
 
 namespace RestDb
+
 {
     partial class RestDbServer
     {
-        static HttpResponse DeleteTable(HttpRequest req)
+        static async Task DeleteTable(HttpContext ctx)
         {
-            string dbName = req.RawUrlEntries[0];
-            string tableName = req.RawUrlEntries[1];
-            int? idVal = req.RetrieveIdValue();
-
+            string dbName = ctx.Request.RawUrlEntries[0];
+            string tableName = ctx.Request.RawUrlEntries[1];
+            int idVal = 0;
+            if (ctx.Request.RawUrlEntries.Count == 3) Int32.TryParse(ctx.Request.RawUrlEntries[2], out idVal);
+            
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "DeleteTable unknown table " + tableName + " in database " + dbName);
-                return new HttpResponse(req, false, 404, null, null, 
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
 
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "DeleteTable unable to retrieve database client for database " + dbName);
-                return new HttpResponse(req, false, 404, null, null,
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
 
-            if (idVal == null 
-                && req.RawUrlEntries.Count == 2)
+            if (idVal == 0 
+                && ctx.Request.RawUrlEntries.Count == 2)
             {
                 #region Retrieve-Table
 
-                bool truncate = Common.IsTrue(req.RetrieveHeaderValue("_truncate"));
-                if (!truncate)
+                if (!ctx.Request.QuerystringEntries.ContainsKey("_truncate"))
                 {
-                    _Logging.Log(LoggingModule.Severity.Warn, "DeleteTable table deletion not allowed without setting _truncate in querystring for " + tableName + " in database " + dbName);
-                    return new HttpResponse(req, false, 400, null, null,
-                        Common.SerializeJson(new ErrorResponse("Bad request", "Cannot truncate table without setting _truncate in querystring to true"), true), true);
+                    _Logging.Warn("DeleteTable table deletion not allowed without setting _truncate in querystring for " + tableName + " in database " + dbName);
+                    ctx.Response.StatusCode = 400;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "Cannot truncate table without setting _truncate in querystring to true"), true));
+                    return;
                 }
 
                 db.Truncate(tableName);
-                _Logging.Log(LoggingModule.Severity.Warn, "DeleteTable truncated table " + tableName + " in database " + dbName);
-                return new HttpResponse(req, true, 200, null, null, null, true);
+                _Logging.Warn("DeleteTable truncated table " + tableName + " in database " + dbName);
+                ctx.Response.StatusCode = 200;
+                await ctx.Response.Send();
+                return;
 
                 #endregion
             }
@@ -60,21 +67,23 @@ namespace RestDb
                 DataTable result = null;
                 Expression filter = null; 
 
-                if (idVal != null)
+                if (idVal > 0)
                 {
                     if (String.IsNullOrEmpty(currTable.PrimaryKey))
                     {
-                        _Logging.Log(LoggingModule.Severity.Warn, "DeleteTable no primary key defined for table " + tableName + " in database " + dbName);
-                        return new HttpResponse(req, false, 400, null, null, 
-                            Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true), true);
+                        _Logging.Warn("DeleteTable no primary key defined for table " + tableName + " in database " + dbName);
+                        ctx.Response.StatusCode = 400;
+                        ctx.Response.ContentType = "application/json";
+                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                        return;
                     }
 
                     filter = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
                 }
 
-                if (req.QuerystringEntries != null && req.QuerystringEntries.Count > 0)
+                if (ctx.Request.QuerystringEntries != null && ctx.Request.QuerystringEntries.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> currKvp in req.QuerystringEntries)
+                    foreach (KeyValuePair<string, string> currKvp in ctx.Request.QuerystringEntries)
                     {
                         if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
                         if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);
@@ -85,8 +94,10 @@ namespace RestDb
                 }
 
                 result = db.Delete(tableName, filter);
-                return new HttpResponse(req, true, 200, null, null, null, true);
-                 
+                ctx.Response.StatusCode = 200;
+                await ctx.Response.Send();
+                return;
+
                 #endregion
             }
         }

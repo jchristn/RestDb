@@ -12,37 +12,46 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static HttpResponse PostTable(HttpRequest req)
+        static async Task PostTable(HttpContext ctx)
         {
-            string dbName = req.RawUrlEntries[0];
-            string tableName = req.RawUrlEntries[1]; 
+            string dbName = ctx.Request.RawUrlEntries[0];
+            string tableName = ctx.Request.RawUrlEntries[1]; 
 
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "PostTable unknown table " + tableName + " in database " + dbName);
-                return new HttpResponse(req, false, 404, null, null, 
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
 
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "PostTable unable to retrieve database client for database " + dbName);
-                return new HttpResponse(req, false, 404, null, null,
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
 
-            if (req.Data == null || req.Data.Length < 1)
+            if (ctx.Request.Data == null || ctx.Request.ContentLength < 1)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "PostTable no request body supplied");
-                return new HttpResponse(req, false, 400, null, null,
-                    Common.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true), true);
+                _Logging.Warn("PostTable no request body supplied");
+                ctx.Response.StatusCode = 400;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                return;
             }
 
-            Dictionary<string, object> dict = Common.DeserializeJson<Dictionary<string, object>>(req.Data);
+            byte[] reqData = Common.StreamToBytes(ctx.Request.Data);
+            Dictionary<string, object> dict = Common.DeserializeJson<Dictionary<string, object>>(reqData);
             DataTable result = db.Insert(tableName, dict);
-            return new HttpResponse(req, true, 200, null, null, Common.SerializeJson(Common.DataTableToDynamic(result), true), true);  
+
+            ctx.Response.StatusCode = 200;
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.Send(Common.SerializeJson(Common.DataTableToDynamic(result), true));
+            return;
         }
     }
 }

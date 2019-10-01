@@ -10,20 +10,21 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static HttpResponse GetDatabase(HttpRequest req)
+        static async Task GetDatabase(HttpContext ctx)
         {
-            string dbName = req.RawUrlEntries[0];
+            string dbName = ctx.Request.RawUrlEntries[0];
             Database db = _Settings.GetDatabaseByName(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetDatabase unable to find database " + dbName);
-                return new HttpResponse(req, false, 404, null, null, 
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
 
             db = Database.Redact(db);
             
-            bool describe = Common.IsTrue(req.RetrieveHeaderValue("_describe"));
+            bool describe = Common.IsTrue(ctx.Request.RetrieveHeaderValue("_describe"));
             if (describe)
             {
                 db.Tables = _Databases.GetTables(dbName, describe);
@@ -33,7 +34,10 @@ namespace RestDb
                 db.TableNames = _Databases.GetTableNames(dbName);
             }
 
-            return new HttpResponse(req, true, 200, null, null, Common.SerializeJson(db, true), true);
+            ctx.Response.StatusCode = 200;
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.Send(Common.SerializeJson(db, true));
+            return;
         }
     }
 }

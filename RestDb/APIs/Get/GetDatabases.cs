@@ -10,10 +10,12 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static HttpResponse GetDatabases(HttpRequest req)
+        static async Task GetDatabases(HttpContext ctx)
         {
-            return new HttpResponse(req, true, 200, null, null, 
-                Common.SerializeJson(_Settings.DatabaseNames(), true), true);
+            ctx.Response.StatusCode = 200;
+            ctx.Response.ContentType = "application/json";
+            await ctx.Response.Send(Common.SerializeJson(_Settings.DatabaseNames(), true));
+            return;
         }
     }
 }

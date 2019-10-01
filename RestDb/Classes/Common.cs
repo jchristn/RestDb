@@ -18,11 +18,11 @@ using Newtonsoft.Json;
 
 namespace RestDb
 {
-    public static class Common
+    internal static class Common
     {
         #region Input
 
-        public static bool InputBoolean(string question, bool yesDefault)
+        internal static bool InputBoolean(string question, bool yesDefault)
         {
             Console.Write(question);
 
@@ -65,7 +65,7 @@ namespace RestDb
             }
         }
 
-        public static string InputString(string question, string defaultAnswer, bool allowNull)
+        internal static string InputString(string question, string defaultAnswer, bool allowNull)
         {
             while (true)
             {
@@ -91,7 +91,7 @@ namespace RestDb
             }
         }
 
-        public static int InputInteger(string question, int defaultAnswer, bool positiveOnly, bool allowZero)
+        internal static int InputInteger(string question, int defaultAnswer, bool positiveOnly, bool allowZero)
         {
             while (true)
             {
@@ -137,7 +137,7 @@ namespace RestDb
 
         #region Serialization
 
-        public static string SerializeJson(object obj, bool pretty)
+        internal static string SerializeJson(object obj, bool pretty)
         {
             if (obj == null) return null;
             string json;
@@ -166,7 +166,7 @@ namespace RestDb
             return json;
         }
 
-        public static T DeserializeJson<T>(string json)
+        internal static T DeserializeJson<T>(string json)
         {
             if (String.IsNullOrEmpty(json)) throw new ArgumentNullException(nameof(json));
 
@@ -184,13 +184,13 @@ namespace RestDb
             }
         }
 
-        public static T DeserializeJson<T>(byte[] data)
+        internal static T DeserializeJson<T>(byte[] data)
         {
             if (data == null || data.Length < 1) throw new ArgumentNullException(nameof(data));
             return DeserializeJson<T>(Encoding.UTF8.GetString(data));
         }
 
-        public static T CopyObject<T>(object o)
+        internal static T CopyObject<T>(object o)
         {
             if (o == null) return default(T);
             string json = SerializeJson(o, false);
@@ -198,7 +198,7 @@ namespace RestDb
             return ret;
         }
 
-        public static string XmlEscape(string val)
+        internal static string XmlEscape(string val)
         {
             if (String.IsNullOrEmpty(val)) return null;
             XmlDocument doc = new XmlDocument();
@@ -207,7 +207,7 @@ namespace RestDb
             return node.InnerXml;
         }
 
-        public static string SanitizeXml(string xml)
+        internal static string SanitizeXml(string xml)
         {
             if (String.IsNullOrEmpty(xml)) return null;
 
@@ -245,7 +245,7 @@ namespace RestDb
             return rgx.Replace(xe.ToString(), "");
         }
 
-        public static string QueryXml(string xml, string path)
+        internal static string QueryXml(string xml, string path)
         {
             try
             {
@@ -279,7 +279,7 @@ namespace RestDb
             }
         }
 
-        public static XElement XmlRemoveNamespace(XElement xml)
+        internal static XElement XmlRemoveNamespace(XElement xml)
         {
             try
             {
@@ -302,7 +302,7 @@ namespace RestDb
             }
         }
 
-        public static string QueryXmlProcessChildren(XPathNodeIterator xpni)
+        internal static string QueryXmlProcessChildren(XPathNodeIterator xpni)
         {
             try
             {
@@ -325,7 +325,7 @@ namespace RestDb
 
         #region Conversion
 
-        public static List<int> CsvToIntList(string csv)
+        internal static List<int> CsvToIntList(string csv)
         {
             try
             {
@@ -364,7 +364,7 @@ namespace RestDb
             }
         }
 
-        public static List<string> CsvToStringList(string csv)
+        internal static List<string> CsvToStringList(string csv)
         {
             try
             {
@@ -396,7 +396,7 @@ namespace RestDb
             }
         }
 
-        public static List<T> GenericToSpecificList<T>(List<object> source)
+        internal static List<T> GenericToSpecificList<T>(List<object> source)
         {
             if (source == null) return null;
 
@@ -412,7 +412,7 @@ namespace RestDb
             return retList;
         }
 
-        public static List<object> DataTableToListObject(DataTable dt, string objType)
+        internal static List<object> DataTableToListObject(DataTable dt, string objType)
         {
             //
             // Must pass in the fully-qualified class name including namespace
@@ -483,7 +483,7 @@ namespace RestDb
             return retList;
         }
 
-        public static object DataTableToObject(DataTable dt, string objType)
+        internal static object DataTableToObject(DataTable dt, string objType)
         {
             if (dt == null) return null;
             if (dt.Rows.Count != 1) return null;
@@ -545,7 +545,7 @@ namespace RestDb
             return ret;
         }
 
-        public static T DataTableToObject<T>(this DataTable table) where T : new()
+        internal static T DataTableToObject<T>(this DataTable table) where T : new()
         {
             IList<PropertyInfo> properties = typeof(T).GetProperties().ToList();
             IList<T> result = new List<T>();
@@ -559,7 +559,7 @@ namespace RestDb
             return default(T);
         }
 
-        public static IList<T> DataTableToList<T>(this DataTable table) where T : new()
+        internal static IList<T> DataTableToList<T>(this DataTable table) where T : new()
         {
             IList<PropertyInfo> properties = typeof(T).GetProperties().ToList();
             IList<T> result = new List<T>();
@@ -573,7 +573,7 @@ namespace RestDb
             return result;
         }
 
-        public static IList<T> DataTableToList<T>(this DataTable table, Dictionary<string, string> mappings) where T : new()
+        internal static IList<T> DataTableToList<T>(this DataTable table, Dictionary<string, string> mappings) where T : new()
         {
             IList<PropertyInfo> properties = typeof(T).GetProperties().ToList();
             IList<T> result = new List<T>();
@@ -609,7 +609,7 @@ namespace RestDb
             return item;
         }
 
-        public static List<dynamic> DataTableToListDynamic(DataTable dt)
+        internal static List<dynamic> DataTableToListDynamic(DataTable dt)
         {
             List<dynamic> ret = new List<dynamic>();
             if (dt == null || dt.Rows.Count < 1) return ret;
@@ -628,7 +628,7 @@ namespace RestDb
             return ret;
         }
 
-        public static dynamic DataTableToDynamic(DataTable dt)
+        internal static dynamic DataTableToDynamic(DataTable dt)
         {
             dynamic ret = new ExpandoObject();
             if (dt == null || dt.Rows.Count < 1) return ret;
@@ -647,7 +647,7 @@ namespace RestDb
             return ret;
         }
 
-        public static List<Dictionary<string, object>> DataTableToListDictionary(DataTable dt)
+        internal static List<Dictionary<string, object>> DataTableToListDictionary(DataTable dt)
         {
             List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
             if (dt == null || dt.Rows.Count < 1) return ret;
@@ -667,7 +667,7 @@ namespace RestDb
             return ret;
         }
 
-        public static Dictionary<string, object> DataTableToDictionary(DataTable dt)
+        internal static Dictionary<string, object> DataTableToDictionary(DataTable dt)
         {
             Dictionary<string, object> ret = new Dictionary<string, object>();
             if (dt == null || dt.Rows.Count < 1) return ret;
@@ -685,12 +685,30 @@ namespace RestDb
             return ret;
         }
 
+        internal static byte[] StreamToBytes(Stream input)
+        {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+            if (!input.CanRead) throw new InvalidOperationException("Input stream is not readable");
+
+            byte[] buffer = new byte[16 * 1024];
+            using (MemoryStream ms = new MemoryStream())
+            {
+                int read;
+
+                while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                {
+                    ms.Write(buffer, 0, read);
+                }
+
+                return ms.ToArray();
+            }
+        }
 
         #endregion
 
         #region Misc
 
-        public static string StringRemove(string original, string remove)
+        internal static string StringRemove(string original, string remove)
         {
             if (String.IsNullOrEmpty(original)) return null;
             if (String.IsNullOrEmpty(remove)) return original;
@@ -703,7 +721,7 @@ namespace RestDb
             return ret;
         }
 
-        public static string Line(int count, string fill)
+        internal static string Line(int count, string fill)
         {
             if (count < 1) return "";
 
@@ -716,7 +734,7 @@ namespace RestDb
             return ret;
         }
 
-        public static string RandomString(int num_char)
+        internal static string RandomString(int num_char)
         {
             string ret = "";
             if (num_char < 1) return null;
@@ -744,7 +762,7 @@ namespace RestDb
             return ret;
         }
 
-        public static double TotalMsFrom(DateTime start_time)
+        internal static double TotalMsFrom(DateTime start_time)
         {
             try
             {
@@ -758,7 +776,7 @@ namespace RestDb
             }
         }
 
-        public static bool IsLaterThanNow(DateTime? dt)
+        internal static bool IsLaterThanNow(DateTime? dt)
         {
             try
             {
@@ -771,7 +789,7 @@ namespace RestDb
             }
         }
 
-        public static bool IsLaterThanNow(DateTime dt)
+        internal static bool IsLaterThanNow(DateTime dt)
         {
             if (DateTime.Compare(dt, DateTime.Now) > 0)
             {
@@ -787,7 +805,7 @@ namespace RestDb
 
         #region Environment
          
-        public static void ExitApplication(string method, string text, int returnCode)
+        internal static void ExitApplication(string method, string text, int returnCode)
         {
             Console.WriteLine("---");
             Console.WriteLine("");
@@ -801,7 +819,7 @@ namespace RestDb
             return;
         }
 
-        public static string GetPathSeparator(string environment)
+        internal static string GetPathSeparator(string environment)
         {
             if (String.IsNullOrEmpty(environment)) throw new ArgumentNullException(nameof(environment));
 
@@ -823,7 +841,7 @@ namespace RestDb
 
         #region Dictionary
 
-        public static Dictionary<string, string> AddToDictionary(string key, string val, Dictionary<string, string> existing)
+        internal static Dictionary<string, string> AddToDictionary(string key, string val, Dictionary<string, string> existing)
         {
             Dictionary<string, string> ret = new Dictionary<string, string>();
 
@@ -843,31 +861,31 @@ namespace RestDb
 
         #region IsTrue
 
-        public static bool IsTrue(int? val)
+        internal static bool IsTrue(int? val)
         {
             if (val == null) return false;
             if (Convert.ToInt32(val) == 1) return true;
             return false;
         }
 
-        public static bool IsTrue(int val)
+        internal static bool IsTrue(int val)
         {
             if (val == 1) return true;
             return false;
         }
 
-        public static bool IsTrue(bool val)
+        internal static bool IsTrue(bool val)
         {
             return val;
         }
 
-        public static bool IsTrue(bool? val)
+        internal static bool IsTrue(bool? val)
         {
             if (val == null) return false;
             return Convert.ToBoolean(val);
         }
 
-        public static bool IsTrue(string val)
+        internal static bool IsTrue(string val)
         {
             if (String.IsNullOrEmpty(val)) return false;
             val = val.ToLower().Trim();
@@ -881,13 +899,13 @@ namespace RestDb
 
         #region Directory 
 
-        public static bool CreateDirectory(string dir)
+        internal static bool CreateDirectory(string dir)
         {
             Directory.CreateDirectory(dir);
             return true;
         }
 
-        public static bool DirectoryExists(string dir)
+        internal static bool DirectoryExists(string dir)
         {
             try
             {
@@ -899,7 +917,7 @@ namespace RestDb
             }
         }
 
-        public static List<string> GetSubdirectoryList(string directory, bool recursive)
+        internal static List<string> GetSubdirectoryList(string directory, bool recursive)
         {
             try
             {
@@ -944,7 +962,7 @@ namespace RestDb
             }
         }
 
-        public static bool DeleteDirectory(string dir, bool recursive)
+        internal static bool DeleteDirectory(string dir, bool recursive)
         {
             if (!Directory.Exists(dir)) return true;
 
@@ -972,7 +990,7 @@ namespace RestDb
             }
         }
 
-        public static bool RenameDirectory(string from, string to)
+        internal static bool RenameDirectory(string from, string to)
         {
             try
             {
@@ -988,7 +1006,7 @@ namespace RestDb
             }
         }
 
-        public static bool MoveDirectory(string from, string to)
+        internal static bool MoveDirectory(string from, string to)
         {
             try
             {
@@ -1004,7 +1022,7 @@ namespace RestDb
             }
         }
 
-        public static bool WalkDirectory(
+        internal static bool WalkDirectory(
             string environment,
             int depth,
             string directory,
@@ -1086,7 +1104,7 @@ namespace RestDb
             }
         }
 
-        public static bool DirectoryStatistics(
+        internal static bool DirectoryStatistics(
             DirectoryInfo dirinfo,
             bool recursive,
             out long bytes,
@@ -1144,7 +1162,7 @@ namespace RestDb
 
         #region File
 
-        public static bool DeleteFile(string filename)
+        internal static bool DeleteFile(string filename)
         {
             try
             {
@@ -1157,12 +1175,12 @@ namespace RestDb
             }
         }
 
-        public static bool FileExists(string filename)
+        internal static bool FileExists(string filename)
         {
             return File.Exists(filename);
         }
 
-        public static List<string> GetFileList(string environment, string directory, bool prependFilename)
+        internal static List<string> GetFileList(string environment, string directory, bool prependFilename)
         {
             try
             {
@@ -1192,7 +1210,7 @@ namespace RestDb
             }
         }
 
-        public static bool WriteFile(string filename, string content, bool append)
+        internal static bool WriteFile(string filename, string content, bool append)
         {
             using (StreamWriter writer = new StreamWriter(filename, append))
             {
@@ -1201,12 +1219,12 @@ namespace RestDb
             return true;
         }
 
-        public static bool WriteFile(string filename, byte[] content)
+        internal static bool WriteFile(string filename, byte[] content)
         {
             File.WriteAllBytes(filename, content); return true;
         }
 
-        public static bool WriteFile(string filename, byte[] content, int pos)
+        internal static bool WriteFile(string filename, byte[] content, int pos)
         {
             using (Stream stream = new FileStream(filename, System.IO.FileMode.OpenOrCreate))
             {
@@ -1216,7 +1234,7 @@ namespace RestDb
             return true;
         }
 
-        public static string ReadTextFile(string filename)
+        internal static string ReadTextFile(string filename)
         {
             try
             {
@@ -1228,7 +1246,7 @@ namespace RestDb
             }
         }
 
-        public static byte[] ReadBinaryFile(string filename, int from, int len)
+        internal static byte[] ReadBinaryFile(string filename, int from, int len)
         {
             try
             {
@@ -1250,7 +1268,7 @@ namespace RestDb
             }
         }
 
-        public static byte[] ReadBinaryFile(string filename)
+        internal static byte[] ReadBinaryFile(string filename)
         {
             try
             {
@@ -1262,7 +1280,7 @@ namespace RestDb
             }
         }
 
-        public static string GetFileExtension(string filename)
+        internal static string GetFileExtension(string filename)
         {
             try
             {
@@ -1275,7 +1293,7 @@ namespace RestDb
             }
         }
 
-        public static bool RenameFile(string from, string to)
+        internal static bool RenameFile(string from, string to)
         {
             try
             {
@@ -1292,7 +1310,7 @@ namespace RestDb
             }
         }
 
-        public static bool MoveFile(string from, string to)
+        internal static bool MoveFile(string from, string to)
         {
             try
             {
@@ -1309,7 +1327,7 @@ namespace RestDb
             }
         }
 
-        public static bool VerifyFileReadAccess(string filename)
+        internal static bool VerifyFileReadAccess(string filename)
         {
             try
             {

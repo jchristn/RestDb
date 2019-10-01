@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 
 namespace RestDb
 {
-    public class Setup
+    internal class Setup
     {
         #region Constructors-and-Factories
 
-        public Setup()
+        internal Setup()
         {
             RunSetup();
         }
@@ -61,8 +61,9 @@ namespace RestDb
             Console.WriteLine("match the host header received on incoming RESTful HTTP requests.  It is");
             Console.WriteLine("recommended that you use the DNS hostname of the machine.");
             Console.WriteLine("");
-            Console.WriteLine("NOTE: using anything other than 127.0.0.1 or localhost may require that you");
-            Console.WriteLine("run RestDb with elevated/admin privileges.");
+            Console.WriteLine("Important: if you use localhost or 127.0.0.1, RestDb will only be able to");
+            Console.WriteLine("accept requests from within the local system.  If you use *, +, or 0.0.0.0 to");
+            Console.WriteLine("represent any address, you will have to run RestDb with admin privileges.");
             Console.WriteLine("");
 
             ret.Server = new ServerSettings();
@@ -132,7 +133,7 @@ namespace RestDb
                 else curr.Port = Common.InputInteger("Server port?", 5432, true, false);
 
                 curr.Instance = null;
-                if (curr.Type.Equals("mssql")) curr.Instance = Common.InputString("Instance name?", "SQLEXPRESS", true);
+                if (curr.Type.Equals("mssql")) curr.Instance = Common.InputString("Instance name?", null, true);
 
                 curr.Username = Common.InputString("Username?", null, false);
                 curr.Password = Common.InputString("Password?", null, false);
@@ -162,14 +163,6 @@ namespace RestDb
             #endregion
         }
 
-        #endregion
-
-        #region Public-Static-Methods
-
-        #endregion
-
-        #region Private-Static-Methods
-
-        #endregion
+        #endregion 
     }
 }

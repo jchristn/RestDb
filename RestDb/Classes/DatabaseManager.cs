@@ -8,11 +8,11 @@ using DatabaseWrapper;
 
 namespace RestDb
 {
-    public class DatabaseManager
+    internal class DatabaseManager
     {
         #region Constructors-and-Factories
 
-        public DatabaseManager(Settings settings, LoggingModule logging)
+        internal DatabaseManager(Settings settings, LoggingModule logging)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (logging == null) throw new ArgumentNullException(nameof(logging));
@@ -40,9 +40,9 @@ namespace RestDb
 
         #endregion
 
-        #region Public-Methods
-        
-        public List<string> ListDatabasesByName()
+        #region Internal-Methods
+
+        internal List<string> ListDatabasesByName()
         {
             List<string> ret = new List<string>();
 
@@ -57,32 +57,32 @@ namespace RestDb
             }
         }
 
-        public Database GetDatabaseByName(string dbName)
+        internal Database GetDatabaseByName(string dbName)
         {
             if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
             return _Settings.GetDatabaseByName(dbName);
         }
 
-        public List<Table> GetTables(string dbName, bool describe)
+        internal List<Table> GetTables(string dbName, bool describe)
         {
             if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
             
             DatabaseClient db = GetDatabaseClient(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTables unable to find client for database " + dbName);
+                _Logging.Warn("GetTables unable to find client for database " + dbName);
                 return null;
             }
 
             List<string> tableNames = db.ListTables();
             if (tableNames == null || tableNames.Count < 1)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTables no tables returned from list tables for database " + dbName);
+                _Logging.Warn("GetTables no tables returned from list tables for database " + dbName);
                 return null;
             }
             else
             {
-                _Logging.Log(LoggingModule.Severity.Debug, "GetTables returning " + tableNames.Count + " tables for database " + dbName);
+                _Logging.Debug("GetTables returning " + tableNames.Count + " tables for database " + dbName);
             }
 
             List<Table> ret = new List<Table>();
@@ -98,7 +98,7 @@ namespace RestDb
                     List<DatabaseWrapper.Column> columns = db.DescribeTable(curr);
                     if (columns == null || columns.Count < 1)
                     {
-                        _Logging.Log(LoggingModule.Severity.Warn, "GetTables no columns found for table " + curr + " in database " + dbName);
+                        _Logging.Warn("GetTables no columns found for table " + curr + " in database " + dbName);
                         ret.Add(currTable);
                         continue;
                     }
@@ -109,11 +109,11 @@ namespace RestDb
                         tempColumn.Name = currColumn.Name;
                         tempColumn.Nullable = currColumn.Nullable;
                         tempColumn.MaxLength = currColumn.MaxLength;
-                        tempColumn.Type = currColumn.DataType;
-                        if (currColumn.IsPrimaryKey) currTable.PrimaryKey = tempColumn.Name;
+                        tempColumn.Type = currColumn.Type.ToString();
+                        if (currColumn.PrimaryKey) currTable.PrimaryKey = tempColumn.Name;
 
                         currTable.Columns.Add(tempColumn);
-                        // _Logging.Log(LoggingModule.Severity.Debug, "GetTables adding column " + tempColumn.Name + " for table " + currTable.Name + " database " + dbName);
+                        // _Logging.Debug("GetTables adding column " + tempColumn.Name + " for table " + currTable.Name + " database " + dbName);
                     }
                 }
 
@@ -123,28 +123,28 @@ namespace RestDb
             return ret;
         }
 
-        public List<string> GetTableNames(string dbName)
+        internal List<string> GetTableNames(string dbName)
         {            
             if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
              
             DatabaseClient db = GetDatabaseClient(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTableNames unable to find client for database " + dbName);
+                _Logging.Warn("GetTableNames unable to find client for database " + dbName);
                 return null;
             }
 
             List<string> tableNames = db.ListTables();
             if (tableNames == null || tableNames.Count < 1)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTableNames no tables returned from list tables for database " + dbName);
+                _Logging.Warn("GetTableNames no tables returned from list tables for database " + dbName);
                 return null;
             }
 
             return tableNames;
         }
 
-        public Table GetTableByName(string dbName, string tableName)
+        internal Table GetTableByName(string dbName, string tableName)
         {
             if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
             if (String.IsNullOrEmpty(tableName)) throw new ArgumentNullException(nameof(tableName));
@@ -152,7 +152,7 @@ namespace RestDb
             DatabaseClient db = GetDatabaseClient(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTableByName unable to find client for database " + dbName);
+                _Logging.Warn("GetTableByName unable to find client for database " + dbName);
                 return null;
             }
 
@@ -163,18 +163,22 @@ namespace RestDb
             List<DatabaseWrapper.Column> columns = db.DescribeTable(tableName);
             if (columns == null || columns.Count < 1)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTableByName no columns found for table " + tableName + " in database " + dbName);
-                return ret;
+                _Logging.Warn("GetTableByName no columns found for table " + tableName + " in database " + dbName);
+                return null;
             }
-
+             
             foreach (DatabaseWrapper.Column currColumn in columns)
             {
                 Column tempColumn = new Column();
                 tempColumn.Name = currColumn.Name;
                 tempColumn.Nullable = currColumn.Nullable;
                 tempColumn.MaxLength = currColumn.MaxLength; 
-                tempColumn.Type = currColumn.DataType;
-                if (currColumn.IsPrimaryKey) ret.PrimaryKey = tempColumn.Name;
+                tempColumn.Type = currColumn.Type.ToString();
+                if (currColumn.PrimaryKey)
+                {
+                    tempColumn.PrimaryKey = true;
+                    ret.PrimaryKey = tempColumn.Name;
+                }
 
                 ret.Columns.Add(tempColumn);
             }
@@ -182,7 +186,7 @@ namespace RestDb
             return ret;
         }
 
-        public DatabaseClient GetDatabaseClient(string dbName)
+        internal DatabaseClient GetDatabaseClient(string dbName)
         {
             lock (_DatabasesLock)
             {
@@ -205,7 +209,7 @@ namespace RestDb
 
             foreach (Database curr in _Settings.Databases)
             {
-                _Logging.Log(LoggingModule.Severity.Debug, "InitializeDatabases initializing db " + curr.ToString());
+                _Logging.Debug("InitializeDatabases initializing db " + curr.ToString());
 
                 DatabaseClient db = new DatabaseClient(
                     curr.Type,
@@ -218,7 +222,7 @@ namespace RestDb
                 
                 if (curr.Debug)
                 {
-                    _Logging.Log(LoggingModule.Severity.Debug, "InitializeDatabases enabling debug for db " + curr.Name);
+                    _Logging.Debug("InitializeDatabases enabling debug for db " + curr.Name);
                     db.DebugRawQuery = true;
                     db.DebugResultRowCount = true;
                 }
@@ -227,14 +231,6 @@ namespace RestDb
             }
         }
 
-        #endregion
-
-        #region Public-Static-Methods
-
-        #endregion
-
-        #region Private-Static-Methods
-
-        #endregion
+        #endregion 
     }
 }

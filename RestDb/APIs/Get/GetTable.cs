@@ -14,35 +14,39 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static WatsonWebserver.HttpResponse GetTable(WatsonWebserver.HttpRequest req)
+        static async Task GetTable(HttpContext ctx)
         {
-            string dbName = req.RawUrlEntries[0];
-            string tableName = req.RawUrlEntries[1];
-            int? idVal = req.RetrieveIdValue();
+            string dbName = ctx.Request.RawUrlEntries[0];
+            string tableName = ctx.Request.RawUrlEntries[1];
+            int idVal = 0;
+            if (ctx.Request.RawUrlEntries.Count == 3) Int32.TryParse(ctx.Request.RawUrlEntries[2], out idVal);
 
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTable unknown table " + tableName + " in database " + dbName);
-                return new WatsonWebserver.HttpResponse(req, false, 404, null, null, 
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
-
+             
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "GetTable unable to retrieve database client for database " + dbName);
-                return new WatsonWebserver.HttpResponse(req, false, 404, null, null,
-                    Common.SerializeJson(new ErrorResponse("Not found", null), true), true);
+                ctx.Response.StatusCode = 404;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                return;
             }
 
             #region Check-for-Describe
 
-            bool describe = Common.IsTrue(req.RetrieveHeaderValue("_describe"));
-            if (describe)
-            { 
-                return new WatsonWebserver.HttpResponse(req, true, 200, null, null,
-                    Common.SerializeJson(currTable, true), true);
+            if (ctx.Request.QuerystringEntries.ContainsKey("_describe"))
+            {
+                ctx.Response.StatusCode = 200;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(currTable, true));
+                return;
             }
 
             #endregion
@@ -57,21 +61,23 @@ namespace RestDb
             List<string> returnFields = null;
             Expression filter = null; 
 
-            if (idVal != null)
+            if (idVal > 0)
             {
                 if (String.IsNullOrEmpty(currTable.PrimaryKey))
                 {
-                    _Logging.Log(LoggingModule.Severity.Warn, "GetTable no primary key defined for table " + tableName + " in database " + dbName);
-                    return new WatsonWebserver.HttpResponse(req, false, 400, null, null, 
-                        Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true), true);
+                    _Logging.Warn("GetTable no primary key defined for table " + tableName + " in database " + dbName);
+                    ctx.Response.StatusCode = 400;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                    return;
                 }
 
                 filter = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
             }
 
-            if (req.QuerystringEntries != null && req.QuerystringEntries.Count > 0)
+            if (ctx.Request.QuerystringEntries != null && ctx.Request.QuerystringEntries.Count > 0)
             {
-                foreach (KeyValuePair<string, string> currKvp in req.QuerystringEntries)
+                foreach (KeyValuePair<string, string> currKvp in ctx.Request.QuerystringEntries)
                 {
                     if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
                     if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);
@@ -81,22 +87,26 @@ namespace RestDb
                 }
             }
 
-            if (req.QuerystringEntries.ContainsKey("_index_start")) indexStart = Convert.ToInt32(req.QuerystringEntries["_index_start"]);
-            if (req.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(req.QuerystringEntries["_max_results"]);
-            if (req.QuerystringEntries.ContainsKey("_order_by")) orderBy = WebUtility.UrlDecode(req.QuerystringEntries["_order_by"]); 
-            if (req.QuerystringEntries.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(req.QuerystringEntries["_return_fields"]);
+            if (ctx.Request.QuerystringEntries.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.QuerystringEntries["_index_start"]);
+            if (ctx.Request.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.QuerystringEntries["_max_results"]);
+            if (ctx.Request.QuerystringEntries.ContainsKey("_order_by")) orderBy = WebUtility.UrlDecode(ctx.Request.QuerystringEntries["_order_by"]); 
+            if (ctx.Request.QuerystringEntries.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.QuerystringEntries["_return_fields"]);
 
             result = db.Select(tableName, indexStart, maxResults, returnFields, filter, orderBy);
 
             if (result == null || result.Rows.Count < 1)
             {
-                return new WatsonWebserver.HttpResponse(req, true, 200, null, null,
-                    Common.SerializeJson(new List<dynamic>(), true), true);
+                ctx.Response.StatusCode = 200;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(new List<dynamic>(), true));
+                return;
             }
             else
             {
-                return new WatsonWebserver.HttpResponse(req, true, 200, null, null,
-                    Common.SerializeJson(Common.DataTableToListDynamic(result), true), true);
+                ctx.Response.StatusCode = 200;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(Common.DataTableToListDynamic(result), true));
+                return;
             }
 
             #endregion 

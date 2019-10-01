@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp2.2;net462</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.3</Version>
+    <Version>1.1.0</Version>
     <Authors>Joel Christner</Authors>
     <Description>C:\Code\Misc\RestDb\RestDbOriginal\APIs\</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -12,13 +12,18 @@
     <RepositoryUrl>https://github.com/jchristn/restdb</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>rest,database,api,db</PackageTags>
-    <PackageReleaseNotes>Retarget to .NET Core and .NET Framework</PackageReleaseNotes>
+    <PackageReleaseNotes>Update dependencies, async</PackageReleaseNotes>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Docs\MsSqlSample.txt" />
     <None Remove="Docs\MySqlSample.txt" />
     <None Remove="Docs\PgSqlSample.txt" />
+    <None Include="..\LICENSE.md">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,10 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DatabaseWrapper" Version="1.2.7" />
-    <PackageReference Include="SyslogLogging" Version="1.0.10" />
+    <PackageReference Include="DatabaseWrapper" Version="1.4.7" />
+    <PackageReference Include="SyslogLogging" Version="1.2.1" />
     <PackageReference Include="System.Runtime.Extensions" Version="4.3.1" />
-    <PackageReference Include="Watson" Version="1.6.0" />
+    <PackageReference Include="Watson" Version="3.0.3" />
   </ItemGroup>
 
 </Project>

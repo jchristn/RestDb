@@ -19,7 +19,7 @@ namespace RestDb
         {
             if (data == null || data.Length < 1)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "DeserializeExpression null or empty byte data supplied");
+                _Logging.Warn("DeserializeExpression null or empty byte data supplied");
                 return null;
             }
 
@@ -30,7 +30,7 @@ namespace RestDb
         {
             if (data == null || data.Length < 1)
             {
-                _Logging.Log(LoggingModule.Severity.Warn, "DeserializeExpression null or empty string data supplied");
+                _Logging.Warn("DeserializeExpression null or empty string data supplied");
                 return null;
             }
 

@@ -42,14 +42,6 @@ namespace RestDb
 
         #region Private-Methods
 
-        #endregion
-
-        #region Public-Static-Methods
-
-        #endregion
-
-        #region Private-Static-Methods
-
-        #endregion
+        #endregion 
     }
 }

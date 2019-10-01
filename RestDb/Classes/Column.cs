@@ -23,6 +23,7 @@ namespace RestDb
         public string Type { get; set; } 
         public int? MaxLength { get; set; }
         public bool Nullable { get; set; }
+        public bool? PrimaryKey { get; set; }
 
         #endregion
 
@@ -36,14 +37,6 @@ namespace RestDb
 
         #region Private-Methods
 
-        #endregion
-
-        #region Public-Static-Methods
-
-        #endregion
-
-        #region Private-Static-Methods
-
-        #endregion
+        #endregion 
     }
 }
