@@ -6,11 +6,12 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server, MySQL, and PostgreSQL.
  
-## New in v1.1.0
+## New in v1.2.0
 
 - Dependency updates
-- Async operation
-- ```_describe``` no longer needs ```=true``` in the querystring
+- Added support for Sqlite
+- Table creation, drop, and truncate APIs
+- .NET Core only (removed support for .NET Framework)
 
 ## Important Notes
 
@@ -19,41 +20,22 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 - By default, access to RestDb is UNAUTHENTICATED.  Configure ```System.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
 
 ## Execution
-
-In Windows, using .NET Framework
-```
-> cd RestDb\bin\debug\net462
-> RestDb.exe
-```
-
-In Windows, using .NET Core
+  
 ```
 > cd RestDb\bin\debug\netcoreapp2.2
 > dotnet RestDb.dll
 ```
-
-In Linux/Mac, using .NET Core
-```
-$ cd RestDb/bin/debug/netcoreapp2.2
-$ dotnet RestDb.dll
-```
-
-In Mono with .NET Framework environments, you should run the Mono AOT.
-```
-mono --aot=nrgctx-trampolines=8096,nimt-trampolines=8096,ntrampolines=4048 --server RestDb.exe
-mono --server RestDb.exe
-```
-
+  
 ## Setup
+ 
+1) Start RestDb as described above.  You will be guided through a setup process to connect to your databases.  Alternatively, you can start with ```Sqlite``` which requires no database setup.
 
-Execute as described above.  Setup scripts for both MSSQL and MySQL are included in the Docs directory of the project, which create the test database and person table used in the examples below.  
-
-1) Start RestDb.exe (.NET Framework) or RestDb.dll (.NET Core) as described above.
 ```
-
-  █▀▀█ █▀▀ █▀▀ ▀▀█▀▀ █▀▀▄ █▀▀▄
-  █▄▄▀ █▀▀ ▀▀█ ░░█░░ █░░█ █▀▀▄
-  ▀░▀▀ ▀▀▀ ▀▀▀ ░░▀░░ ▀▀▀░ ▀▀▀░
+                 _      _ _
+   _ __ ___  ___| |_ __| | |__
+  | '__/ _ \/ __| __/ _  |  _ \
+  | | |  __/\__ \ || (_| | |_) |
+  |_|  \___||___/\__\__,_|_.__/
 
 
 Listening for requests on http://localhost:8000
@@ -73,6 +55,44 @@ Resp:
 [
   "test"
 ]
+```
+
+### Create a Table
+```
+POST http://localhost:8000/test
+{
+  "Name": "person",
+  "PrimaryKey": "person_id",
+  "Columns": [
+    {
+      "Name": "person_id",
+      "Type": "int",
+      "Nullable": false
+    },
+    {
+      "Name": "first_name",
+      "Type": "nvarchar",
+      "MaxLength": 32,
+      "Nullable": false
+    },
+    {
+      "Name": "last_name",
+      "Type": "nvarchar",
+      "MaxLength": 32,
+      "Nullable": true
+    },
+    {
+      "Name": "age",
+      "Type": "int",
+      "Nullable": false
+    },
+    {
+      "Name": "created",
+      "Type": "datetime",
+      "Nullable": true
+    }
+  ]
+}
 ```
 
 ### Retrieve a Database
@@ -124,7 +144,7 @@ Resp:
     },
     {
       "Name": "created",
-      "Type": "datetime2",
+      "Type": "datetime",
       "Nullable": true
     }
   ]
@@ -135,9 +155,10 @@ Resp:
 
 Be sure to use timestamps appropriate to your database type, for instance:
 
-- MSSQL: MM/dd/yyyy HH:mm:ss
-- MySQL: yyyy-MM-dd HH:mm:ss
-- PGSQL: MM/dd/yyyy HH:mm:ss
+- MsSql:  MM/dd/yyyy HH:mm:ss
+- MySql:  yyyy-MM-dd HH:mm:ss
+- PgSql:  MM/dd/yyyy HH:mm:ss
+- Sqlite: yyyy-MM-dd HH:mm:ss
 
 ```
 POST http://localhost:8000/test/person
@@ -239,6 +260,16 @@ DELETE http://localhost:8000/test/person/1
 Resp: 200/OK (no data)
 ```
 
+### Truncating a Table
+```
+DELETE http://localhost:8000/test/person?_truncate
+```
+
+### Dropping a Table
+```
+DELETE http://localhost:8000/test/person?_drop
+```
+
 ## Enabling Authentication
 
 To enable authentication, set ```Server.RequireAuthentication``` to ```true``` and specify an API key header in ```Server.ApiKeyHeader``` in the ```System.Json``` file.  Then, add a section called ```ApiKeys``` with each of the keys you wish to allow or disallow.  An example with one API key is below.
@@ -265,7 +296,7 @@ To enable authentication, set ```Server.RequireAuthentication``` to ```true``` a
   "Databases": [
     {
       "Name": "test",
-      "Type": "mssql",
+      "Type": "MsSql",
       "Hostname": "localhost",
       "Port": 1433,
       "Instance": "SQLEXPRESS",

@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp2.2;net462</TargetFrameworks>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Joel Christner</Authors>
     <Description>C:\Code\Misc\RestDb\RestDbOriginal\APIs\</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -12,15 +12,12 @@
     <RepositoryUrl>https://github.com/jchristn/restdb</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>rest,database,api,db</PackageTags>
-    <PackageReleaseNotes>Update dependencies, async</PackageReleaseNotes>
+    <PackageReleaseNotes>Table management APIs, Sqlite support, dependency update</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIconUrl>https://github.com/jchristn/RestDb/raw/master/assets/database-icon.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Docs\MsSqlSample.txt" />
-    <None Remove="Docs\MySqlSample.txt" />
-    <None Remove="Docs\PgSqlSample.txt" />
     <None Include="..\LICENSE.md">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
@@ -28,16 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Docs\MsSqlSample.txt" />
-    <Content Include="Docs\MySqlSample.txt" />
-    <Content Include="Docs\PgSqlSample.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="DatabaseWrapper" Version="1.4.7" />
-    <PackageReference Include="SyslogLogging" Version="1.2.1" />
+    <PackageReference Include="DatabaseWrapper" Version="2.0.4" />
+    <PackageReference Include="SyslogLogging" Version="1.3.2" />
     <PackageReference Include="System.Runtime.Extensions" Version="4.3.1" />
-    <PackageReference Include="Watson" Version="3.0.3" />
+    <PackageReference Include="Watson" Version="3.0.9" />
   </ItemGroup>
 
 </Project>

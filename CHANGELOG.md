@@ -2,13 +2,20 @@
 
 ## Current Version
 
+v1.2.0
+
+- Dependency updates
+- Added support for Sqlite
+- Table creation, drop, and truncate APIs
+- .NET Core only (removed support for .NET Framework)
+
+## Previous Versions
+
 v1.1.0
 
 - Dependency updates
 - Async operation
 - ```_describe``` no longer needs ```=true``` in the querystring
-
-## Previous Versions
 
 v1.0.3
 

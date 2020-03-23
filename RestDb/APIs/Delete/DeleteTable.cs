@@ -8,8 +8,7 @@ using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
 
-namespace RestDb
-
+namespace RestDb 
 {
     partial class RestDbServer
     {
@@ -38,29 +37,31 @@ namespace RestDb
                 return;
             }
 
-            if (idVal == 0 
-                && ctx.Request.RawUrlEntries.Count == 2)
+            if (ctx.Request.RawUrlEntries.Count == 2 && ctx.Request.QuerystringEntries.ContainsKey("_truncate"))
             {
-                #region Retrieve-Table
-
-                if (!ctx.Request.QuerystringEntries.ContainsKey("_truncate"))
-                {
-                    _Logging.Warn("DeleteTable table deletion not allowed without setting _truncate in querystring for " + tableName + " in database " + dbName);
-                    ctx.Response.StatusCode = 400;
-                    ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "Cannot truncate table without setting _truncate in querystring to true"), true));
-                    return;
-                }
+                #region Truncate
 
                 db.Truncate(tableName);
                 _Logging.Warn("DeleteTable truncated table " + tableName + " in database " + dbName);
-                ctx.Response.StatusCode = 200;
+                ctx.Response.StatusCode = 204;
                 await ctx.Response.Send();
                 return;
 
                 #endregion
             }
-            else
+            else if (ctx.Request.RawUrlEntries.Count == 2 && ctx.Request.QuerystringEntries.ContainsKey("_drop"))
+            {
+                #region Drop
+
+                db.DropTable(tableName);
+                _Logging.Warn("DeleteTable dropped table " + tableName + " in database " + dbName);
+                ctx.Response.StatusCode = 204;
+                await ctx.Response.Send();
+                return;
+
+                #endregion
+            }
+            else if (ctx.Request.RawUrlEntries.Count >= 2)
             {
                 #region Delete-Objects
 
@@ -87,14 +88,12 @@ namespace RestDb
                     {
                         if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
                         if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);
-                        else filter = Expression.PrependAndClause(
-                            new Expression(currKvp.Key, Operators.Equals, currKvp.Value),
-                            filter);
+                        else filter.PrependAnd(currKvp.Key, Operators.Equals, currKvp.Value);
                     }
                 }
 
                 result = db.Delete(tableName, filter);
-                ctx.Response.StatusCode = 200;
+                ctx.Response.StatusCode = 204;
                 await ctx.Response.Send();
                 return;
 

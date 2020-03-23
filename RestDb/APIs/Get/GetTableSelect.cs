@@ -14,7 +14,7 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task GetTable(HttpContext ctx)
+        static async Task GetTableSelect(HttpContext ctx)
         {
             string dbName = ctx.Request.RawUrlEntries[0];
             string tableName = ctx.Request.RawUrlEntries[1];

@@ -78,7 +78,7 @@ namespace RestDb
             if (tableNames == null || tableNames.Count < 1)
             {
                 _Logging.Warn("GetTables no tables returned from list tables for database " + dbName);
-                return null;
+                return new List<Table>();
             }
             else
             {
@@ -109,7 +109,7 @@ namespace RestDb
                         tempColumn.Name = currColumn.Name;
                         tempColumn.Nullable = currColumn.Nullable;
                         tempColumn.MaxLength = currColumn.MaxLength;
-                        tempColumn.Type = currColumn.Type.ToString();
+                        tempColumn.Type = currColumn.Type;
                         if (currColumn.PrimaryKey) currTable.PrimaryKey = tempColumn.Name;
 
                         currTable.Columns.Add(tempColumn);
@@ -137,8 +137,8 @@ namespace RestDb
             List<string> tableNames = db.ListTables();
             if (tableNames == null || tableNames.Count < 1)
             {
-                _Logging.Warn("GetTableNames no tables returned from list tables for database " + dbName);
-                return null;
+                _Logging.Debug("GetTableNames no tables returned from list tables for database " + dbName);
+                return new List<string>();
             }
 
             return tableNames;
@@ -167,13 +167,13 @@ namespace RestDb
                 return null;
             }
              
-            foreach (DatabaseWrapper.Column currColumn in columns)
+            foreach (Column currColumn in columns)
             {
                 Column tempColumn = new Column();
                 tempColumn.Name = currColumn.Name;
                 tempColumn.Nullable = currColumn.Nullable;
                 tempColumn.MaxLength = currColumn.MaxLength; 
-                tempColumn.Type = currColumn.Type.ToString();
+                tempColumn.Type = currColumn.Type;
                 if (currColumn.PrimaryKey)
                 {
                     tempColumn.PrimaryKey = true;
@@ -211,24 +211,43 @@ namespace RestDb
             {
                 _Logging.Debug("InitializeDatabases initializing db " + curr.ToString());
 
-                DatabaseClient db = new DatabaseClient(
-                    curr.Type,
-                    curr.Hostname,
-                    curr.Port,
-                    curr.Username,
-                    curr.Password,
-                    curr.Instance,
-                    curr.Name);
-                
-                if (curr.Debug)
+                DatabaseClient db = null;
+
+                switch (curr.Type)
                 {
-                    _Logging.Debug("InitializeDatabases enabling debug for db " + curr.Name);
-                    db.DebugRawQuery = true;
-                    db.DebugResultRowCount = true;
+                    case DbTypes.Sqlite:
+                        db = new DatabaseClient(curr.Filename);
+                        break;
+                    case DbTypes.MsSql:
+                    case DbTypes.MySql:
+                    case DbTypes.PgSql:
+                        db = new DatabaseClient(
+                            curr.Type,
+                            curr.Hostname,
+                            Convert.ToInt32(curr.Port),
+                            curr.Username,
+                            curr.Password,
+                            curr.Instance,
+                            curr.Name);
+                        break;
+                    default:
+                        throw new ArgumentException("Unknown database type: " + curr.Type.ToString()); 
+                } 
+
+                if (curr.Debug)
+                { 
+                    db.Logger = Logger;
+                    db.LogQueries = true;
+                    db.LogResults = true;
                 }
 
                 _Databases.Add(curr.Name, db);
             }
+        }
+
+        private void Logger(string msg)
+        {
+            _Logging.Debug(msg);
         }
 
         #endregion 

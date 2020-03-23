@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using DatabaseWrapper;
 
 namespace RestDb
 {
@@ -116,27 +117,47 @@ namespace RestDb
 
                     break;
                 }
-
-                string currType = Common.InputString("Database type [mssql|mysql|pgsql]?", "mssql", false);
-                if (!currType.Equals("mssql") && !currType.Equals("mysql") && !currType.Equals("pgsql"))
+                 
+                string currType = Common.InputString("Database type [MsSql|MySql|PgSql|Sqlite]?", "Sqlite", false);
+                if (!currType.Equals("Sqlite") && !currType.Equals("MsSql") && !currType.Equals("MySql") && !currType.Equals("PgSql"))
                 {
-                    Console.WriteLine("Error: Use mssql, mysql, or pgsql for the database type.");
+                    Console.WriteLine("Error: Use MsSql, MySql, PgSql, or Sqlite for the database type.");
                     Console.WriteLine("");
                     continue;
                 }
 
-                curr.Type = currType;
-                curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
+                curr.Type = (DbTypes)(Enum.Parse(typeof(DbTypes), currType));
 
-                if (curr.Type.Equals("mssql")) curr.Port = Common.InputInteger("Server port?", 1433, true, false);
-                else if (curr.Type.Equals("mysql")) curr.Port = Common.InputInteger("Server port?", 3306, true, false);
-                else curr.Port = Common.InputInteger("Server port?", 5432, true, false);
+                switch (curr.Type)
+                {
+                    case DbTypes.Sqlite:
+                        curr.Filename = Common.InputString("Filename?", "./database.db", false);
+                        break;
+                    case DbTypes.MsSql:
+                        curr.Hostname = Common.InputString("Server hostname?", "localhost", false); 
+                        curr.Port = Common.InputInteger("Server port?", 1433, true, false);
+                        curr.Instance = Common.InputString("Instance name?", null, true);
+                        curr.Username = Common.InputString("Username?", null, false);
+                        curr.Password = Common.InputString("Password?", null, false);
+                        break;
+                    case DbTypes.MySql:
+                        curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
+                        curr.Port = Common.InputInteger("Server port?", 3306, true, false);
+                        curr.Instance = null;
+                        curr.Username = Common.InputString("Username?", null, false);
+                        curr.Password = Common.InputString("Password?", null, false);
+                        break;
+                    case DbTypes.PgSql:
+                        curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
+                        curr.Port = Common.InputInteger("Server port?", 5432, true, false);
+                        curr.Instance = null;
+                        curr.Username = Common.InputString("Username?", null, false);
+                        curr.Password = Common.InputString("Password?", null, false);
+                        break;
+                    default:
+                        throw new ArgumentException("Unknown database type: " + curr.Type.ToString());
+                }
 
-                curr.Instance = null;
-                if (curr.Type.Equals("mssql")) curr.Instance = Common.InputString("Instance name?", null, true);
-
-                curr.Username = Common.InputString("Username?", null, false);
-                curr.Password = Common.InputString("Password?", null, false);
                 curr.Debug = false;
                 databases.Add(curr);
             }

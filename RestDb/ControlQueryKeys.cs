@@ -15,7 +15,8 @@ namespace RestDb
             "_max_results",     // maximum number of results to return
             "_order_by",        // how to order the results, must be URL-encoded
             "_return_fields",   // CSV list of fields to return
-            "_truncate",        // bool to indicate they really want to truncate (safety)
+            "_truncate",        // bool to indicate that they want to truncate the table
+            "_drop",            // bool to indicate that they want to drop the table
             "_debug"            // bool to debug certain queries
         };
     }

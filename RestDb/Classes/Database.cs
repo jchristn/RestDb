@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DatabaseWrapper;
 
 namespace RestDb
 {
@@ -20,9 +21,10 @@ namespace RestDb
         #region Public-Members
 
         public string Name { get; set; }
-        public string Type { get; set; }
+        public DbTypes Type { get; set; }
+        public string Filename { get; set; }
         public string Hostname { get; set; }
-        public int Port { get; set; }
+        public int? Port { get; set; }
         public string Instance { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
@@ -42,7 +44,17 @@ namespace RestDb
         public override string ToString()
         {
             string ret = "";
-            ret += Name + " [" + Type.ToString() + "] " + Hostname + ":" + Port + " " + Instance + " User: " + Username;
+
+            switch (Type)
+            {
+                case DbTypes.Sqlite:
+                    ret += Name + " [" + Type.ToString() + "] ";
+                    break;
+                default:
+                    ret += Name + " [" + Type.ToString() + "] " + Hostname + ":" + Port + " " + Instance + " User: " + Username;
+                    break;
+            }
+
             return ret;
         }
 

@@ -46,7 +46,7 @@ namespace RestDb
                 _Settings.Logging.ServerIp,
                 _Settings.Logging.ServerPort,
                 _Settings.Logging.ConsoleLogging,
-                (LoggingModule.Severity)_Settings.Logging.MinimumLevel,
+                (Severity)_Settings.Logging.MinimumLevel,
                 false,
                 true,
                 true,
@@ -185,7 +185,7 @@ namespace RestDb
 
                         if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
                         {
-                            await GetTable(ctx);
+                            await GetTableSelect(ctx);
                             return;
                         }
                         break;
@@ -207,9 +207,15 @@ namespace RestDb
                     case HttpMethod.POST:
                         #region post
 
+                        if (ctx.Request.RawUrlEntries.Count == 1)
+                        {
+                            await PostTableCreate(ctx);
+                            return;
+                        }
+
                         if (ctx.Request.RawUrlEntries.Count == 2)
                         {
-                            await PostTable(ctx);
+                            await PostTableInsert(ctx);
                             return;
                         }
                         break;
@@ -261,9 +267,11 @@ namespace RestDb
             return
                 Environment.NewLine +
                 Environment.NewLine +
-                "  █▀▀█ █▀▀ █▀▀ ▀▀█▀▀ █▀▀▄ █▀▀▄  " + Environment.NewLine +
-                "  █▄▄▀ █▀▀ ▀▀█ ░░█░░ █░░█ █▀▀▄  " + Environment.NewLine +
-                "  ▀░▀▀ ▀▀▀ ▀▀▀ ░░▀░░ ▀▀▀░ ▀▀▀░  " + Environment.NewLine +
+                @"                 _      _ _      " + Environment.NewLine +
+                @"   _ __ ___  ___| |_ __| | |__   " + Environment.NewLine +
+                @"  | '__/ _ \/ __| __/ _  |  _ \  " + Environment.NewLine +
+                @"  | | |  __/\__ \ || (_| | |_) | " + Environment.NewLine +
+                @"  |_|  \___||___/\__\__,_|_.__/  " + Environment.NewLine +
                 Environment.NewLine;
         }
 
@@ -277,7 +285,7 @@ namespace RestDb
                 "  <body>" +
                 "    <pre>";
 
-            ret += Logo();
+            ret += Logo() + Environment.NewLine;
             ret += "RestDb is running." + Environment.NewLine;
             ret += "Documentation and source code: <a href='https://github.com/jchristn/restdb' target='_blank'>https://github.com/jchristn/restdb</a>" + Environment.NewLine;
             ret +=
