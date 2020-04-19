@@ -36,9 +36,20 @@ namespace RestDb
 
         private void RunSetup()
         {
-            #region General
+            #region Welcome-and-General
 
             if (Console.WindowWidth < 79) Console.WindowWidth = 79;
+
+            Console.WriteLine(
+                Environment.NewLine +
+                Environment.NewLine +
+                @"                 _      _ _      " + Environment.NewLine +
+                @"   _ __ ___  ___| |_ __| | |__   " + Environment.NewLine +
+                @"  | '__/ _ \/ __| __/ _  |  _ \  " + Environment.NewLine +
+                @"  | | |  __/\__ \ || (_| | |_) | " + Environment.NewLine +
+                @"  |_|  \___||___/\__\__,_|_.__/  " + Environment.NewLine +
+                Environment.NewLine +
+                Environment.NewLine);
 
             Settings ret = new Settings();
             ret.Version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
@@ -54,8 +65,8 @@ namespace RestDb
 
             //                 0        1         2         3         4         5         6         7
             //                 1234567890123456789012345678901234567890123456789012345678901234567890123456789
-            Console.WriteLine("RestDb Setup");
-            Console.WriteLine("------------");
+            Console.WriteLine("Thank you for using RestDb!");
+            Console.WriteLine("");
             Console.WriteLine("We'll collect some values and put together your initial configuration.");
             Console.WriteLine("");
             Console.WriteLine("On which hostname should this node listen?  The hostname supplied here MUST");

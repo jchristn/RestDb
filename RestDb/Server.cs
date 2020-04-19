@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace RestDb
 {
     partial class RestDbServer
     {
+        static string _Version;
         static readonly EventWaitHandle Terminator = new EventWaitHandle(false, EventResetMode.ManualReset, "UserIntervention");
         static Settings _Settings;
         static LoggingModule _Logging;
@@ -20,6 +22,8 @@ namespace RestDb
 
         static void Main(string[] args)
         {
+            _Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
             #region Process-Arguments
 
             if (args != null && args.Length > 0)
@@ -42,6 +46,8 @@ namespace RestDb
 
             #region Initialize-Globals
 
+            Welcome();
+
             _Logging = new LoggingModule(
                 _Settings.Logging.ServerIp,
                 _Settings.Logging.ServerPort,
@@ -58,8 +64,6 @@ namespace RestDb
 
             _Auth = new AuthManager(_Settings, _Logging);
 
-            Console.WriteLine(Logo());
-
             _Server = new Server(
                 _Settings.Server.ListenerHostname,
                 _Settings.Server.ListenerPort,
@@ -74,6 +78,45 @@ namespace RestDb
             #endregion
 
             Terminator.WaitOne();
+        }
+
+        private static void Welcome()
+        {
+            ConsoleColor prior = Console.ForegroundColor;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine(Logo());
+            Console.WriteLine("RestDb | RESTful API for databases | v" + _Version);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine("");
+
+            if (_Settings.Server.ListenerHostname.Equals("localhost") || _Settings.Server.ListenerHostname.Equals("127.0.0.1"))
+            {
+                //                          1         2         3         4         5         6         7         8
+                //                 12345678901234567890123456789012345678901234567890123456789012345678901234567890
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine("WARNING: RestDb started on '" + _Settings.Server.ListenerHostname + "'");
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("RestDb can only service requests from the local machine.  If you wish to serve");
+                Console.WriteLine("external requests, edit the System.json file and specify a DNS-resolvable");
+                Console.WriteLine("hostname in the Server.ListenerHostname field.");
+                Console.WriteLine("");
+            }
+
+            List<string> adminListeners = new List<string> { "*", "+", "0.0.0.0" };
+
+            if (adminListeners.Contains(_Settings.Server.ListenerHostname))
+            {
+                //                          1         2         3         4         5         6         7         8
+                //                 12345678901234567890123456789012345678901234567890123456789012345678901234567890
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine("NOTICE: RestDb listening on a wildcard hostname: '" + _Settings.Server.ListenerHostname + "'");
+                Console.ForegroundColor = ConsoleColor.DarkCyan;
+                Console.WriteLine("RestDb must be run with administrative privileges, otherwise it will not be");
+                Console.WriteLine("able to respond to incoming requests.");
+                Console.WriteLine("");
+            }
+
+            Console.ForegroundColor = prior;
         }
 
         static async Task DefaultRoute(HttpContext ctx)
@@ -272,6 +315,7 @@ namespace RestDb
                 @"  | '__/ _ \/ __| __/ _  |  _ \  " + Environment.NewLine +
                 @"  | | |  __/\__ \ || (_| | |_) | " + Environment.NewLine +
                 @"  |_|  \___||___/\__\__,_|_.__/  " + Environment.NewLine +
+                Environment.NewLine +
                 Environment.NewLine;
         }
 

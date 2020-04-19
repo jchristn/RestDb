@@ -2,14 +2,18 @@
 
 ## Current Version
 
+v1.2.1
+
+- Logo and listener notifications (localhost, wildcard)
+
+## Previous Versions
+
 v1.2.0
 
 - Dependency updates
 - Added support for Sqlite
 - Table creation, drop, and truncate APIs
 - .NET Core only (removed support for .NET Framework)
-
-## Previous Versions
 
 v1.1.0
 
