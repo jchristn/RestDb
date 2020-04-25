@@ -13,7 +13,7 @@ namespace RestDb
     partial class RestDbServer
     {
         static string _Version;
-        static readonly EventWaitHandle Terminator = new EventWaitHandle(false, EventResetMode.ManualReset, "UserIntervention");
+        static readonly EventWaitHandle Terminator = new EventWaitHandle(false, EventResetMode.ManualReset);
         static Settings _Settings;
         static LoggingModule _Logging;
         static Server _Server;

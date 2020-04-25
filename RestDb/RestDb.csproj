@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <Authors>Joel Christner</Authors>
     <Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
     <Copyright>(c)2019 Joel Christner</Copyright>
@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/jchristn/restdb</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>rest,database,api,db</PackageTags>
-    <PackageReleaseNotes>Table management APIs, Sqlite support, dependency update</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix for multi-platform</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <PackageIconUrl>https://github.com/jchristn/RestDb/raw/master/assets/database-icon.png</PackageIconUrl>
   </PropertyGroup>

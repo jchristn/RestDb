@@ -2,11 +2,15 @@
 
 ## Current Version
 
+v1.2.2
+
+- Fix for multi-platform
+
+## Previous Versions
+
 v1.2.1
 
 - Logo and listener notifications (localhost, wildcard)
-
-## Previous Versions
 
 v1.2.0
 
