@@ -37,9 +37,7 @@ namespace RestDb
         private void RunSetup()
         {
             #region Welcome-and-General
-
-            if (Console.WindowWidth < 79) Console.WindowWidth = 79;
-
+             
             Console.WriteLine(
                 Environment.NewLine +
                 Environment.NewLine +

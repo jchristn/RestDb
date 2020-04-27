@@ -38,9 +38,9 @@ namespace RestDb
 
             #region Load-Configuration
 
-            if (!Common.FileExists("System.Json")) new Setup();
+            if (!Common.FileExists("System.json")) new Setup();
 
-            _Settings = Settings.FromFile("System.Json");
+            _Settings = Settings.FromFile("System.json");
 
             #endregion
 
