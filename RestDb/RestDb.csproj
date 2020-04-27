@@ -20,7 +20,11 @@
   <PropertyGroup>
     <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
   </PropertyGroup>
- 
+
+  <ItemGroup>
+    <None Include="LICENSE.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="DatabaseWrapper" Version="2.0.4" />
     <PackageReference Include="SyslogLogging" Version="1.3.2" />
