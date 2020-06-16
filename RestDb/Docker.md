@@ -4,11 +4,11 @@ Getting an ```HttpListener``` application (such as RestDb or any application usi
 
 ## Before you Begin
 
-RestDb relies on a configuration file ```System.json``` that must be present.  It is automatically generated on the first run, so it is recommended that you first run RestDb outside of Docker and make the appropriate configuration changes.  This will nee
+RestDb relies on a configuration file ```System.json``` that must be present.  It is automatically generated on the first run, so it is recommended that you first run RestDb outside of Docker and make the appropriate configuration changes.  This will need to be copied in either as part of build or overridden when the image is run as described below.
 
-Be sure to set ```Logging.ConsoleLogging``` to ```false``` when running in Docker.
+Set ```Logging.ConsoleLogging``` to ```false``` when running in Docker.
 
-Be sure to set ```Server.ListenerHostname``` to ```*``` when running in Docker.
+Set ```Server.ListenerHostname``` to ```*``` when running in Docker.
 
 ## Steps to Run RestDb in Docker
 
@@ -35,6 +35,15 @@ $ docker run --user ContainerAdministrator -d -p 8000:8000 restdb
 
 Linux or Mac
 $ docker run --user root -d -p 8000:8000 restdb
+```
+
+To run using a ```System.json``` from your filesystem (or external storage) use the following.  Note that the first parameter to ```-v``` is the path to the file outside of the container image and the second parameter is the path within the image.  The app is in ```/app``` so the path will need to reflect that.
+```
+Windows
+$ docker run --user ContainerAdministrator -p 8000:8000 -v /[PathOnLocalFilesystem]/System.json:/app/System.json restdb
+
+Linux or Mac 
+$ docker run --user root -p 8000:8000 -v /[PathOnLocalFilesystem]/System.json:/app/System.json restdb
 ```
 
 5) Connect to RestDb in your browser:
