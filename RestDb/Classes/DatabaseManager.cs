@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SyslogLogging;
 using DatabaseWrapper;
+using DatabaseWrapper.Core;
 
 namespace RestDb
 {
@@ -95,7 +96,7 @@ namespace RestDb
                 if (describe)
                 {
                     currTable.Columns = new List<Column>();
-                    List<DatabaseWrapper.Column> columns = db.DescribeTable(curr);
+                    List<DatabaseWrapper.Core.Column> columns = db.DescribeTable(curr);
                     if (columns == null || columns.Count < 1)
                     {
                         _Logging.Warn("GetTables no columns found for table " + curr + " in database " + dbName);
@@ -103,7 +104,7 @@ namespace RestDb
                         continue;
                     }
 
-                    foreach (DatabaseWrapper.Column currColumn in columns)
+                    foreach (DatabaseWrapper.Core.Column currColumn in columns)
                     {
                         Column tempColumn = new Column();
                         tempColumn.Name = currColumn.Name;
@@ -160,7 +161,7 @@ namespace RestDb
             ret.Name = tableName;
             ret.Columns = new List<Column>();
 
-            List<DatabaseWrapper.Column> columns = db.DescribeTable(tableName);
+            List<DatabaseWrapper.Core.Column> columns = db.DescribeTable(tableName);
             if (columns == null || columns.Count < 1)
             {
                 _Logging.Warn("GetTableByName no columns found for table " + tableName + " in database " + dbName);
@@ -218,9 +219,9 @@ namespace RestDb
                     case DbTypes.Sqlite:
                         db = new DatabaseClient(curr.Filename);
                         break;
-                    case DbTypes.MsSql:
-                    case DbTypes.MySql:
-                    case DbTypes.PgSql:
+                    case DbTypes.SqlServer:
+                    case DbTypes.Mysql:
+                    case DbTypes.Postgresql:
                         db = new DatabaseClient(
                             curr.Type,
                             curr.Hostname,

@@ -46,7 +46,7 @@ namespace RestDb
 
             #region Initialize-Globals
 
-            Welcome();
+            Welcome(); 
 
             _Logging = new LoggingModule(
                 _Settings.Logging.ServerIp,
@@ -252,8 +252,16 @@ namespace RestDb
 
                         if (ctx.Request.RawUrlEntries.Count == 1)
                         {
-                            await PostTableCreate(ctx);
-                            return;
+                            if (ctx.Request.QuerystringEntries.ContainsKey("raw"))
+                            {
+                                await PostRawQuery(ctx);
+                                return;
+                            }
+                            else
+                            {
+                                await PostTableCreate(ctx);
+                                return;
+                            }
                         }
 
                         if (ctx.Request.RawUrlEntries.Count == 2)

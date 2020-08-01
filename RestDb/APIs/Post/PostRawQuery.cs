@@ -13,7 +13,7 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task PostTableCreate(HttpContext ctx)
+        static async Task PostRawQuery(HttpContext ctx)
         {
             string dbName = ctx.Request.RawUrlEntries[0];
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
@@ -34,13 +34,23 @@ namespace RestDb
                 return;
             }
 
-            Table table = Common.DeserializeJson<Table>(Common.StreamToBytes(ctx.Request.Data));
-            db.CreateTable(table.Name, table.Columns);
-             
-            ctx.Response.StatusCode = 201;
-            ctx.Response.ContentType = "application/json";
-            await ctx.Response.Send();
-            return;
+            string query = Encoding.UTF8.GetString(Common.StreamToBytes(ctx.Request.Data));
+            DataTable result = db.Query(query);
+
+            if (result != null && result.Rows.Count > 0)
+            {
+                ctx.Response.StatusCode = 200;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send(Common.SerializeJson(Common.DataTableToListDynamic(result), true));
+                return;
+            }
+            else
+            {
+                ctx.Response.StatusCode = 200;
+                ctx.Response.ContentType = "application/json";
+                await ctx.Response.Send();
+                return;
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using DatabaseWrapper;
+using DatabaseWrapper.Core;
 
 namespace RestDb
 {
@@ -127,10 +127,10 @@ namespace RestDb
                     break;
                 }
                  
-                string currType = Common.InputString("Database type [MsSql|MySql|PgSql|Sqlite]?", "Sqlite", false);
-                if (!currType.Equals("Sqlite") && !currType.Equals("MsSql") && !currType.Equals("MySql") && !currType.Equals("PgSql"))
+                string currType = Common.InputString("Database type [SqlServer|Mysql|Postgresql|Sqlite]?", "Sqlite", false);
+                if (!currType.Equals("Sqlite") && !currType.Equals("SqlServer") && !currType.Equals("Mysql") && !currType.Equals("Postgresql"))
                 {
-                    Console.WriteLine("Error: Use MsSql, MySql, PgSql, or Sqlite for the database type.");
+                    Console.WriteLine("Error: Use SqlServer, Mysql, Postgresql, or Sqlite for the database type.");
                     Console.WriteLine("");
                     continue;
                 }
@@ -142,21 +142,21 @@ namespace RestDb
                     case DbTypes.Sqlite:
                         curr.Filename = Common.InputString("Filename?", "./database.db", false);
                         break;
-                    case DbTypes.MsSql:
+                    case DbTypes.SqlServer:
                         curr.Hostname = Common.InputString("Server hostname?", "localhost", false); 
                         curr.Port = Common.InputInteger("Server port?", 1433, true, false);
                         curr.Instance = Common.InputString("Instance name?", null, true);
                         curr.Username = Common.InputString("Username?", null, false);
                         curr.Password = Common.InputString("Password?", null, false);
                         break;
-                    case DbTypes.MySql:
+                    case DbTypes.Mysql:
                         curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
                         curr.Port = Common.InputInteger("Server port?", 3306, true, false);
                         curr.Instance = null;
                         curr.Username = Common.InputString("Username?", null, false);
                         curr.Password = Common.InputString("Password?", null, false);
                         break;
-                    case DbTypes.PgSql:
+                    case DbTypes.Postgresql:
                         curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
                         curr.Port = Common.InputInteger("Server port?", 5432, true, false);
                         curr.Instance = null;

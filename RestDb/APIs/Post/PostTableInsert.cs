@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
+using DatabaseWrapper.Core;
 
 namespace RestDb
 {

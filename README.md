@@ -6,9 +6,10 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server, MySQL, and PostgreSQL.
  
-## New in v1.2.1
+## New in v1.2.5
 
-- Fix for multi-platform
+- Dependency update
+- Raw query API
 
 ## Important Notes
 
@@ -265,6 +266,23 @@ DELETE http://localhost:8000/test/person?_truncate
 ### Dropping a Table
 ```
 DELETE http://localhost:8000/test/person?_drop
+```
+
+### Executing a Raw Query
+```
+POST http://localhost:8000/test?raw
+Data:
+SELECT * FROM person;
+Resp: 
+[
+  {
+    "person_id": 1,
+    "first_name": "joel",
+    "last_name": "christner",
+    "age": 18,
+    "created": "05/03/2017 00:00:00"
+  }
+]
 ```
 
 ## Enabling Authentication

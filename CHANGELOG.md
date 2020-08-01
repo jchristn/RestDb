@@ -2,11 +2,16 @@
 
 ## Current Version
 
+v1.2.5
+
+- Dependency update
+- Raw query API
+
+## Previous Versions
+
 v1.2.2
 
 - Fix for multi-platform
-
-## Previous Versions
 
 v1.2.1
 

@@ -173,6 +173,35 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "POST raw query",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "SELECT * FROM table1;"
+				},
+				"url": {
+					"raw": "http://localhost:8000/test?raw",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"test"
+					],
+					"query": [
+						{
+							"key": "raw",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"protocolProfileBehavior": {}

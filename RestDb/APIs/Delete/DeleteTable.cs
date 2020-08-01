@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
+using DatabaseWrapper.Core;
 
 namespace RestDb 
 {
@@ -64,8 +65,7 @@ namespace RestDb
             else if (ctx.Request.RawUrlEntries.Count >= 2)
             {
                 #region Delete-Objects
-
-                DataTable result = null;
+                 
                 Expression filter = null; 
 
                 if (idVal > 0)
@@ -92,7 +92,7 @@ namespace RestDb
                     }
                 }
 
-                result = db.Delete(tableName, filter);
+                db.Delete(tableName, filter);
                 ctx.Response.StatusCode = 204;
                 await ctx.Response.Send();
                 return;
