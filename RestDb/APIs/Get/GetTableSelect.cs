@@ -57,8 +57,7 @@ namespace RestDb
             DataTable result = null;
 
             int? indexStart = null;
-            int? maxResults = null;
-            string orderBy = null;
+            int? maxResults = null; 
             List<string> returnFields = null;
             Expression filter = null; 
 
@@ -89,11 +88,10 @@ namespace RestDb
             }
 
             if (ctx.Request.QuerystringEntries.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.QuerystringEntries["_index_start"]);
-            if (ctx.Request.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.QuerystringEntries["_max_results"]);
-            if (ctx.Request.QuerystringEntries.ContainsKey("_order_by")) orderBy = WebUtility.UrlDecode(ctx.Request.QuerystringEntries["_order_by"]); 
+            if (ctx.Request.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.QuerystringEntries["_max_results"]); 
             if (ctx.Request.QuerystringEntries.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.QuerystringEntries["_return_fields"]);
 
-            result = db.Select(tableName, indexStart, maxResults, returnFields, filter, orderBy);
+            result = db.Select(tableName, indexStart, maxResults, returnFields, filter);
 
             if (result == null || result.Rows.Count < 1)
             {

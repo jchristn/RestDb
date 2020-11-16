@@ -70,6 +70,8 @@ namespace RestDb
                 _Settings.Server.Ssl,
                 DefaultRoute);
 
+            _Server.Start();
+
             string header = "http";
             if (_Settings.Server.Ssl) header += "s";
             header += "://" + _Settings.Server.ListenerHostname + ":" + _Settings.Server.ListenerPort;
