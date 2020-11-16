@@ -6,10 +6,11 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server, MySQL, and PostgreSQL.
  
-## New in v1.2.5
+## New in v1.2.7
 
+- .NET 5 support
 - Dependency update
-- Raw query API
+- Change to pagination
 
 ## Important Notes
 
@@ -193,10 +194,14 @@ GET http://localhost:8000/test/person?first_name=joel
 
 ### Retrieve Objects with Pagination
 
-You can retrieve results and use pagination to return only a subset.  Include ```_index_start``` and ```_order_by``` in the querystring.  Note that ```_order_by``` MUST be URL-encoded and include the entire clause.
+You can retrieve results and use pagination to return only a subset.  Include ```_index_start```, ```_order```, and  ```_order_by``` in the querystring.  
+
+```_order``` must be either ```asc``` (ascending) or ```desc``` (descending).
+
+```_order_by``` is one or more column names in a comma-separated list.
 
 ```
-GET http://localhost:8000/test/person?_max_results=1&_index_start=1&_order_by=ORDER%20BY%20created%20DESC
+GET http://localhost:8000/test/person?_max_results=1&_index_start=1&_order=asc&_order_by=person_id,first_name
 Resp:
 [
   {

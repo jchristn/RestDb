@@ -57,7 +57,7 @@ namespace RestDb
                 true,
                 true,
                 false,
-                true,
+                false,
                 false);
 
             _Databases = new DatabaseManager(_Settings, _Logging);
@@ -233,6 +233,7 @@ namespace RestDb
                             await GetTableSelect(ctx);
                             return;
                         }
+
                         break;
 
                     #endregion

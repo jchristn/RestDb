@@ -13,7 +13,8 @@ namespace RestDb
             "_describe",        // indicates that table column details should be included
             "_index_start",     // starting point of the results to return
             "_max_results",     // maximum number of results to return
-            "_order_by",        // how to order the results, must be URL-encoded
+            "_order_by",        // field or fields (CSV list) on which to order the results
+            "_order",           // result ordering, i.e. asc or desc
             "_return_fields",   // CSV list of fields to return
             "_truncate",        // bool to indicate that they want to truncate the table
             "_drop",            // bool to indicate that they want to drop the table

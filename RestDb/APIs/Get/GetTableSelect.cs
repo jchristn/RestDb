@@ -59,7 +59,11 @@ namespace RestDb
             int? indexStart = null;
             int? maxResults = null; 
             List<string> returnFields = null;
-            Expression filter = null; 
+            Expression filter = null;
+            string order = null;
+            string orderBy = null;
+            List<ResultOrder> resultOrderList = new List<ResultOrder>();
+            ResultOrder[] resultOrder = null;
 
             if (idVal > 0)
             {
@@ -90,8 +94,50 @@ namespace RestDb
             if (ctx.Request.QuerystringEntries.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.QuerystringEntries["_index_start"]);
             if (ctx.Request.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.QuerystringEntries["_max_results"]); 
             if (ctx.Request.QuerystringEntries.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.QuerystringEntries["_return_fields"]);
+            if (ctx.Request.QuerystringEntries.ContainsKey("_order")) order = ctx.Request.QuerystringEntries["_order"];
+            if (ctx.Request.QuerystringEntries.ContainsKey("_order_by")) orderBy = ctx.Request.QuerystringEntries["_order_by"];
 
-            result = db.Select(tableName, indexStart, maxResults, returnFields, filter);
+            if (!String.IsNullOrEmpty(orderBy) && !String.IsNullOrEmpty(order))
+            {
+                List<string> orderByElements = new List<string>();
+                if (orderBy.Contains(","))
+                {
+                    orderByElements = Common.CsvToStringList(orderBy);
+                }
+                else
+                {
+                    orderByElements.Add(orderBy);
+                }
+
+                if (order.Equals("asc"))
+                {
+                    foreach (string curr in orderByElements)
+                    {
+                        ResultOrder ro = new ResultOrder(db.SanitizeString(curr), OrderDirection.Ascending);
+                        resultOrderList.Add(ro);
+                    }
+                }
+                else if (order.Equals("desc"))
+                {
+                    foreach (string curr in orderByElements)
+                    {
+                        ResultOrder ro = new ResultOrder(db.SanitizeString(curr), OrderDirection.Descending);
+                        resultOrderList.Add(ro);
+                    }
+                }
+                else
+                {
+                    _Logging.Warn("PutTable invalid order '" + order + "'");
+                    ctx.Response.StatusCode = 400;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "Invalid order parameter '" + order + "'"), true));
+                    return;
+                }
+
+                if (resultOrderList.Count > 0) resultOrder = resultOrderList.ToArray();
+            }
+
+            result = db.Select(tableName, indexStart, maxResults, returnFields, filter, resultOrder);
 
             if (result == null || result.Rows.Count < 1)
             {
