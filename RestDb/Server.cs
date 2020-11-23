@@ -124,8 +124,8 @@ namespace RestDb
         static async Task DefaultRoute(HttpContext ctx)
         { 
             DateTime startTime = DateTime.Now;
-            string header = ctx.Request.SourceIp + ":" + ctx.Request.SourcePort + " "; 
-            _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.RawUrlWithoutQuery);
+            string header = ctx.Request.Source.IpAddress + ":" + ctx.Request.Source.Port + " "; 
+            _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.Url.RawWithoutQuery);
              
             #region APIs
 
@@ -138,7 +138,7 @@ namespace RestDb
                     case HttpMethod.GET:
                         #region get
 
-                        if (ctx.Request.RawUrlWithoutQuery.Equals("/"))
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/"))
                         {
                             ctx.Response.StatusCode = 200;
                             ctx.Response.ContentType = "text/html; charset=utf8";
@@ -146,8 +146,8 @@ namespace RestDb
                             return;
                         }
 
-                        if (ctx.Request.RawUrlWithoutQuery.Equals("/favicon.ico")
-                            || ctx.Request.RawUrlWithoutQuery.Equals("/robots.txt"))
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/favicon.ico")
+                            || ctx.Request.Url.RawWithoutQuery.Equals("/robots.txt"))
                         {
                             ctx.Response.StatusCode = 200;
                             await ctx.Response.Send();
@@ -210,25 +210,25 @@ namespace RestDb
                     case HttpMethod.GET:
                         #region get
                          
-                        if (ctx.Request.RawUrlWithoutQuery.Equals("/_databaseclients"))
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_databaseclients"))
                         {
                             await GetDatabaseClients(ctx);
                             return;
                         }
 
-                        if (ctx.Request.RawUrlWithoutQuery.Equals("/_databases"))
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_databases"))
                         {
                             await GetDatabases(ctx);
                             return;
                         }
 
-                        if (ctx.Request.RawUrlEntries.Count == 1)
+                        if (ctx.Request.Url.Elements.Length == 1)
                         {
                             await GetDatabase(ctx);
                             return;
                         }
 
-                        if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
+                        if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
                             await GetTableSelect(ctx);
                             return;
@@ -241,7 +241,7 @@ namespace RestDb
                     case HttpMethod.PUT:
                         #region put
 
-                        if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
+                        if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
                             await PutTable(ctx);
                             return;
@@ -253,9 +253,9 @@ namespace RestDb
                     case HttpMethod.POST:
                         #region post
 
-                        if (ctx.Request.RawUrlEntries.Count == 1)
+                        if (ctx.Request.Url.Elements.Length == 1)
                         {
-                            if (ctx.Request.QuerystringEntries.ContainsKey("raw"))
+                            if (ctx.Request.Query.Elements.ContainsKey("raw"))
                             {
                                 await PostRawQuery(ctx);
                                 return;
@@ -267,7 +267,7 @@ namespace RestDb
                             }
                         }
 
-                        if (ctx.Request.RawUrlEntries.Count == 2)
+                        if (ctx.Request.Url.Elements.Length == 2)
                         {
                             await PostTableInsert(ctx);
                             return;
@@ -279,7 +279,7 @@ namespace RestDb
                     case HttpMethod.DELETE:
                         #region delete
 
-                        if (ctx.Request.RawUrlEntries.Count == 2 || ctx.Request.RawUrlEntries.Count == 3)
+                        if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
                             await DeleteTable(ctx);
                             return;
@@ -310,7 +310,7 @@ namespace RestDb
             }
             finally
             {
-                _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.RawUrlWithoutQuery + " " + Common.TotalMsFrom(startTime) + "ms: " + ctx.Response.StatusCode);
+                _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.Url.RawWithoutQuery + " " + Common.TotalMsFrom(startTime) + "ms: " + ctx.Response.StatusCode);
             }
 
             #endregion

@@ -12,7 +12,7 @@ namespace RestDb
     {
         static async Task GetDatabase(HttpContext ctx)
         {
-            string dbName = ctx.Request.RawUrlEntries[0];
+            string dbName = ctx.Request.Url.Elements[0];
             Database db = _Settings.GetDatabaseByName(dbName);
             if (db == null)
             {

@@ -15,10 +15,10 @@ namespace RestDb
     {
         static async Task DeleteTable(HttpContext ctx)
         {
-            string dbName = ctx.Request.RawUrlEntries[0];
-            string tableName = ctx.Request.RawUrlEntries[1];
+            string dbName = ctx.Request.Url.Elements[0];
+            string tableName = ctx.Request.Url.Elements[1];
             int idVal = 0;
-            if (ctx.Request.RawUrlEntries.Count == 3) Int32.TryParse(ctx.Request.RawUrlEntries[2], out idVal);
+            if (ctx.Request.Url.Elements.Length == 3) Int32.TryParse(ctx.Request.Url.Elements[2], out idVal);
             
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
@@ -38,7 +38,7 @@ namespace RestDb
                 return;
             }
 
-            if (ctx.Request.RawUrlEntries.Count == 2 && ctx.Request.QuerystringEntries.ContainsKey("_truncate"))
+            if (ctx.Request.Url.Elements.Length == 2 && ctx.Request.Query.Elements.ContainsKey("_truncate"))
             {
                 #region Truncate
 
@@ -50,7 +50,7 @@ namespace RestDb
 
                 #endregion
             }
-            else if (ctx.Request.RawUrlEntries.Count == 2 && ctx.Request.QuerystringEntries.ContainsKey("_drop"))
+            else if (ctx.Request.Url.Elements.Length == 2 && ctx.Request.Query.Elements.ContainsKey("_drop"))
             {
                 #region Drop
 
@@ -62,7 +62,7 @@ namespace RestDb
 
                 #endregion
             }
-            else if (ctx.Request.RawUrlEntries.Count >= 2)
+            else if (ctx.Request.Url.Elements.Length >= 2)
             {
                 #region Delete-Objects
                  
@@ -82,9 +82,9 @@ namespace RestDb
                     filter = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
                 }
 
-                if (ctx.Request.QuerystringEntries != null && ctx.Request.QuerystringEntries.Count > 0)
+                if (ctx.Request.Query.Elements != null && ctx.Request.Query.Elements.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> currKvp in ctx.Request.QuerystringEntries)
+                    foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
                     {
                         if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
                         if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);

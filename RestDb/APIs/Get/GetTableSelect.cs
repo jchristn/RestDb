@@ -17,10 +17,10 @@ namespace RestDb
     {
         static async Task GetTableSelect(HttpContext ctx)
         {
-            string dbName = ctx.Request.RawUrlEntries[0];
-            string tableName = ctx.Request.RawUrlEntries[1];
+            string dbName = ctx.Request.Url.Elements[0];
+            string tableName = ctx.Request.Url.Elements[1];
             int idVal = 0;
-            if (ctx.Request.RawUrlEntries.Count == 3) Int32.TryParse(ctx.Request.RawUrlEntries[2], out idVal);
+            if (ctx.Request.Url.Elements.Length == 3) Int32.TryParse(ctx.Request.Url.Elements[2], out idVal);
 
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
@@ -42,7 +42,7 @@ namespace RestDb
 
             #region Check-for-Describe
 
-            if (ctx.Request.QuerystringEntries.ContainsKey("_describe"))
+            if (ctx.Request.Query.Elements.ContainsKey("_describe"))
             {
                 ctx.Response.StatusCode = 200;
                 ctx.Response.ContentType = "application/json";
@@ -79,9 +79,9 @@ namespace RestDb
                 filter = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
             }
 
-            if (ctx.Request.QuerystringEntries != null && ctx.Request.QuerystringEntries.Count > 0)
+            if (ctx.Request.Query.Elements != null && ctx.Request.Query.Elements.Count > 0)
             {
-                foreach (KeyValuePair<string, string> currKvp in ctx.Request.QuerystringEntries)
+                foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
                 {
                     if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
                     if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);
@@ -91,11 +91,11 @@ namespace RestDb
                 }
             }
 
-            if (ctx.Request.QuerystringEntries.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.QuerystringEntries["_index_start"]);
-            if (ctx.Request.QuerystringEntries.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.QuerystringEntries["_max_results"]); 
-            if (ctx.Request.QuerystringEntries.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.QuerystringEntries["_return_fields"]);
-            if (ctx.Request.QuerystringEntries.ContainsKey("_order")) order = ctx.Request.QuerystringEntries["_order"];
-            if (ctx.Request.QuerystringEntries.ContainsKey("_order_by")) orderBy = ctx.Request.QuerystringEntries["_order_by"];
+            if (ctx.Request.Query.Elements.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.Query.Elements["_index_start"]);
+            if (ctx.Request.Query.Elements.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.Query.Elements["_max_results"]); 
+            if (ctx.Request.Query.Elements.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.Query.Elements["_return_fields"]);
+            if (ctx.Request.Query.Elements.ContainsKey("_order")) order = ctx.Request.Query.Elements["_order"];
+            if (ctx.Request.Query.Elements.ContainsKey("_order_by")) orderBy = ctx.Request.Query.Elements["_order_by"];
 
             if (!String.IsNullOrEmpty(orderBy) && !String.IsNullOrEmpty(order))
             {

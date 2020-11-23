@@ -15,7 +15,7 @@ namespace RestDb
     {
         static async Task PostRawQuery(HttpContext ctx)
         {
-            string dbName = ctx.Request.RawUrlEntries[0];
+            string dbName = ctx.Request.Url.Elements[0];
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {

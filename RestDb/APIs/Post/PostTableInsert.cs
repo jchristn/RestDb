@@ -15,8 +15,8 @@ namespace RestDb
     {
         static async Task PostTableInsert(HttpContext ctx)
         {
-            string dbName = ctx.Request.RawUrlEntries[0];
-            string tableName = ctx.Request.RawUrlEntries[1]; 
+            string dbName = ctx.Request.Url.Elements[0];
+            string tableName = ctx.Request.Url.Elements[1]; 
 
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
