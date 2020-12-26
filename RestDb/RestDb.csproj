@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.2.7.1</Version>
+    <Version>1.2.7.2</Version>
     <Authors>Joel Christner</Authors>
     <Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
     <Copyright>(c)2020 Joel Christner</Copyright>
@@ -26,10 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="DatabaseWrapper" Version="3.2.2.10" />
-    <PackageReference Include="SyslogLogging" Version="1.3.2.5" />
+    <PackageReference Include="DatabaseWrapper" Version="3.2.2.16" />
+    <PackageReference Include="SyslogLogging" Version="1.3.2.7" />
     <PackageReference Include="System.Runtime.Extensions" Version="4.3.1" />
-    <PackageReference Include="Watson" Version="4.0.0.2" />
+    <PackageReference Include="Watson" Version="4.0.0.3" />
   </ItemGroup>
 
 </Project>
