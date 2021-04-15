@@ -2,13 +2,18 @@
 
 ## Current Version
 
+v1.3.0
+
+- Dependency update
+- Support for ```DateTimeOffset``` types
+
+## Previous Versions
+
 v1.2.7
 
 - .NET 5 support
 - Dependency update
 - Change to pagination
-
-## Previous Versions
 
 v1.2.5
 

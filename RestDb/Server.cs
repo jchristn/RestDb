@@ -46,19 +46,14 @@ namespace RestDb
 
             #region Initialize-Globals
 
-            Welcome(); 
+            Welcome();
 
             _Logging = new LoggingModule(
                 _Settings.Logging.ServerIp,
                 _Settings.Logging.ServerPort,
-                _Settings.Logging.ConsoleLogging,
-                (Severity)_Settings.Logging.MinimumLevel,
-                false,
-                true,
-                true,
-                false,
-                false,
-                false);
+                _Settings.Logging.ConsoleLogging);
+
+            _Logging.Settings.MinimumSeverity = (Severity)_Settings.Logging.MinimumLevel;
 
             _Databases = new DatabaseManager(_Settings, _Logging);
 
@@ -303,7 +298,7 @@ namespace RestDb
             }
             catch (Exception e)
             {
-                _Logging.Exception("RestDb", "Router", e);
+                _Logging.Exception(e);
                 ctx.Response.StatusCode = 500;
                 ctx.Response.ContentType = "application/json";
                 await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Internal server error", e.Message), true));
