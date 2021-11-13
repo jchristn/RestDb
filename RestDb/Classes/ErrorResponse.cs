@@ -8,6 +8,19 @@ namespace RestDb
 {
     public class ErrorResponse
     {
+        #region Public-Members
+
+        public bool Success { get; set; } = true;
+        public string Message { get; set; } = null;
+        public string Detail { get; set; } = null;
+        public Exception Exception { get; set; } = null;
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
         #region Constructors-and-Factories
 
         public ErrorResponse()
@@ -15,24 +28,13 @@ namespace RestDb
 
         }
 
-        public ErrorResponse(string msg, string detail)
+        public ErrorResponse(string msg, string detail, Exception e = null)
         {
             Success = false;
             Message = msg;
             Detail = detail;
+            Exception = e;
         }
-
-        #endregion
-
-        #region Public-Members
-
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public string Detail { get; set; }
-
-        #endregion
-
-        #region Private-Members
 
         #endregion
 

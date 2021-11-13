@@ -10,6 +10,19 @@ namespace RestDb
 {
     internal class AuthManager
     {
+        #region Public-Members
+
+        #endregion
+
+        #region Private-Members
+
+        private Settings _Settings;
+        private LoggingModule _Logging;
+        private readonly object _KeysLock = new object();
+        private List<ApiKey> _Keys = new List<ApiKey>();
+
+        #endregion
+
         #region Constructors-and-Factories
 
         internal AuthManager(Settings settings, LoggingModule logging)
@@ -21,19 +34,6 @@ namespace RestDb
             _Logging = logging;
             _Keys = settings.ApiKeys;
         }
-
-        #endregion
-
-        #region Public-Members
-
-        #endregion
-
-        #region Private-Members
-
-        private Settings _Settings;
-        private LoggingModule _Logging;
-        private readonly object _KeysLock = new object();
-        private List<ApiKey> _Keys = new List<ApiKey>();
 
         #endregion
 

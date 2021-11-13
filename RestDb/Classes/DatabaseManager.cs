@@ -11,6 +11,19 @@ namespace RestDb
 {
     internal class DatabaseManager
     {
+        #region Public-Members
+
+        #endregion
+
+        #region Private-Members
+
+        private Settings _Settings;
+        private LoggingModule _Logging;
+        private Dictionary<string, DatabaseClient> _Databases;
+        private readonly object _DatabasesLock;
+
+        #endregion
+
         #region Constructors-and-Factories
 
         internal DatabaseManager(Settings settings, LoggingModule logging)
@@ -25,19 +38,6 @@ namespace RestDb
 
             InitializeDatabases();
         }
-
-        #endregion
-
-        #region Public-Members
-
-        #endregion
-
-        #region Private-Members
-
-        private Settings _Settings;
-        private LoggingModule _Logging;
-        private Dictionary<string, DatabaseClient> _Databases;
-        private readonly object _DatabasesLock;
 
         #endregion
 

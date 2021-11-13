@@ -121,7 +121,7 @@ namespace RestDb
             DateTime startTime = DateTime.Now;
             string header = ctx.Request.Source.IpAddress + ":" + ctx.Request.Source.Port + " "; 
             _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.Url.RawWithoutQuery);
-             
+
             #region APIs
 
             try
@@ -301,7 +301,7 @@ namespace RestDb
                 _Logging.Exception(e);
                 ctx.Response.StatusCode = 500;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Internal server error", e.Message), true));
+                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Internal server error", e.Message, e), true));
             }
             finally
             {

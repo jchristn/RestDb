@@ -11,20 +11,20 @@ namespace RestDb
 {
     internal class Setup
     {
+        #region Public-Members
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
         #region Constructors-and-Factories
 
         internal Setup()
         {
             RunSetup();
         }
-
-        #endregion
-
-        #region Public-Members
-
-        #endregion
-
-        #region Private-Members
 
         #endregion
 
@@ -52,10 +52,10 @@ namespace RestDb
             Settings ret = new Settings();
             ret.Version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
 
-            ret.Logging = LoggingSettings.Default();
+            ret.Logging = new LoggingSettings();
 
             ret.ApiKeys = new List<ApiKey>();
-            ret.ApiKeys.Add(ApiKey.Default());
+            ret.ApiKeys.Add(new ApiKey());
 
             #endregion
 

@@ -9,24 +9,24 @@ namespace RestDb
 {
     public class Table
     {
+        #region Public-Members
+
+        public string Name { get; set; } = null;
+        public string PrimaryKey { get; set; } = null;
+        public List<Column> Columns { get; set; } = new List<Column>();
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
         #region Constructors-and-Factories
 
         public Table()
         {
 
         }
-
-        #endregion
-
-        #region Public-Members
-
-        public string Name { get; set; }
-        public string PrimaryKey { get; set; }
-        public List<Column> Columns { get; set; }
-
-        #endregion
-
-        #region Private-Members
 
         #endregion
 

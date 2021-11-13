@@ -8,6 +8,20 @@ namespace RestDb
 {
     public class Settings
     {
+        #region Public-Members
+
+        public string Version { get; set; } = "1.0.0";
+        public ServerSettings Server { get; set; } = new ServerSettings();
+        public LoggingSettings Logging { get; set; } = new LoggingSettings();
+        public List<Database> Databases { get; set; } = new List<Database>();
+        public List<ApiKey> ApiKeys { get; set; } = new List<ApiKey>();
+
+        #endregion
+
+        #region Private-Members
+
+        #endregion
+
         #region Constructors-and-Factories
 
         public Settings()
@@ -28,20 +42,6 @@ namespace RestDb
             Common.WriteFile(filename, Encoding.UTF8.GetBytes(Common.SerializeJson(this, true)));
             return;
         }
-
-        #endregion
-
-        #region Public-Members
-
-        public string Version { get; set; } 
-        public ServerSettings Server { get; set; }
-        public LoggingSettings Logging { get; set; }
-        public List<Database> Databases { get; set; }
-        public List<ApiKey> ApiKeys { get; set; }
-
-        #endregion
-
-        #region Private-Members
 
         #endregion
 
@@ -78,47 +78,31 @@ namespace RestDb
 
     public class ServerSettings
     {
-        public string ListenerHostname;
-        public int ListenerPort;
-        public bool Ssl;
-        public bool Debug;
+        public string ListenerHostname { get; set; } = "localhost";
+        public int ListenerPort { get; set; } = 8000;
+        public bool Ssl { get; set; } = false;
+        public bool Debug { get; set; } = false;
+        public bool RequireAuthentication { get; set; } = false;
+        public string ApiKeyHeader { get; set; } = "x-api-key";
 
-        public bool RequireAuthentication;
-        public string ApiKeyHeader;
-
-        public static ServerSettings Default()
+        public ServerSettings()
         {
-            ServerSettings ret = new ServerSettings();
-            ret.ListenerHostname = "localhost";
-            ret.ListenerPort = 8000;
-            ret.Ssl = false;
-            ret.Debug = false;
 
-            ret.RequireAuthentication = false;
-            ret.ApiKeyHeader = "x-api-key";
-            return ret;
         }
     }
 
     public class LoggingSettings
     {
-        public string ServerIp;
-        public int ServerPort;
-        public int MinimumLevel;
-        public bool LogHttpRequests;
-        public bool LogHttpResponses;
-        public bool ConsoleLogging;
+        public string ServerIp { get; set; } = "127.0.0.1";
+        public int ServerPort { get; set; } = 514;
+        public int MinimumLevel { get; set; } = 1;
+        public bool LogHttpRequests { get; set; } = false;
+        public bool LogHttpResponses { get; set; } = false;
+        public bool ConsoleLogging { get; set; } = true;
 
-        public static LoggingSettings Default()
+        public LoggingSettings()
         {
-            LoggingSettings ret = new LoggingSettings();
-            ret.ServerIp = "127.0.0.1";
-            ret.ServerPort = 514;
-            ret.MinimumLevel = 1;
-            ret.LogHttpRequests = false;
-            ret.LogHttpResponses = false;
-            ret.ConsoleLogging = true;
-            return ret;
+
         }
     }
 }
