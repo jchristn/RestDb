@@ -4,7 +4,7 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 ## Description
 
-RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, and TRUNCATE against tables in Microsoft SQL Server, MySQL, and PostgreSQL.
+RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, TRUNCATE, and DROP against tables in Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite.
  
 ## New in v2.0.0
 
@@ -14,7 +14,7 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 
 - If you specify a listener other than ```localhost``` or ```127.0.0.1```, you may have to run with elevated privileges.
 - The HTTP HOST header MUST match the listener hostname, otherwise you'll get ```Bad Request``` errors back.
-- By default, access to RestDb is UNAUTHENTICATED.  Configure ```system.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
+- By default, access to RestDb is **UNAUTHENTICATED**.  Configure ```system.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
 
 ## Execution
   
@@ -194,10 +194,10 @@ GET http://localhost:8000/test/person?first_name=joel
 
 You can retrieve results and use pagination to return only a subset.  Include ```_index```, ```_max```, ```_order```, and  ```_order_by``` in the querystring.  
 
-```_index``` is the starting index
-```_max``` is the maximum number of results to retrieve
-```_order``` must be either ```asc``` (ascending) or ```desc``` (descending).
-```_order_by``` is one or more column names in a comma-separated list.
+- ```_index``` is the starting index
+- ```_max``` is the maximum number of results to retrieve
+- ```_order``` must be either ```asc``` (ascending) or ```desc``` (descending).
+- ```_order_by``` is one or more column names in a comma-separated list.
 
 By default, ```SELECT``` requests are ordered ASCENDING by the table's primary key.
 
