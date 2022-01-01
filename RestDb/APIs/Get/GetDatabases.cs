@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 
@@ -14,7 +15,7 @@ namespace RestDb
         {
             ctx.Response.StatusCode = 200;
             ctx.Response.ContentType = "application/json";
-            await ctx.Response.Send(Common.SerializeJson(_Settings.DatabaseNames(), true));
+            await ctx.Response.Send(SerializationHelper.SerializeJson(_Settings.GetDatabaseNames(), true));
             return;
         }
     }

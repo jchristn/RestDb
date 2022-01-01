@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 
@@ -38,9 +40,9 @@ namespace RestDb
 
             #region Load-Configuration
 
-            if (!Common.FileExists("System.json")) new Setup();
+            if (!File.Exists("./system.json")) new Setup();
 
-            _Settings = Settings.FromFile("System.json");
+            _Settings = Settings.FromFile("./system.json");
 
             #endregion
 
@@ -176,7 +178,7 @@ namespace RestDb
                     default:
                         ctx.Response.StatusCode = 400;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unknown method", null), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unknown method", null), true));
                         return;
                 }
 
@@ -191,7 +193,7 @@ namespace RestDb
                         _Logging.Warn(header + "authentication failed");
                         ctx.Response.StatusCode = 401;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unauthorized", null), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unauthorized", null), true));
                         return;
                     }
                 }
@@ -286,7 +288,7 @@ namespace RestDb
                     default:
                         ctx.Response.StatusCode = 400;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unknown method", null), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unknown method", null), true));
                         return;
                 }
 
@@ -294,14 +296,14 @@ namespace RestDb
 
                 ctx.Response.StatusCode = 400;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Unknown API", null), true)); 
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unknown API", null), true)); 
             }
             catch (Exception e)
             {
                 _Logging.Exception(e);
                 ctx.Response.StatusCode = 500;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Internal server error", e.Message, e), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Internal server error", e.Message, e), true));
             }
             finally
             {

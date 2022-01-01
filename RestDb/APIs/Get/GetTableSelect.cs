@@ -6,10 +6,12 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
 using DatabaseWrapper.Core;
+using ExpressionTree;
 
 namespace RestDb
 {
@@ -27,7 +29,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
              
@@ -36,7 +38,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
@@ -46,7 +48,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 200;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(currTable, true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(currTable, true));
                 return;
             }
 
@@ -59,11 +61,12 @@ namespace RestDb
             int? indexStart = null;
             int? maxResults = null; 
             List<string> returnFields = null;
-            Expression filter = null;
+            Expr filter = null;
             string order = null;
             string orderBy = null;
             List<ResultOrder> resultOrderList = new List<ResultOrder>();
-            ResultOrder[] resultOrder = null;
+            ResultOrder[] resultOrder = new ResultOrder[1];
+            resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirection.Ascending);
 
             if (idVal > 0)
             {
@@ -72,11 +75,11 @@ namespace RestDb
                     _Logging.Warn("GetTable no primary key defined for table " + tableName + " in database " + dbName);
                     ctx.Response.StatusCode = 400;
                     ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
                     return;
                 }
 
-                filter = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
+                filter = new Expr(currTable.PrimaryKey, OperatorEnum.Equals, idVal);
             }
 
             if (ctx.Request.Query.Elements != null && ctx.Request.Query.Elements.Count > 0)
@@ -84,15 +87,15 @@ namespace RestDb
                 foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
                 {
                     if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
-                    if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);
-                    else filter = Expression.PrependAndClause(
-                        new Expression(currKvp.Key, Operators.Equals, currKvp.Value),
+                    if (filter == null) filter = new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
+                    else filter = Expr.PrependAndClause(
+                        new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value),
                         filter);
                 }
             }
 
-            if (ctx.Request.Query.Elements.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.Query.Elements["_index_start"]);
-            if (ctx.Request.Query.Elements.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.Query.Elements["_max_results"]); 
+            if (ctx.Request.Query.Elements.ContainsKey("_index")) indexStart = Convert.ToInt32(ctx.Request.Query.Elements["_index"]);
+            if (ctx.Request.Query.Elements.ContainsKey("_max")) maxResults = Convert.ToInt32(ctx.Request.Query.Elements["_max"]); 
             if (ctx.Request.Query.Elements.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.Query.Elements["_return_fields"]);
             if (ctx.Request.Query.Elements.ContainsKey("_order")) order = ctx.Request.Query.Elements["_order"];
             if (ctx.Request.Query.Elements.ContainsKey("_order_by")) orderBy = ctx.Request.Query.Elements["_order_by"];
@@ -130,7 +133,7 @@ namespace RestDb
                     _Logging.Warn("PutTable invalid order '" + order + "'");
                     ctx.Response.StatusCode = 400;
                     ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "Invalid order parameter '" + order + "'"), true));
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "Invalid order parameter '" + order + "'"), true));
                     return;
                 }
 
@@ -143,14 +146,14 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 200;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new List<dynamic>(), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new List<dynamic>(), true));
                 return;
             }
             else
             {
                 ctx.Response.StatusCode = 200;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(Common.DataTableToListDynamic(result), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
                 return;
             }
 

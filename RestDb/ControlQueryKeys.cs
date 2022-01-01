@@ -11,8 +11,8 @@ namespace RestDb
         static List<string> _ControlQueryKeys = new List<string>
         {
             "_describe",        // indicates that table column details should be included
-            "_index_start",     // starting point of the results to return
-            "_max_results",     // maximum number of results to return
+            "_index",           // starting point of the results to return
+            "_max",             // maximum number of results to return
             "_order_by",        // field or fields (CSV list) on which to order the results
             "_order",           // result ordering, i.e. asc or desc
             "_return_fields",   // CSV list of fields to return

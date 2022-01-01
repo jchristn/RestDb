@@ -7,12 +7,26 @@ using DatabaseWrapper.Core;
 
 namespace RestDb
 {
+    /// <summary>
+    /// Database table.
+    /// </summary>
     public class Table
     {
         #region Public-Members
 
+        /// <summary>
+        /// Table name.
+        /// </summary>
         public string Name { get; set; } = null;
+
+        /// <summary>
+        /// Name of the primary key column.
+        /// </summary>
         public string PrimaryKey { get; set; } = null;
+
+        /// <summary>
+        /// Table columns.
+        /// </summary>
         public List<Column> Columns { get; set; } = new List<Column>();
 
         #endregion
@@ -23,6 +37,9 @@ namespace RestDb
 
         #region Constructors-and-Factories
 
+        /// <summary>
+        /// Instantiate.
+        /// </summary>
         public Table()
         {
 

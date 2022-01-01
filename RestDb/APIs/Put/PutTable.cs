@@ -4,10 +4,12 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
 using DatabaseWrapper.Core;
+using ExpressionTree;
 
 namespace RestDb
 {
@@ -25,7 +27,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
@@ -34,7 +36,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
@@ -43,17 +45,17 @@ namespace RestDb
                 _Logging.Warn("PutTable no request body supplied");
                 ctx.Response.StatusCode = 400;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
                 return;
             }
 
-            if (idVal > 0 
+            if (idVal == 0 
                 && ctx.Request.Url.Elements.Length == 2)
             {
                 #region Search-Table
 
                 byte[] reqData = Common.StreamToBytes(ctx.Request.Data);
-                Expression e = DeserializeExpression(reqData, Common.IsTrue(ctx.Request.RetrieveHeaderValue("_debug")));
+                Expr e = SerializationHelper.DeserializeJsonExpression(reqData);
 
                 int? indexStart = null;
                 int? maxResults = null;
@@ -68,14 +70,14 @@ namespace RestDb
                     foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
                     {
                         if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
-                        e = Expression.PrependAndClause(
-                            new Expression(currKvp.Key, Operators.Equals, currKvp.Value),
+                        e = Expr.PrependAndClause(
+                            new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value),
                             e);
                     }
                 }
 
-                if (ctx.Request.Query.Elements.ContainsKey("_index_start")) indexStart = Convert.ToInt32(ctx.Request.Query.Elements["_index_start"]);
-                if (ctx.Request.Query.Elements.ContainsKey("_max_results")) maxResults = Convert.ToInt32(ctx.Request.Query.Elements["_max_results"]);
+                if (ctx.Request.Query.Elements.ContainsKey("_index")) indexStart = Convert.ToInt32(ctx.Request.Query.Elements["_index"]);
+                if (ctx.Request.Query.Elements.ContainsKey("_max")) maxResults = Convert.ToInt32(ctx.Request.Query.Elements["_max"]);
                 if (ctx.Request.Query.Elements.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.Query.Elements["_return_fields"]);
                 if (ctx.Request.Query.Elements.ContainsKey("_order")) order = ctx.Request.Query.Elements["_order"];
                 if (ctx.Request.Query.Elements.ContainsKey("_order_by")) orderBy = ctx.Request.Query.Elements["_order_by"];
@@ -113,7 +115,7 @@ namespace RestDb
                         _Logging.Warn("PutTable invalid order '" + order + "'");
                         ctx.Response.StatusCode = 400;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "Invalid order parameter '" + order + "'"), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "Invalid order parameter '" + order + "'"), true));
                         return;
                     }
 
@@ -126,14 +128,14 @@ namespace RestDb
                 {
                     ctx.Response.StatusCode = 200;
                     ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(Common.SerializeJson(new List<dynamic>(), true));
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(new List<dynamic>(), true));
                     return;
                 }
                 else
                 {
                     ctx.Response.StatusCode = 200;
                     ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(Common.SerializeJson(Common.DataTableToListDynamic(result), true));
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
                     return;
                 } 
 
@@ -148,18 +150,18 @@ namespace RestDb
                     _Logging.Warn("PutTable no primary key defined for table " + tableName + " in database " + dbName);
                     ctx.Response.StatusCode = 400;
                     ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
                     return;
                 }
 
                 byte[] reqData = Common.StreamToBytes(ctx.Request.Data);
-                Dictionary<string, object> dict = Common.DeserializeJson<Dictionary<string, object>>(reqData);
-                Expression e = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
+                Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(reqData);
+                Expr e = new Expr(currTable.PrimaryKey, OperatorEnum.Equals, idVal);
                 DataTable result = db.Update(tableName, dict, e);
 
                 ctx.Response.StatusCode = 200;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(Common.DataTableToDynamic(result), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
                 return; 
 
                 #endregion

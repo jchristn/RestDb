@@ -50,10 +50,7 @@ namespace RestDb
                 Environment.NewLine);
 
             Settings ret = new Settings();
-            ret.Version = FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion;
-
             ret.Logging = new LoggingSettings();
-
             ret.ApiKeys = new List<ApiKey>();
             ret.ApiKeys.Add(new ApiKey());
 

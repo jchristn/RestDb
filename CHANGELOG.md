@@ -2,12 +2,16 @@
 
 ## Current Version
 
+v2.0.0
+
+- Breaking change caused by dependency updates
+
+## Previous Versions
+
 v1.3.0
 
 - Dependency update
 - Support for ```DateTimeOffset``` types
-
-## Previous Versions
 
 v1.2.7
 

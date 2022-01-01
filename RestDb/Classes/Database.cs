@@ -7,21 +7,66 @@ using DatabaseWrapper.Core;
 
 namespace RestDb
 {
+    /// <summary>
+    /// Database settings.
+    /// </summary>
     public class Database
     {
         #region Public-Members
 
+        /// <summary>
+        /// Database name.
+        /// </summary>
         public string Name { get; set; } = "Database";
+
+        /// <summary>
+        /// Database type.
+        /// </summary>
         public DbTypes Type { get; set; } = DbTypes.Sqlite;
-        public string Filename { get; set; } = "database.db";
+
+        /// <summary>
+        /// Database filename.
+        /// </summary>
+        public string Filename { get; set; } = null;
+
+        /// <summary>
+        /// Hostname.
+        /// </summary>
         public string Hostname { get; set; } = null;
+
+        /// <summary>
+        /// Port.
+        /// </summary>
         public int? Port { get; set; } = null;
+
+        /// <summary>
+        /// For SQL Server and SQL Server Express, the instance name.
+        /// </summary>
         public string Instance { get; set; } = null;
+
+        /// <summary>
+        /// The username.
+        /// </summary>
         public string Username { get; set; } = null;
+
+        /// <summary>
+        /// Password.
+        /// </summary>
         public string Password { get; set; } = null;
+
+        /// <summary>
+        /// Flag to enable or disable debugging.
+        /// </summary>
         public bool Debug { get; set; } = false;
 
+        /// <summary>
+        /// List of tables.
+        /// </summary>
         public List<Table> Tables { get; set; } = new List<Table>();
+
+        /// <summary>
+        /// List of table names.
+        /// </summary>
         public List<string> TableNames { get; set; } = new List<string>();
 
         #endregion
@@ -32,6 +77,9 @@ namespace RestDb
 
         #region Constructors-and-Factories
 
+        /// <summary>
+        /// Instantiate.
+        /// </summary>
         public Database()
         {
 
@@ -41,6 +89,10 @@ namespace RestDb
 
         #region Public-Methods
 
+        /// <summary>
+        /// Human-readable string.
+        /// </summary>
+        /// <returns>String.</returns>
         public override string ToString()
         {
             string ret = "";
@@ -66,6 +118,11 @@ namespace RestDb
 
         #region Public-Static-Methods
 
+        /// <summary>
+        /// Redact.
+        /// </summary>
+        /// <param name="db">Database.</param>
+        /// <returns>Redacted database.</returns>
         public static Database Redact(Database db)
         {
             if (db == null) throw new ArgumentNullException(nameof(db));

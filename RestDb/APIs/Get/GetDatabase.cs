@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 
@@ -18,16 +19,16 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
             db = Database.Redact(db);
-            
-            bool describe = Common.IsTrue(ctx.Request.RetrieveHeaderValue("_describe"));
-            if (describe)
+
+            string describe = ctx.Request.RetrieveHeaderValue("_describe");
+            if (!String.IsNullOrEmpty(describe) && describe.Equals("true"))
             {
-                db.Tables = _Databases.GetTables(dbName, describe);
+                db.Tables = _Databases.GetTables(dbName, true);
             }
             else
             {
@@ -36,7 +37,7 @@ namespace RestDb
 
             ctx.Response.StatusCode = 200;
             ctx.Response.ContentType = "application/json";
-            await ctx.Response.Send(Common.SerializeJson(db, true));
+            await ctx.Response.Send(SerializationHelper.SerializeJson(db, true));
             return;
         }
     }

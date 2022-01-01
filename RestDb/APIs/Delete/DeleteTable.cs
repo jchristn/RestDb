@@ -4,10 +4,12 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
 using DatabaseWrapper.Core;
+using ExpressionTree;
 
 namespace RestDb 
 {
@@ -25,7 +27,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
@@ -34,7 +36,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
@@ -66,7 +68,7 @@ namespace RestDb
             {
                 #region Delete-Objects
                  
-                Expression filter = null; 
+                Expr filter = null; 
 
                 if (idVal > 0)
                 {
@@ -75,11 +77,11 @@ namespace RestDb
                         _Logging.Warn("DeleteTable no primary key defined for table " + tableName + " in database " + dbName);
                         ctx.Response.StatusCode = 400;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
                         return;
                     }
 
-                    filter = new Expression(currTable.PrimaryKey, Operators.Equals, idVal);
+                    filter = new Expr(currTable.PrimaryKey, OperatorEnum.Equals, idVal);
                 }
 
                 if (ctx.Request.Query.Elements != null && ctx.Request.Query.Elements.Count > 0)
@@ -87,8 +89,8 @@ namespace RestDb
                     foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
                     {
                         if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
-                        if (filter == null) filter = new Expression(currKvp.Key, Operators.Equals, currKvp.Value);
-                        else filter.PrependAnd(currKvp.Key, Operators.Equals, currKvp.Value);
+                        if (filter == null) filter = new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
+                        else filter.PrependAnd(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
                     }
                 }
 

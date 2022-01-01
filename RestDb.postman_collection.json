@@ -6,203 +6,535 @@
 	},
 	"item": [
 		{
-			"name": "GET databases",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/_databases",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"_databases"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "GET database describe",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/test?_describe",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test"
-					],
-					"query": [
-						{
-							"key": "_describe",
-							"value": null
+			"name": "v1.0",
+			"item": [
+				{
+					"name": "GET databases",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/_databases",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"_databases"
+							]
 						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "POST table create",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "content-type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"Name\": \"table1\",\n  \"PrimaryKey\": \"id\",\n  \"Columns\": [\n    {\n      \"Name\": \"id\",\n      \"PrimaryKey\": true,\n      \"Type\": \"Int\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"name\",\n      \"PrimaryKey\": false,\n      \"Type\": \"Nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    }\n  ]\n}"
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "http://localhost:8000/test",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "GET table rows",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/test/table1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test",
-						"table1"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "GET table describe",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/test/table1?_describe",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test",
-						"table1"
-					],
-					"query": [
-						{
-							"key": "_describe",
-							"value": null
+				{
+					"name": "GET database describe",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test?_describe",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test"
+							],
+							"query": [
+								{
+									"key": "_describe",
+									"value": null
+								}
+							]
 						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "DELETE table truncate",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8000/test/table1?_truncate",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test",
-						"table1"
-					],
-					"query": [
-						{
-							"key": "_truncate",
-							"value": null
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "POST table object",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"name\": \"Joel\"\n}"
+					},
+					"response": []
 				},
-				"url": {
-					"raw": "http://localhost:8000/test/table1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test",
-						"table1"
-					]
+				{
+					"name": "POST table create",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Name\": \"table1\",\n  \"PrimaryKey\": \"id\",\n  \"Columns\": [\n    {\n      \"Name\": \"id\",\n      \"PrimaryKey\": true,\n      \"Type\": \"Int\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"name\",\n      \"PrimaryKey\": false,\n      \"Type\": \"Nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET table rows",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GET table describe",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_describe",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_describe",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE table truncate",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_truncate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_truncate",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST table object",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Joel\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST raw query",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "SELECT * FROM table1;"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test?raw",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test"
+							],
+							"query": [
+								{
+									"key": "raw",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		},
 		{
-			"name": "POST raw query",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": "SELECT * FROM table1;"
-				},
-				"url": {
-					"raw": "http://localhost:8000/test?raw",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8000",
-					"path": [
-						"test"
-					],
-					"query": [
-						{
-							"key": "raw",
-							"value": null
+			"name": "v2.0",
+			"item": [
+				{
+					"name": "List databases",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/_databases",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"_databases"
+							]
 						}
-					]
+					},
+					"response": []
+				},
+				{
+					"name": "Describe a database",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test?_describe",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test"
+							],
+							"query": [
+								{
+									"key": "_describe",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a table",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"Name\": \"table1\",\n  \"PrimaryKey\": \"id\",\n  \"Columns\": [\n    {\n      \"Name\": \"id\",\n      \"PrimaryKey\": true,\n      \"Type\": \"Int\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"name\",\n      \"PrimaryKey\": false,\n      \"Type\": \"Nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Describe a table",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_describe",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_describe",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Retrieve table rows",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_max=10&_index=0",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_max",
+									"value": "10"
+								},
+								{
+									"key": "_index",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search table rows",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"Left\": \"name\",\r\n    \"Operator\": \"Equals\",\r\n    \"Right\": \"joel\"\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_index=0&_max=10&_return_fields=name&_order=asc&_order_by=id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_index",
+									"value": "0"
+								},
+								{
+									"key": "_max",
+									"value": "10"
+								},
+								{
+									"key": "_return_fields",
+									"value": "name"
+								},
+								{
+									"key": "_order",
+									"value": "asc"
+								},
+								{
+									"key": "_order_by",
+									"value": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create table row",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Joel\"\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Truncate a table",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_truncate",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_truncate",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Drop a table",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_drop",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_drop",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete by primary key ID",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Execute raw query",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "SELECT * FROM table1;"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test?raw",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test"
+							],
+							"query": [
+								{
+									"key": "raw",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
 				}
-			},
-			"response": []
+			]
 		}
-	],
-	"protocolProfileBehavior": {}
+	]
 }

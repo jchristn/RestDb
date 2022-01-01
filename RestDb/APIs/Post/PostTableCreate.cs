@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
 using DatabaseWrapper;
@@ -21,7 +22,7 @@ namespace RestDb
             {
                 ctx.Response.StatusCode = 404;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Not found", null), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
                 return;
             }
 
@@ -30,11 +31,11 @@ namespace RestDb
                 _Logging.Warn("PostTableCreate no request body supplied");
                 ctx.Response.StatusCode = 400;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(Common.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
                 return;
             }
 
-            Table table = Common.DeserializeJson<Table>(Common.StreamToBytes(ctx.Request.Data));
+            Table table = SerializationHelper.DeserializeJson<Table>(Common.StreamToBytes(ctx.Request.Data));
             db.CreateTable(table.Name, table.Columns);
              
             ctx.Response.StatusCode = 201;
