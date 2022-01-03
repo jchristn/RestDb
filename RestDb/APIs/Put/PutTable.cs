@@ -54,8 +54,7 @@ namespace RestDb
             {
                 #region Search-Table
 
-                byte[] reqData = md.Http.Request.DataAsBytes;
-                Expr filter = SerializationHelper.DeserializeJsonExpression(reqData);
+                Expr filter = SerializationHelper.DeserializeJsonExpression(md.Http.Request.DataAsBytes);
 
                 ResultOrder[] resultOrder = new ResultOrder[1];
                 resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirection.Ascending);
@@ -104,6 +103,11 @@ namespace RestDb
                     md.Params.ReturnFields, 
                     filter, 
                     resultOrder);
+
+                if (md.Params.Debug && filter != null)
+                {
+                    md.Http.Response.Headers.Add(Constants.HeaderExpression, filter.ToString());
+                }
 
                 if (result == null || result.Rows.Count < 1)
                 {

@@ -39,21 +39,26 @@ namespace RestDb.Classes
 
             JObject jo = JObject.Load(reader);
 
-            /*
-            Console.WriteLine("--- In Converter ---");
-            Console.WriteLine("Object   : " + jo.ToString());
-            Console.WriteLine("Left     : " + jo["Left"].ToString());
-            Console.WriteLine("Operator : " + jo["Operator"].ToString());
-            Console.WriteLine("Right    : " + jo["Right"].ToString());
-            */
+            // Console.WriteLine("--- In Converter ---");
+            // Console.WriteLine("Object   : " + jo.ToString());
+            // Console.WriteLine("Left     : " + jo["Left"].ToString());
+            // Console.WriteLine("Operator : " + jo["Operator"].ToString());
+            // Console.WriteLine("Right    : " + jo["Right"].ToString());
 
             if (jo["Left"] != null)
             {
                 JToken leftToken = jo["Left"];
                 if (leftToken.Type == JTokenType.Object)
                 {
-                    // Console.WriteLine("Left: Object");
-                    ret.Left = SerializationHelper.DeserializeJson<Expr>(leftToken.ToString());
+                    // Console.WriteLine("Left: Object (recursively calling expression converter)");
+                    ret.Left = JsonConvert.DeserializeObject<Expr>(
+                        leftToken.ToString(),
+                        new JsonSerializerSettings
+                        {
+                            Converters = new JsonConverter[] { new ExpressionConverter(), new StringEnumConverter() },
+                            TypeNameHandling = TypeNameHandling.All
+                        }
+                    );
                 }
                 else if (leftToken.Type == JTokenType.Array)
                 {
@@ -67,7 +72,7 @@ namespace RestDb.Classes
                 }
                 else
                 {
-                    // Console.WriteLine("Left: Array");
+                    // Console.WriteLine("Left: String");
                     ret.Left = leftToken.ToObject<string>();
                 }
             }
@@ -79,8 +84,15 @@ namespace RestDb.Classes
                 JToken rightToken = jo["Right"];
                 if (rightToken.Type == JTokenType.Object)
                 {
-                    // Console.WriteLine("Right: Object");
-                    ret.Right = SerializationHelper.DeserializeJson<Expr>(rightToken.ToString());
+                    // Console.WriteLine("Right: Object (recursively calling expression converter)");
+                    ret.Right = JsonConvert.DeserializeObject<Expr>(
+                        rightToken.ToString(),
+                        new JsonSerializerSettings
+                        {
+                            Converters = new JsonConverter[] { new ExpressionConverter(), new StringEnumConverter() },
+                            TypeNameHandling = TypeNameHandling.All
+                        }
+                    );
                 }
                 else if (rightToken.Type == JTokenType.Array)
                 {

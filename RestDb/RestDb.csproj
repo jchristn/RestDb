@@ -5,7 +5,7 @@
     <TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>2.0.1</Version>
+    <Version>2.0.1.1</Version>
     <Authors>Joel Christner</Authors>
     <Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
     <Copyright>(c)2021 Joel Christner</Copyright>

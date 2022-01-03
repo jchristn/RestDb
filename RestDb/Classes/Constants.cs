@@ -54,5 +54,6 @@ namespace RestDb.Classes
         
         internal static string QueryDebug = "_debug";
 
+        internal static string HeaderExpression = "x-expression";
     }
 }
