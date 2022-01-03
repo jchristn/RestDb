@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RestDb
+namespace RestDb.Classes
 {
     /// <summary>
     /// Error response.
@@ -17,6 +17,11 @@ namespace RestDb
         /// Flag indicating whether or not the operation was successful.
         /// </summary>
         public bool Success { get; set; } = true;
+
+        /// <summary>
+        /// Error code.
+        /// </summary>
+        public ErrorCodeEnum Code { get; set; } = ErrorCodeEnum.Unknown;
 
         /// <summary>
         /// Message.
@@ -52,12 +57,14 @@ namespace RestDb
         /// <summary>
         /// Instantiate.
         /// </summary>
+        /// <param name="code">Error code.</param>
         /// <param name="msg">Message.</param>
         /// <param name="detail">Detail.</param>
         /// <param name="e">Exception.</param>
-        public ErrorResponse(string msg, string detail, Exception e = null)
+        public ErrorResponse(ErrorCodeEnum code, string msg, string detail, Exception e = null)
         {
             Success = false;
+            Code = code;
             Message = msg;
             Detail = detail;
             Exception = e;

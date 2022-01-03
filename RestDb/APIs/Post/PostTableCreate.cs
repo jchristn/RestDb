@@ -14,33 +14,33 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task PostTableCreate(HttpContext ctx)
+        static async Task PostTableCreate(RequestMetadata md)
         {
-            string dbName = ctx.Request.Url.Elements[0];
+            string dbName = md.Http.Request.Url.Elements[0];
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
-            if (ctx.Request.Data == null || ctx.Request.ContentLength < 1)
+            if (md.Http.Request.Data == null || md.Http.Request.ContentLength < 1)
             {
                 _Logging.Warn("PostTableCreate no request body supplied");
-                ctx.Response.StatusCode = 400;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                md.Http.Response.StatusCode = 400;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.MissingRequestBody, "Invalid request", "No request body supplied"), true));
                 return;
             }
 
-            Table table = SerializationHelper.DeserializeJson<Table>(Common.StreamToBytes(ctx.Request.Data));
+            Table table = SerializationHelper.DeserializeJson<Table>(md.Http.Request.DataAsString);
             db.CreateTable(table.Name, table.Columns);
-             
-            ctx.Response.StatusCode = 201;
-            ctx.Response.ContentType = "application/json";
-            await ctx.Response.Send();
+
+            md.Http.Response.StatusCode = 201;
+            md.Http.Response.ContentType = "application/json";
+            await md.Http.Response.Send();
             return;
         }
     }

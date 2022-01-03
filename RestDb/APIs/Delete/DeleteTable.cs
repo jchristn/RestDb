@@ -15,56 +15,56 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task DeleteTable(HttpContext ctx)
+        static async Task DeleteTable(RequestMetadata md)
         {
-            string dbName = ctx.Request.Url.Elements[0];
-            string tableName = ctx.Request.Url.Elements[1];
+            string dbName = md.Http.Request.Url.Elements[0];
+            string tableName = md.Http.Request.Url.Elements[1];
             int idVal = 0;
-            if (ctx.Request.Url.Elements.Length == 3) Int32.TryParse(ctx.Request.Url.Elements[2], out idVal);
+            if (md.Http.Request.Url.Elements.Length == 3) Int32.TryParse(md.Http.Request.Url.Elements[2], out idVal);
             
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
-            if (ctx.Request.Url.Elements.Length == 2 && ctx.Request.Query.Elements.ContainsKey("_truncate"))
+            if (md.Params.Truncate)
             {
                 #region Truncate
 
                 db.Truncate(tableName);
                 _Logging.Warn("DeleteTable truncated table " + tableName + " in database " + dbName);
-                ctx.Response.StatusCode = 204;
-                await ctx.Response.Send();
+                md.Http.Response.StatusCode = 204;
+                await md.Http.Response.Send();
                 return;
 
                 #endregion
             }
-            else if (ctx.Request.Url.Elements.Length == 2 && ctx.Request.Query.Elements.ContainsKey("_drop"))
+            else if (md.Params.Drop)
             {
                 #region Drop
 
                 db.DropTable(tableName);
                 _Logging.Warn("DeleteTable dropped table " + tableName + " in database " + dbName);
-                ctx.Response.StatusCode = 204;
-                await ctx.Response.Send();
+                md.Http.Response.StatusCode = 204;
+                await md.Http.Response.Send();
                 return;
 
                 #endregion
             }
-            else if (ctx.Request.Url.Elements.Length >= 2)
+            else if (md.Http.Request.Url.Elements.Length >= 2)
             {
                 #region Delete-Objects
                  
@@ -75,28 +75,28 @@ namespace RestDb
                     if (String.IsNullOrEmpty(currTable.PrimaryKey))
                     {
                         _Logging.Warn("DeleteTable no primary key defined for table " + tableName + " in database " + dbName);
-                        ctx.Response.StatusCode = 400;
-                        ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                        md.Http.Response.StatusCode = 400;
+                        md.Http.Response.ContentType = "application/json";
+                        await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Invalid request", "No primary key for table " + tableName), true));
                         return;
                     }
 
                     filter = new Expr(currTable.PrimaryKey, OperatorEnum.Equals, idVal);
                 }
 
-                if (ctx.Request.Query.Elements != null && ctx.Request.Query.Elements.Count > 0)
+                if (md.Http.Request.Query.Elements != null && md.Http.Request.Query.Elements.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
+                    foreach (KeyValuePair<string, string> currKvp in md.Http.Request.Query.Elements)
                     {
-                        if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
+                        if (Constants.QueryKeys.Contains(currKvp.Key)) continue;
                         if (filter == null) filter = new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
                         else filter.PrependAnd(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
                     }
                 }
 
                 db.Delete(tableName, filter);
-                ctx.Response.StatusCode = 204;
-                await ctx.Response.Send();
+                md.Http.Response.StatusCode = 204;
+                await md.Http.Response.Send();
                 return;
 
                 #endregion

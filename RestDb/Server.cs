@@ -83,7 +83,7 @@ namespace RestDb
         {
             ConsoleColor prior = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine(Logo());
+            Console.WriteLine(Constants.Logo);
             Console.WriteLine("RestDb | RESTful API for databases | v" + _Version);
             Console.ForegroundColor = ConsoleColor.Gray;
             Console.WriteLine("");
@@ -178,9 +178,15 @@ namespace RestDb
                     default:
                         ctx.Response.StatusCode = 400;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unknown method", null), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method", null), true));
                         return;
                 }
+
+                #endregion
+
+                #region Build-Metadata
+
+                RequestMetadata md = new RequestMetadata(ctx);
 
                 #endregion
 
@@ -188,14 +194,28 @@ namespace RestDb
 
                 if (_Settings.Server.RequireAuthentication)
                 {
-                    if (!_Auth.Authenticate(ctx))
+                    string apiKey = null;
+                    ApiKey key = null;
+
+                    if (!_Auth.Authenticate(ctx, out apiKey, out key))
                     {
                         _Logging.Warn(header + "authentication failed");
                         ctx.Response.StatusCode = 401;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unauthorized", null), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotAuthenticated, "You are not authorized to perform this operation", null), true));
                         return;
                     }
+
+                    md.ApiKey = key;
+                    md.Params.ApiKey = apiKey;
+                }
+
+                if (md.Params.Metadata)
+                {
+                    ctx.Response.StatusCode = 200;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(md, true));
+                    return;
                 }
 
                 #endregion
@@ -209,25 +229,25 @@ namespace RestDb
                          
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_databaseclients"))
                         {
-                            await GetDatabaseClients(ctx);
+                            await GetDatabaseClients(md);
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_databases"))
                         {
-                            await GetDatabases(ctx);
+                            await GetDatabases(md);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 1)
                         {
-                            await GetDatabase(ctx);
+                            await GetDatabase(md);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
-                            await GetTableSelect(ctx);
+                            await GetTableSelect(md);
                             return;
                         }
 
@@ -240,7 +260,7 @@ namespace RestDb
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
-                            await PutTable(ctx);
+                            await PutTable(md);
                             return;
                         }
                         break;
@@ -254,19 +274,19 @@ namespace RestDb
                         {
                             if (ctx.Request.Query.Elements.ContainsKey("raw"))
                             {
-                                await PostRawQuery(ctx);
+                                await PostRawQuery(md);
                                 return;
                             }
                             else
                             {
-                                await PostTableCreate(ctx);
+                                await PostTableCreate(md);
                                 return;
                             }
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2)
                         {
-                            await PostTableInsert(ctx);
+                            await PostTableInsert(md);
                             return;
                         }
                         break;
@@ -278,7 +298,7 @@ namespace RestDb
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
-                            await DeleteTable(ctx);
+                            await DeleteTable(md);
                             return;
                         }
                         break;
@@ -288,7 +308,7 @@ namespace RestDb
                     default:
                         ctx.Response.StatusCode = 400;
                         ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unknown method", null), true));
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method", null), true));
                         return;
                 }
 
@@ -296,14 +316,14 @@ namespace RestDb
 
                 ctx.Response.StatusCode = 400;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Unknown API", null), true)); 
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown endpoint", null), true)); 
             }
             catch (Exception e)
             {
                 _Logging.Exception(e);
                 ctx.Response.StatusCode = 500;
                 ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Internal server error", e.Message, e), true));
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InternalError, "Internal server error", e.Message, e), true));
             }
             finally
             {
@@ -311,20 +331,6 @@ namespace RestDb
             }
 
             #endregion
-        }
-
-        private static string Logo()
-        {
-            return
-                Environment.NewLine +
-                Environment.NewLine +
-                @"                 _      _ _      " + Environment.NewLine +
-                @"   _ __ ___  ___| |_ __| | |__   " + Environment.NewLine +
-                @"  | '__/ _ \/ __| __/ _  |  _ \  " + Environment.NewLine +
-                @"  | | |  __/\__ \ || (_| | |_) | " + Environment.NewLine +
-                @"  |_|  \___||___/\__\__,_|_.__/  " + Environment.NewLine +
-                Environment.NewLine +
-                Environment.NewLine;
         }
 
         private static string RootHtml()
@@ -337,7 +343,7 @@ namespace RestDb
                 "  <body>" +
                 "    <pre>";
 
-            ret += Logo() + Environment.NewLine;
+            ret += Constants.Logo + Environment.NewLine;
             ret += "RestDb is running." + Environment.NewLine;
             ret += "Documentation and source code: <a href='https://github.com/jchristn/restdb' target='_blank'>https://github.com/jchristn/restdb</a>" + Environment.NewLine;
             ret +=

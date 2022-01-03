@@ -14,45 +14,62 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task PostTableInsert(HttpContext ctx)
+        static async Task PostTableInsert(RequestMetadata md)
         {
-            string dbName = ctx.Request.Url.Elements[0];
-            string tableName = ctx.Request.Url.Elements[1]; 
+            string dbName = md.Http.Request.Url.Elements[0];
+            string tableName = md.Http.Request.Url.Elements[1]; 
 
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
-            if (ctx.Request.Data == null || ctx.Request.ContentLength < 1)
+            if (md.Http.Request.Data == null || md.Http.Request.ContentLength < 1)
             {
                 _Logging.Warn("PostTableInsert no request body supplied");
-                ctx.Response.StatusCode = 400;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                md.Http.Response.StatusCode = 400;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.MissingRequestBody, "Invalid request", "No request body supplied"), true));
                 return;
             }
 
-            byte[] reqData = Common.StreamToBytes(ctx.Request.Data);
-            Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(reqData);
-            DataTable result = db.Insert(tableName, dict);
+            DataTable result = null;
 
-            ctx.Response.StatusCode = 200;
-            ctx.Response.ContentType = "application/json";
-            await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
+            if (!md.Params.Multiple)
+            {
+                Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(md.Http.Request.DataAsBytes);
+                result = db.Insert(tableName, dict);
+            }
+            else
+            {
+                List<Dictionary<string, object>> dicts = SerializationHelper.DeserializeJson<List<Dictionary<string, object>>>(md.Http.Request.DataAsBytes);
+                db.InsertMultiple(tableName, dicts);
+            }
+
+            md.Http.Response.StatusCode = 201;
+            md.Http.Response.ContentType = "application/json";
+
+            if (result != null)
+            {
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
+            }
+            else
+            {
+                await md.Http.Response.Send();
+            }
             return;
         }
     }

@@ -212,6 +212,31 @@
 			"name": "v2.0",
 			"item": [
 				{
+					"name": "Get request metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/_databases?_md",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"_databases"
+							],
+							"query": [
+								{
+									"key": "_md",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "List databases",
 					"request": {
 						"method": "GET",
@@ -527,6 +552,42 @@
 							"query": [
 								{
 									"key": "raw",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create multiple rows",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"name\": \"created1\"\r\n    },\r\n    {\r\n        \"name\": \"created2\"\r\n    },\r\n    {\r\n        \"name\": \"created3\"\r\n    }\r\n]"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_multiple",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_multiple",
 									"value": null
 								}
 							]

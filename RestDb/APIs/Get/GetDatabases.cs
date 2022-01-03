@@ -11,11 +11,11 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task GetDatabases(HttpContext ctx)
+        static async Task GetDatabases(RequestMetadata md)
         {
-            ctx.Response.StatusCode = 200;
-            ctx.Response.ContentType = "application/json";
-            await ctx.Response.Send(SerializationHelper.SerializeJson(_Settings.GetDatabaseNames(), true));
+            md.Http.Response.StatusCode = 200;
+            md.Http.Response.ContentType = "application/json";
+            await md.Http.Response.Send(SerializationHelper.SerializeJson(_Settings.GetDatabaseNames(), true));
             return;
         }
     }

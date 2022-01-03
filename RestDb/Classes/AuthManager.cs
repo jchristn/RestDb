@@ -39,11 +39,14 @@ namespace RestDb
 
         #region Public-Methods
 
-        internal bool Authenticate(HttpContext ctx)
-        { 
+        internal bool Authenticate(HttpContext ctx, out string apiKey, out ApiKey key)
+        {
+            apiKey = null;
+            key = null;
+
             #region Extract-API-Key
 
-            string apiKey = ctx.Request.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
+            apiKey = ctx.Request.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
             if (String.IsNullOrEmpty(apiKey))
             {
                 _Logging.Warn("Authenticate unable to retrieve API key from headers");
@@ -58,9 +61,13 @@ namespace RestDb
             {
                 lock (_KeysLock)
                 {
-                    if (_Keys.Exists(k => k.Key.Equals(apiKey)))
+                    string tempKey = apiKey;
+
+                    if (_Keys.Exists(k => k.Key.Equals(tempKey)))
                     {
-                        ApiKey curr = _Keys.Where(k => k.Key.Equals(apiKey)).First();
+                        ApiKey curr = _Keys.Where(k => k.Key.Equals(tempKey)).First();
+                        key = curr;
+
                         switch (ctx.Request.Method)
                         {
                             case HttpMethod.GET:

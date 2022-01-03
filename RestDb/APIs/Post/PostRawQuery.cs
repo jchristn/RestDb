@@ -14,42 +14,41 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task PostRawQuery(HttpContext ctx)
+        static async Task PostRawQuery(RequestMetadata md)
         {
-            string dbName = ctx.Request.Url.Elements[0];
+            string dbName = md.Http.Request.Url.Elements[0];
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
-            if (ctx.Request.Data == null || ctx.Request.ContentLength < 1)
+            if (md.Http.Request.Data == null || md.Http.Request.ContentLength < 1)
             {
                 _Logging.Warn("PostTableCreate no request body supplied");
-                ctx.Response.StatusCode = 400;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                md.Http.Response.StatusCode = 400;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.MissingRequestBody, "Missing request body", "No request body supplied"), true));
                 return;
             }
 
-            string query = Encoding.UTF8.GetString(Common.StreamToBytes(ctx.Request.Data));
-            DataTable result = db.Query(query);
+            DataTable result = db.Query(md.Http.Request.DataAsString);
 
             if (result != null && result.Rows.Count > 0)
             {
-                ctx.Response.StatusCode = 200;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
+                md.Http.Response.StatusCode = 200;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
                 return;
             }
             else
             {
-                ctx.Response.StatusCode = 200;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send();
+                md.Http.Response.StatusCode = 200;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send();
                 return;
             }
         }

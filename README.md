@@ -6,9 +6,13 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, TRUNCATE, and DROP against tables in Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite.
  
-## New in v2.0.0
+## New in v2.0.1
 
 - Breaking change caused by dependency updates
+- Multiple insert API
+- Internal refactor
+- More complete Postman environment
+- Error codes
 
 ## Important Notes
 
@@ -48,7 +52,9 @@ Point your browser to http://localhost:8000.  You should see a default webpage f
 ### List databases
 ```
 GET http://localhost:8000/_databases
+
 Resp:
+200/OK
 [
   "test"
 ]
@@ -57,6 +63,7 @@ Resp:
 ### Create a Table
 ```
 POST http://localhost:8000/test
+Data: 
 {
   "Name": "person",
   "PrimaryKey": "person_id",
@@ -90,12 +97,17 @@ POST http://localhost:8000/test
     }
   ]
 }
+
+Resp:
+201/Created
 ```
 
 ### Retrieve a Database
 ```
 GET http://localhost:8000/test
+
 Resp:
+200/OK
 {
   "Name": "test",
   "Type": "mssql",
@@ -112,7 +124,9 @@ Resp:
 ### Describe a Table
 ```
 GET http://localhost:8000/test/person?_describe
+
 Resp:
+200/OK
 {
   "Name": "person",
   "PrimaryKey": "person_id",
@@ -160,7 +174,9 @@ Be sure to use timestamps appropriate to your database type, for instance:
 ```
 POST http://localhost:8000/test/person
 Data: { first_name: 'joel', last_name: 'christner', age: 40, created: '05/03/2017' }
+
 Resp:
+201/Created
 {
   "person_id": 1,
   "first_name": "joel",
@@ -168,6 +184,18 @@ Resp:
   "age": 40,
   "created": "05/03/2017 00:00:00"
 }
+```
+
+### Create Multiple Objects
+
+To create multiple objects, send a JSON array containing a series of dictionaries appropriate for the specified table.
+
+```
+POST http://localhost:8080/test/person?_multiple
+Data: [ { first_name: 'person1', last_name: 'last', age: 50, created '5/1/2017' }, ... ]
+
+Resp:
+201/Created
 ```
 
 ### Retrieve Objects
@@ -178,6 +206,9 @@ You can retrieve all of a table's contents, retrieve by a specific ID, and filte
 GET http://localhost:8000/test/person 
 GET http://localhost:8000/test/person/1
 GET http://localhost:8000/test/person?first_name=joel 
+
+Resp:
+200/OK
 [
   {
     "person_id": 1,
@@ -203,7 +234,9 @@ By default, ```SELECT``` requests are ordered ASCENDING by the table's primary k
 
 ```
 GET http://localhost:8000/test/person?_max=1&_index=1&_order=asc&_order_by=person_id,first_name
+
 Resp:
+200/OK
 [
   {
     "__row_num__": 1,
@@ -224,7 +257,9 @@ Supply the ID in the URL and include the key-value pairs to change in the reques
 ```
 PUT http://localhost:8000/test/person/1
 Data: { age: 18 }
+
 Resp:
+200/OK
 {
   "person_id": 1,
   "first_name": "joel",
@@ -246,7 +281,9 @@ Data:
   "Operator": "GreaterThan",
   "Right": 0
 }
+
 Resp:
+200/OK
 [
   {
     "person_id": 1,
@@ -261,17 +298,25 @@ Resp:
 ### Delete an Object
 ```
 DELETE http://localhost:8000/test/person/1
-Resp: 200/OK (no data)
+
+Resp: 
+204/Deleted
 ```
 
 ### Truncating a Table
 ```
 DELETE http://localhost:8000/test/person?_truncate
+
+Resp: 
+204/Deleted
 ```
 
 ### Dropping a Table
 ```
 DELETE http://localhost:8000/test/person?_drop
+
+Resp:
+204/Deleted
 ```
 
 ### Executing a Raw Query
@@ -279,7 +324,9 @@ DELETE http://localhost:8000/test/person?_drop
 POST http://localhost:8000/test?raw
 Data:
 SELECT * FROM person;
-Resp: 
+
+Resp:
+200/OK 
 [
   {
     "person_id": 1,

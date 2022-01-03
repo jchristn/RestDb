@@ -15,127 +15,108 @@ namespace RestDb
 {
     partial class RestDbServer
     {
-        static async Task PutTable(HttpContext ctx)
+        static async Task PutTable(RequestMetadata md)
         {
-            string dbName = ctx.Request.Url.Elements[0];
-            string tableName = ctx.Request.Url.Elements[1];
+            string dbName = md.Http.Request.Url.Elements[0];
+            string tableName = md.Http.Request.Url.Elements[1];
             int idVal = 0;
-            if (ctx.Request.Url.Elements.Length == 3) Int32.TryParse(ctx.Request.Url.Elements[2], out idVal);
+            if (md.Http.Request.Url.Elements.Length == 3) Int32.TryParse(md.Http.Request.Url.Elements[2], out idVal);
 
             Table currTable = _Databases.GetTableByName(dbName, tableName);
             if (currTable == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
             DatabaseClient db = _Databases.GetDatabaseClient(dbName);
             if (db == null)
             {
-                ctx.Response.StatusCode = 404;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Not found", null), true));
+                md.Http.Response.StatusCode = 404;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
                 return;
             }
 
-            if (ctx.Request.Data == null || ctx.Request.ContentLength < 1)
+            if (md.Http.Request.Data == null || md.Http.Request.ContentLength < 1)
             {
                 _Logging.Warn("PutTable no request body supplied");
-                ctx.Response.StatusCode = 400;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No request body supplied"), true));
+                md.Http.Response.StatusCode = 400;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.MissingRequestBody, "Invalid request", "No request body supplied"), true));
                 return;
             }
 
             if (idVal == 0 
-                && ctx.Request.Url.Elements.Length == 2)
+                && md.Http.Request.Url.Elements.Length == 2)
             {
                 #region Search-Table
 
-                byte[] reqData = Common.StreamToBytes(ctx.Request.Data);
-                Expr e = SerializationHelper.DeserializeJsonExpression(reqData);
+                byte[] reqData = md.Http.Request.DataAsBytes;
+                Expr filter = SerializationHelper.DeserializeJsonExpression(reqData);
 
-                int? indexStart = null;
-                int? maxResults = null;
-                List<string> returnFields = null;
-                string order = null;
-                string orderBy = null;
-                List<ResultOrder> resultOrderList = new List<ResultOrder>();
-                ResultOrder[] resultOrder = null;
+                ResultOrder[] resultOrder = new ResultOrder[1];
+                resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirection.Ascending);
 
-                if (ctx.Request.Query.Elements != null && ctx.Request.Query.Elements.Count > 0)
+                if (md.Http.Request.Query.Elements != null && md.Http.Request.Query.Elements.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> currKvp in ctx.Request.Query.Elements)
+                    foreach (KeyValuePair<string, string> currKvp in md.Http.Request.Query.Elements)
                     {
-                        if (_ControlQueryKeys.Contains(currKvp.Key)) continue;
-                        e = Expr.PrependAndClause(
+                        if (Constants.QueryKeys.Contains(currKvp.Key)) continue;
+                        filter = Expr.PrependAndClause(
                             new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value),
-                            e);
+                            filter);
                     }
                 }
 
-                if (ctx.Request.Query.Elements.ContainsKey("_index")) indexStart = Convert.ToInt32(ctx.Request.Query.Elements["_index"]);
-                if (ctx.Request.Query.Elements.ContainsKey("_max")) maxResults = Convert.ToInt32(ctx.Request.Query.Elements["_max"]);
-                if (ctx.Request.Query.Elements.ContainsKey("_return_fields")) returnFields = Common.CsvToStringList(ctx.Request.Query.Elements["_return_fields"]);
-                if (ctx.Request.Query.Elements.ContainsKey("_order")) order = ctx.Request.Query.Elements["_order"];
-                if (ctx.Request.Query.Elements.ContainsKey("_order_by")) orderBy = ctx.Request.Query.Elements["_order_by"];
-
-                if (!String.IsNullOrEmpty(orderBy) && !String.IsNullOrEmpty(order))
+                if (md.Params.OrderBy != null && md.Params.OrderBy.Count > 0)
                 {
-                    List<string> orderByElements = new List<string>();
-                    if (orderBy.Contains(","))
-                    {
-                        orderByElements = Common.CsvToStringList(orderBy);
-                    }
-                    else
-                    {
-                        orderByElements.Add(orderBy);
-                    }
+                    List<ResultOrder> resultOrderList = new List<ResultOrder>();
 
-                    if (order.Equals("asc"))
+                    foreach (string curr in md.Params.OrderBy)
                     {
-                        foreach (string curr in orderByElements)
+                        if (md.Params.OrderDirection == OrderDirectionEnum.Descending)
                         {
-                            ResultOrder ro = new ResultOrder(db.SanitizeString(curr), OrderDirection.Ascending);
-                            resultOrderList.Add(ro);
+                            ResultOrder ro = new ResultOrder(curr, OrderDirection.Descending);
+                        }
+                        else if (md.Params.OrderDirection == OrderDirectionEnum.Ascending)
+                        {
+                            ResultOrder ro = new ResultOrder(curr, OrderDirection.Ascending);
                         }
                     }
-                    else if (order.Equals("desc"))
+
+                    if (resultOrderList.Count > 0)
                     {
-                        foreach (string curr in orderByElements)
+                        resultOrder = new ResultOrder[resultOrderList.Count];
+                        for (int i = 0; i < resultOrderList.Count; i++)
                         {
-                            ResultOrder ro = new ResultOrder(db.SanitizeString(curr), OrderDirection.Descending); 
-                            resultOrderList.Add(ro);
+                            resultOrder[i] = resultOrderList[i];
                         }
                     }
-                    else
-                    {
-                        _Logging.Warn("PutTable invalid order '" + order + "'");
-                        ctx.Response.StatusCode = 400;
-                        ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "Invalid order parameter '" + order + "'"), true));
-                        return;
-                    }
-
-                    if (resultOrderList.Count > 0) resultOrder = resultOrderList.ToArray();
                 }
 
-                DataTable result = db.Select(tableName, indexStart, maxResults, returnFields, e, resultOrder);
+                DataTable result = db.Select(
+                    tableName,
+                    md.Params.IndexStart, 
+                    md.Params.MaxResults, 
+                    md.Params.ReturnFields, 
+                    filter, 
+                    resultOrder);
 
                 if (result == null || result.Rows.Count < 1)
                 {
-                    ctx.Response.StatusCode = 200;
-                    ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(SerializationHelper.SerializeJson(new List<dynamic>(), true));
+                    md.Http.Response.StatusCode = 200;
+                    md.Http.Response.ContentType = "application/json";
+                    await md.Http.Response.Send(SerializationHelper.SerializeJson(new List<dynamic>(), true));
                     return;
                 }
                 else
                 {
-                    ctx.Response.StatusCode = 200;
-                    ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
+                    md.Http.Response.StatusCode = 200;
+                    md.Http.Response.ContentType = "application/json";
+                    await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
                     return;
                 } 
 
@@ -148,20 +129,20 @@ namespace RestDb
                 if (String.IsNullOrEmpty(currTable.PrimaryKey))
                 {
                     _Logging.Warn("PutTable no primary key defined for table " + tableName + " in database " + dbName);
-                    ctx.Response.StatusCode = 400;
-                    ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse("Bad request", "No primary key for table " + tableName), true));
+                    md.Http.Response.StatusCode = 400;
+                    md.Http.Response.ContentType = "application/json";
+                    await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Invalid request", "No primary key for table " + tableName), true));
                     return;
                 }
 
-                byte[] reqData = Common.StreamToBytes(ctx.Request.Data);
+                byte[] reqData = md.Http.Request.DataAsBytes;
                 Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(reqData);
                 Expr e = new Expr(currTable.PrimaryKey, OperatorEnum.Equals, idVal);
                 DataTable result = db.Update(tableName, dict, e);
 
-                ctx.Response.StatusCode = 200;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
+                md.Http.Response.StatusCode = 200;
+                md.Http.Response.ContentType = "application/json";
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
                 return; 
 
                 #endregion

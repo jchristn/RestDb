@@ -2,9 +2,13 @@
 
 ## Current Version
 
-v2.0.0
+v2.0.1
 
 - Breaking change caused by dependency updates
+- Multiple insert API
+- Internal refactor
+- More complete Postman environment
+- Error codes
 
 ## Previous Versions
 
