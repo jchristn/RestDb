@@ -38,6 +38,8 @@ namespace RestDb
             Table table = SerializationHelper.DeserializeJson<Table>(md.Http.Request.DataAsString);
             db.CreateTable(table.Name, table.Columns);
 
+            _Logging.Info("PostTableCreate created table " + table.Name + " in database " + dbName);
+
             md.Http.Response.StatusCode = 201;
             md.Http.Response.ContentType = "application/json";
             await md.Http.Response.Send();
