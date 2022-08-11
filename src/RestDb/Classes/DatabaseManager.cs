@@ -236,10 +236,10 @@ namespace RestDb
                 } 
 
                 if (curr.Debug)
-                { 
-                    db.Logger = Logger;
-                    db.LogQueries = true;
-                    db.LogResults = true;
+                {
+                    db.Settings.Debug.Logger = Logger;
+                    db.Settings.Debug.EnableForQueries = true;
+                    db.Settings.Debug.EnableForResults = true;
                 }
 
                 _Databases.Add(curr.Name, db);
