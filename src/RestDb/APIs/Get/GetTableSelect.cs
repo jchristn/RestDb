@@ -59,7 +59,7 @@ namespace RestDb
             DataTable result = null;
             Expr filter = null;
             ResultOrder[] resultOrder = new ResultOrder[1];
-            resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirection.Ascending);
+            resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
 
             if (idVal > 0)
             {
@@ -95,11 +95,11 @@ namespace RestDb
                 {
                     if (md.Params.OrderDirection == OrderDirectionEnum.Descending)
                     {
-                        ResultOrder ro = new ResultOrder(curr, OrderDirection.Descending);
+                        ResultOrder ro = new ResultOrder(curr, OrderDirectionEnum.Descending);
                     }
                     else if (md.Params.OrderDirection == OrderDirectionEnum.Ascending)
                     {
-                        ResultOrder ro = new ResultOrder(curr, OrderDirection.Ascending);
+                        ResultOrder ro = new ResultOrder(curr, OrderDirectionEnum.Ascending);
                     }
                 }
 

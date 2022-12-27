@@ -57,7 +57,7 @@ namespace RestDb
                 Expr filter = SerializationHelper.DeserializeJsonExpression(md.Http.Request.DataAsBytes);
 
                 ResultOrder[] resultOrder = new ResultOrder[1];
-                resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirection.Ascending);
+                resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
 
                 if (md.Http.Request.Query.Elements != null && md.Http.Request.Query.Elements.Count > 0)
                 {
@@ -78,11 +78,11 @@ namespace RestDb
                     {
                         if (md.Params.OrderDirection == OrderDirectionEnum.Descending)
                         {
-                            ResultOrder ro = new ResultOrder(curr, OrderDirection.Descending);
+                            ResultOrder ro = new ResultOrder(curr, OrderDirectionEnum.Descending);
                         }
                         else if (md.Params.OrderDirection == OrderDirectionEnum.Ascending)
                         {
-                            ResultOrder ro = new ResultOrder(curr, OrderDirection.Ascending);
+                            ResultOrder ro = new ResultOrder(curr, OrderDirectionEnum.Ascending);
                         }
                     }
 
@@ -142,11 +142,11 @@ namespace RestDb
                 byte[] reqData = md.Http.Request.DataAsBytes;
                 Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(reqData);
                 Expr e = new Expr(currTable.PrimaryKey, OperatorEnum.Equals, idVal);
-                DataTable result = db.Update(tableName, dict, e);
+                db.Update(tableName, dict, e);
 
                 md.Http.Response.StatusCode = 200;
                 md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
+                await md.Http.Response.Send();
                 return; 
 
                 #endregion

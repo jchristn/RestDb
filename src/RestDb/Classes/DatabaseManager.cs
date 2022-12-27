@@ -216,12 +216,12 @@ namespace RestDb
 
                 switch (curr.Type)
                 {
-                    case DbTypes.Sqlite:
+                    case DbTypeEnum.Sqlite:
                         db = new DatabaseClient(curr.Filename);
                         break;
-                    case DbTypes.SqlServer:
-                    case DbTypes.Mysql:
-                    case DbTypes.Postgresql:
+                    case DbTypeEnum.SqlServer:
+                    case DbTypeEnum.Mysql:
+                    case DbTypeEnum.Postgresql:
                         db = new DatabaseClient(
                             curr.Type,
                             curr.Hostname,

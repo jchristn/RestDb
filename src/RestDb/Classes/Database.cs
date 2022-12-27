@@ -22,7 +22,7 @@ namespace RestDb
         /// <summary>
         /// Database type.
         /// </summary>
-        public DbTypes Type { get; set; } = DbTypes.Sqlite;
+        public DbTypeEnum Type { get; set; } = DbTypeEnum.Sqlite;
 
         /// <summary>
         /// Database filename.
@@ -99,7 +99,7 @@ namespace RestDb
 
             switch (Type)
             {
-                case DbTypes.Sqlite:
+                case DbTypeEnum.Sqlite:
                     ret += Name + " [" + Type.ToString() + "] ";
                     break;
                 default:

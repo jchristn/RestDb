@@ -132,28 +132,28 @@ namespace RestDb
                     continue;
                 }
 
-                curr.Type = (DbTypes)(Enum.Parse(typeof(DbTypes), currType));
+                curr.Type = (DbTypeEnum)(Enum.Parse(typeof(DbTypeEnum), currType));
 
                 switch (curr.Type)
                 {
-                    case DbTypes.Sqlite:
+                    case DbTypeEnum.Sqlite:
                         curr.Filename = Common.InputString("Filename?", "./database.db", false);
                         break;
-                    case DbTypes.SqlServer:
+                    case DbTypeEnum.SqlServer:
                         curr.Hostname = Common.InputString("Server hostname?", "localhost", false); 
                         curr.Port = Common.InputInteger("Server port?", 1433, true, false);
                         curr.Instance = Common.InputString("Instance name?", null, true);
                         curr.Username = Common.InputString("Username?", null, false);
                         curr.Password = Common.InputString("Password?", null, false);
                         break;
-                    case DbTypes.Mysql:
+                    case DbTypeEnum.Mysql:
                         curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
                         curr.Port = Common.InputInteger("Server port?", 3306, true, false);
                         curr.Instance = null;
                         curr.Username = Common.InputString("Username?", null, false);
                         curr.Password = Common.InputString("Password?", null, false);
                         break;
-                    case DbTypes.Postgresql:
+                    case DbTypeEnum.Postgresql:
                         curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
                         curr.Port = Common.InputInteger("Server port?", 5432, true, false);
                         curr.Instance = null;

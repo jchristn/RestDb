@@ -2,6 +2,12 @@
 
 ## Current Version
 
+v2.0.2
+
+- Dependency update to silence dependabot
+
+## Previous Versions
+
 v2.0.1
 
 - Breaking change caused by dependency updates
@@ -9,8 +15,6 @@ v2.0.1
 - Internal refactor
 - More complete Postman environment
 - Error codes
-
-## Previous Versions
 
 v1.3.0
 
