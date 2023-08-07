@@ -19,11 +19,6 @@ namespace RestDb.Classes
         public string ApiKey { get; set; } = null;
 
         /// <summary>
-        /// Metadata.
-        /// </summary>
-        public bool Metadata { get; set; } = false;
-
-        /// <summary>
         /// Describe.
         /// </summary>
         public bool Describe { get; set; } = false;
@@ -113,39 +108,33 @@ namespace RestDb.Classes
         {
             if (ctx != null && ctx.Request != null)
             {
-                if (ctx.Request.QuerystringExists(Constants.QueryMetadata, false))
-                {
-                    Metadata = true;
-                }
-                else if (ctx.Request.QuerystringExists(Constants.QueryDescribe, false))
+                if (ctx.Request.QuerystringExists(Constants.QueryDescribe))
                 {
                     Describe = true;
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryMultiple, false))
+                else if (ctx.Request.QuerystringExists(Constants.QueryMultiple))
                 {
                     Multiple = true;
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryIndexStart, false))
+                else if (ctx.Request.QuerystringExists(Constants.QueryIndexStart))
                 {
-                    int testInt = 0;
-                    if (Int32.TryParse(ctx.Request.Query.Elements[Constants.QueryIndexStart], out testInt))
+                    if (Int32.TryParse(ctx.Request.Query.Elements[Constants.QueryIndexStart], out int testInt))
                     {
                         IndexStart = testInt;
                     }
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryMaxResults, false))
+                else if (ctx.Request.QuerystringExists(Constants.QueryMaxResults))
                 {
-                    int testInt = 0;
-                    if (Int32.TryParse(ctx.Request.Query.Elements[Constants.QueryMaxResults], out testInt))
+                    if (Int32.TryParse(ctx.Request.Query.Elements[Constants.QueryMaxResults], out int testInt))
                     {
                         MaxResults = testInt;
                     }
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryOrderBy, false))
+                else if (ctx.Request.QuerystringExists(Constants.QueryOrderBy))
                 {
                     OrderBy = Common.CsvToStringList(ctx.Request.Query.Elements[Constants.QueryOrderBy]);
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryOrderDirection, false))
+                else if (ctx.Request.QuerystringExists(Constants.QueryOrderDirection))
                 {
                     string orderDirection = ctx.Request.Query.Elements[Constants.QueryOrderDirection];
                     if (!String.IsNullOrEmpty(orderDirection))
@@ -154,19 +143,19 @@ namespace RestDb.Classes
                         else if (orderDirection.ToLower().Equals("desc")) OrderDirection = OrderDirectionEnum.Descending;
                     }
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryReturnFields, false))
+                else if (ctx.Request.QuerystringExists(Constants.QueryReturnFields))
                 {
                     ReturnFields = Common.CsvToStringList(ctx.Request.Query.Elements[Constants.QueryReturnFields]);
                 }
-                if (ctx.Request.QuerystringExists(Constants.QueryTruncateTable, false))
+                if (ctx.Request.QuerystringExists(Constants.QueryTruncateTable))
                 {
                     Truncate = true;
                 }
-                if (ctx.Request.QuerystringExists(Constants.QueryDropTable, false))
+                if (ctx.Request.QuerystringExists(Constants.QueryDropTable))
                 {
                     Drop = true;
                 }
-                if (ctx.Request.QuerystringExists(Constants.QueryDebug, false))
+                if (ctx.Request.QuerystringExists(Constants.QueryDebug))
                 {
                     Debug = true;
                 }

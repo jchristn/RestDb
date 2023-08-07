@@ -59,7 +59,7 @@ namespace RestDb
             DataTable result = null;
             Expr filter = null;
             ResultOrder[] resultOrder = null;
-            if (!string.IsNullOrWhiteSpace(currTable.PrimaryKey))
+            if (!String.IsNullOrEmpty(currTable.PrimaryKey))
             {
                 resultOrder = new ResultOrder[1];
                 resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
@@ -81,12 +81,16 @@ namespace RestDb
 
             if (md.Http.Request.Query.Elements != null && md.Http.Request.Query.Elements.Count > 0)
             {
-                foreach (KeyValuePair<string, string> currKvp in md.Http.Request.Query.Elements)
+                for (int i = 0; i < md.Http.Request.Query.Elements.Count; i++)
                 {
-                    if (Constants.QueryKeys.Contains(currKvp.Key)) continue;
-                    if (filter == null) filter = new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
+                    string currKey = md.Http.Request.Query.Elements.GetKey(i);
+                    string currVal = md.Http.Request.Query.Elements.Get(i);
+                    if (String.IsNullOrEmpty(currKey)) continue;
+                    if (Constants.QueryKeys.Contains(currKey)) continue;
+
+                    if (filter == null) filter = new Expr(currKey, OperatorEnum.Equals, currVal);
                     else filter = Expr.PrependAndClause(
-                        new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value),
+                        new Expr(currKey, OperatorEnum.Equals, currVal),
                         filter);
                 }
             }

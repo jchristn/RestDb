@@ -19,7 +19,6 @@ namespace RestDb.Classes
 
         internal static List<string> QueryKeys = new List<string>
         {
-            "_md",
             "_describe",
             "_multiple",
             "_index",
@@ -32,8 +31,6 @@ namespace RestDb.Classes
             "_debug"
         };
 
-        internal static string QueryMetadata = "_md";
-        
         internal static string QueryDescribe = "_describe";
 
         internal static string QueryMultiple = "_multiple";

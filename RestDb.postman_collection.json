@@ -2,7 +2,8 @@
 	"info": {
 		"_postman_id": "311ea6a8-0b2b-4639-9d57-f38e04948b75",
 		"name": "RestDb",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "720438"
 	},
 	"item": [
 		{
@@ -212,31 +213,6 @@
 			"name": "v2.0",
 			"item": [
 				{
-					"name": "Get request metadata",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/_databases?_md",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"_databases"
-							],
-							"query": [
-								{
-									"key": "_md",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "List databases",
 					"request": {
 						"method": "GET",
@@ -336,6 +312,72 @@
 					"response": []
 				},
 				{
+					"name": "Create table row",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Joel\"\r\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create multiple rows",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "content-type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[\r\n    {\r\n        \"name\": \"created1\"\r\n    },\r\n    {\r\n        \"name\": \"created2\"\r\n    },\r\n    {\r\n        \"name\": \"created3\"\r\n    }\r\n]"
+						},
+						"url": {
+							"raw": "http://localhost:8000/test/table1?_multiple",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"test",
+								"table1"
+							],
+							"query": [
+								{
+									"key": "_multiple",
+									"value": null
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Retrieve table rows",
 					"request": {
 						"method": "GET",
@@ -381,7 +423,7 @@
 							"raw": "{\r\n    \"Left\": \"name\",\r\n    \"Operator\": \"Equals\",\r\n    \"Right\": \"joel\"\r\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8000/test/table1?_index=0&_max=10&_return_fields=name&_order=asc&_order_by=id",
+							"raw": "http://localhost:8000/test/table1?_index=0&_max=10&_return=name&_order=asc&_order_by=id",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -401,7 +443,7 @@
 									"value": "10"
 								},
 								{
-									"key": "_return_fields",
+									"key": "_return",
 									"value": "name"
 								},
 								{
@@ -412,36 +454,6 @@
 									"key": "_order_by",
 									"value": "id"
 								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create table row",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Joel\"\r\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test/table1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
 							]
 						}
 					},
@@ -552,42 +564,6 @@
 							"query": [
 								{
 									"key": "raw",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create multiple rows",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "[\r\n    {\r\n        \"name\": \"created1\"\r\n    },\r\n    {\r\n        \"name\": \"created2\"\r\n    },\r\n    {\r\n        \"name\": \"created3\"\r\n    }\r\n]"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test/table1?_multiple",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							],
-							"query": [
-								{
-									"key": "_multiple",
 									"value": null
 								}
 							]

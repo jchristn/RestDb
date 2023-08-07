@@ -61,11 +61,14 @@ namespace RestDb
 
                 if (md.Http.Request.Query.Elements != null && md.Http.Request.Query.Elements.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> currKvp in md.Http.Request.Query.Elements)
+                    for (int i = 0; i < md.Http.Request.Query.Elements.Count; i++)
                     {
-                        if (Constants.QueryKeys.Contains(currKvp.Key)) continue;
+                        string currKey = md.Http.Request.Query.Elements.GetKey(i);
+                        string currVal = md.Http.Request.Query.Elements.Get(i);
+                        if (String.IsNullOrEmpty(currKey)) continue;
+                        if (Constants.QueryKeys.Contains(currKey)) continue;
                         filter = Expr.PrependAndClause(
-                            new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value),
+                            new Expr(currKey, OperatorEnum.Equals, currVal),
                             filter);
                     }
                 }

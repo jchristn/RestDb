@@ -194,10 +194,7 @@ namespace RestDb
 
                 if (_Settings.Server.RequireAuthentication)
                 {
-                    string apiKey = null;
-                    ApiKey key = null;
-
-                    if (!_Auth.Authenticate(ctx, out apiKey, out key))
+                    if (!_Auth.Authenticate(ctx, out string apiKey, out ApiKey key))
                     {
                         _Logging.Warn(header + "authentication failed");
                         ctx.Response.StatusCode = 401;
@@ -208,14 +205,6 @@ namespace RestDb
 
                     md.ApiKey = key;
                     md.Params.ApiKey = apiKey;
-                }
-
-                if (md.Params.Metadata)
-                {
-                    ctx.Response.StatusCode = 200;
-                    ctx.Response.ContentType = "application/json";
-                    await ctx.Response.Send(SerializationHelper.SerializeJson(md, true));
-                    return;
                 }
 
                 #endregion
@@ -272,7 +261,7 @@ namespace RestDb
 
                         if (ctx.Request.Url.Elements.Length == 1)
                         {
-                            if (ctx.Request.Query.Elements.ContainsKey("raw"))
+                            if (ctx.Request.Query.Elements.AllKeys.Contains("raw"))
                             {
                                 await PostRawQuery(md);
                                 return;
