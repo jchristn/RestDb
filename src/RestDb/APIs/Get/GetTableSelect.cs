@@ -58,8 +58,12 @@ namespace RestDb
 
             DataTable result = null;
             Expr filter = null;
-            ResultOrder[] resultOrder = new ResultOrder[1];
-            resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
+            ResultOrder[] resultOrder = null;
+            if (!string.IsNullOrWhiteSpace(currTable.PrimaryKey))
+            {
+                resultOrder = new ResultOrder[1];
+                resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
+            }
 
             if (idVal > 0)
             {
