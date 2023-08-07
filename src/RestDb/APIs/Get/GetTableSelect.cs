@@ -117,10 +117,9 @@ namespace RestDb
                 }
             }
 
-            int? index_start = resultOrder == null ? null : md.Params.IndexStart;
             result = db.Select(
                 tableName, 
-                index_start,
+                md.Params.IndexStart, 
                 md.Params.MaxResults, 
                 md.Params.ReturnFields, 
                 filter, 

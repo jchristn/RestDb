@@ -99,7 +99,7 @@ namespace RestDb.Classes
 
         #region Private-Members
 
-        private int? _IndexStart = 0;
+        private int? _IndexStart = null;
         private int? _MaxResults = 100;
 
         #endregion
