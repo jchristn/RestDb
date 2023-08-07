@@ -58,8 +58,12 @@ namespace RestDb
 
             DataTable result = null;
             Expr filter = null;
-            ResultOrder[] resultOrder = new ResultOrder[1];
-            resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
+            ResultOrder[] resultOrder = null;
+            if (!string.IsNullOrWhiteSpace(currTable.PrimaryKey))
+            {
+                resultOrder = new ResultOrder[1];
+                resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
+            }
 
             if (idVal > 0)
             {
@@ -113,9 +117,10 @@ namespace RestDb
                 }
             }
 
+            int? index_start = resultOrder == null ? null : md.Params.IndexStart;
             result = db.Select(
                 tableName, 
-                md.Params.IndexStart, 
+                index_start,
                 md.Params.MaxResults, 
                 md.Params.ReturnFields, 
                 filter, 
