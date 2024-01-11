@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using RestDb.Classes;
 using SyslogLogging;
 using WatsonWebserver;
+using WatsonWebserver.Core;
 
 namespace RestDb
 {
@@ -17,8 +18,9 @@ namespace RestDb
         static string _Version;
         static readonly EventWaitHandle Terminator = new EventWaitHandle(false, EventResetMode.ManualReset);
         static Settings _Settings;
+        static WebserverSettings _WebserverSettings;
         static LoggingModule _Logging;
-        static Server _Server;
+        static Webserver _Server;
         static DatabaseManager _Databases;
         static AuthManager _Auth;
 
@@ -61,10 +63,16 @@ namespace RestDb
 
             _Auth = new AuthManager(_Settings, _Logging);
 
-            _Server = new Server(
-                _Settings.Server.ListenerHostname,
-                _Settings.Server.ListenerPort,
-                _Settings.Server.Ssl,
+            _WebserverSettings = new WebserverSettings() {
+                Hostname = _Settings.Server.ListenerHostname,
+                Port = _Settings.Server.ListenerPort,
+                Ssl = new WebserverSettings.SslSettings() {
+                    Enable = _Settings.Server.Ssl,
+                }
+            };
+
+            _Server = new Webserver(
+                _WebserverSettings,
                 DefaultRoute);
 
             _Server.Start();
@@ -118,8 +126,9 @@ namespace RestDb
             Console.ForegroundColor = prior;
         }
 
-        static async Task DefaultRoute(HttpContext ctx)
-        { 
+        static async Task DefaultRoute(HttpContextBase ctxBase)
+        {
+            HttpContext ctx = (HttpContext)ctxBase;
             DateTime startTime = DateTime.Now;
             string header = ctx.Request.Source.IpAddress + ":" + ctx.Request.Source.Port + " "; 
             _Logging.Debug(header + ctx.Request.Method + " " + ctx.Request.Url.RawWithoutQuery);
@@ -171,6 +180,13 @@ namespace RestDb
                     case HttpMethod.DELETE:
                         #region delete
                          
+                        break;
+
+                    #endregion
+
+                    case HttpMethod.OPTIONS:
+                        #region OPTIONS
+
                         break;
 
                     #endregion
@@ -291,6 +307,18 @@ namespace RestDb
                             return;
                         }
                         break;
+
+                    #endregion
+
+                    case HttpMethod.OPTIONS:
+                        #region OPTIONS
+
+                        // Send a standard response to the OPTIONS request.
+                        // JavaScript fetch sends preflight requests as OPTIONS request and expects to receive HTTP/200 OK responses, thus, we have to handle them.
+                        ctx.Response.StatusCode = 200;
+                        ctx.Response.Headers.Add("Allow", "GET, PUT, POST, DELETE, OPTIONS");
+                        await ctx.Response.Send(string.Empty);
+                        return;
 
                     #endregion
 
