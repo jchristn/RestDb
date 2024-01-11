@@ -2,18 +2,18 @@
 
 	<PropertyGroup>
 		<OutputType>Exe</OutputType>
-		<TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>2.0.3</Version>
+		<Version>2.0.4</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
-		<Copyright>(c)2023 Joel Christner</Copyright>
+		<Copyright>(c)2024 Joel Christner</Copyright>
 		<PackageProjectUrl>https://github.com/jchristn/restdb</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/jchristn/restdb</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageTags>rest,database,api,db</PackageTags>
-		<PackageReleaseNotes>.NET 6 support</PackageReleaseNotes>
+		<PackageReleaseNotes>.NET 8 support</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageIconUrl></PackageIconUrl>
 	</PropertyGroup>

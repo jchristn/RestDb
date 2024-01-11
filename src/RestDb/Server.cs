@@ -142,7 +142,7 @@ namespace RestDb
                 switch (ctx.Request.Method)
                 {
                     case HttpMethod.GET:
-                        #region get
+                        #region GET
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/"))
                         {
@@ -164,21 +164,21 @@ namespace RestDb
                     #endregion
 
                     case HttpMethod.PUT:
-                        #region put
+                        #region PUT
                          
                         break;
 
                     #endregion
 
                     case HttpMethod.POST:
-                        #region post
+                        #region POST
                          
                         break;
 
                     #endregion
 
                     case HttpMethod.DELETE:
-                        #region delete
+                        #region DELETE
                          
                         break;
 
@@ -230,7 +230,7 @@ namespace RestDb
                 switch (ctx.Request.Method)
                 {
                     case HttpMethod.GET:
-                        #region get
+                        #region GET
                          
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_databaseclients"))
                         {
@@ -261,7 +261,7 @@ namespace RestDb
                     #endregion
 
                     case HttpMethod.PUT:
-                        #region put
+                        #region PUT
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
@@ -273,7 +273,7 @@ namespace RestDb
                     #endregion
 
                     case HttpMethod.POST:
-                        #region post
+                        #region POST
 
                         if (ctx.Request.Url.Elements.Length == 1)
                         {
@@ -299,7 +299,7 @@ namespace RestDb
                     #endregion
 
                     case HttpMethod.DELETE:
-                        #region delete
+                        #region DELETE
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
@@ -312,12 +312,9 @@ namespace RestDb
 
                     case HttpMethod.OPTIONS:
                         #region OPTIONS
-
-                        // Send a standard response to the OPTIONS request.
-                        // JavaScript fetch sends preflight requests as OPTIONS request and expects to receive HTTP/200 OK responses, thus, we have to handle them.
                         ctx.Response.StatusCode = 200;
                         ctx.Response.Headers.Add("Allow", "GET, PUT, POST, DELETE, OPTIONS");
-                        await ctx.Response.Send(string.Empty);
+                        await ctx.Response.Send();
                         return;
 
                     #endregion

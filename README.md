@@ -6,9 +6,10 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, TRUNCATE, and DROP against tables in Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite.
  
-## New in v2.0.3
+## New in v2.0.x
 
 - Dependency update to silence dependabot
+- Preflight OPTIONS fix from @Andrei-Errapart
 
 ## Important Notes
 
@@ -19,7 +20,7 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 ## Execution
   
 ```
-> cd RestDb\bin\debug\netcoreapp2.2
+> cd RestDb\bin\debug\net8.0
 > dotnet RestDb.dll
 ```
   
