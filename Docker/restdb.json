@@ -1,6 +1,6 @@
 {
   "Server": {
-    "ListenerHostname": "localhost",
+    "ListenerHostname": "*",
     "ListenerPort": 8000,
     "Ssl": false,
     "Debug": false,
