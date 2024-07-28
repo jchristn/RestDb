@@ -13,9 +13,30 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 
 ## Important Notes
 
-- If you specify a listener other than ```localhost``` or ```127.0.0.1```, you may have to run with elevated privileges.
-- The HTTP HOST header MUST match the listener hostname, otherwise you'll get ```Bad Request``` errors back.
-- By default, access to RestDb is **UNAUTHENTICATED**.  Configure ```restdb.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
+- If you specify a listener other than `localhost` or `127.0.0.1`, you may have to run with elevated privileges.
+- The HTTP HOST header MUST match the listener hostname, otherwise you'll get `Bad Request` errors back.
+- By default, access to RestDb is **UNAUTHENTICATED**.  Configure `restdb.json` with API keys to enable authentication, and set the `RequireAuthentication` value to `true`.
+
+## Running in Docker and Docker Compose
+
+The easiest way to get started running in Docker or Docker Compose is to clone the repository and use the scripts found in the `Docker` directory.
+
+```
+git clone https://github.com/jchristn/restdb
+cd restdb/Docker
+chmod +x *.sh
+
+#
+# Start and stop using Docker Compose
+#
+./compose-up.sh
+./compose-down.sh
+
+#
+# Run within Docker
+#
+./run.sh
+```
 
 ## Execution
   
@@ -26,7 +47,7 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
   
 ## Setup
  
-1) Start RestDb as described above.  You will be guided through a setup process to connect to your databases.  Alternatively, you can start with ```Sqlite``` which requires no database setup.
+1) Start RestDb as described above.  You will be guided through a setup process to connect to your databases.  Alternatively, you can start with `Sqlite` which requires no database setup.
 
 ```
                  _      _ _
@@ -42,7 +63,7 @@ Listening for requests on http://localhost:8000
 
 2) Verify Connectivity
 
-Point your browser to http://localhost:8000.  You should see a default webpage for RestDb.
+Point your browser to `http://localhost:8000`.  You should see a default webpage for RestDb.
 
 ## Simple Examples
 
@@ -220,14 +241,14 @@ Resp:
 
 ### Retrieve Objects with Pagination
 
-You can retrieve results and use pagination to return only a subset.  Include ```_index```, ```_max```, ```_order```, and  ```_order_by``` in the querystring.  
+You can retrieve results and use pagination to return only a subset.  Include `_index`, `_max`, `_order`, and  `_order_by` in the querystring.  
 
-- ```_index``` is the starting index
-- ```_max``` is the maximum number of results to retrieve
-- ```_order``` must be either ```asc``` (ascending) or ```desc``` (descending).
-- ```_order_by``` is one or more column names in a comma-separated list.
+- `_index` is the starting index
+- `_max` is the maximum number of results to retrieve
+- `_order` must be either `asc` (ascending) or `desc` (descending).
+- `_order_by` is one or more column names in a comma-separated list.
 
-By default, ```SELECT``` requests are ordered ASCENDING by the table's primary key.
+By default, `SELECT` requests are ordered ASCENDING by the table's primary key.
 
 ```
 GET http://localhost:8000/test/person?_max=1&_index=1&_order=asc&_order_by=person_id,first_name
@@ -337,7 +358,7 @@ Resp:
 
 ## Enabling Authentication
 
-To enable authentication, set ```Server.RequireAuthentication``` to ```true``` and specify an API key header in ```Server.ApiKeyHeader``` in the ```restdb.json``` file.  Then, add a section called ```ApiKeys``` with each of the keys you wish to allow or disallow.  An example with one API key is below.
+To enable authentication, set `Server.RequireAuthentication` to `true` and specify an API key header in `Server.ApiKeyHeader` in the `restdb.json` file.  Then, add a section called `ApiKeys` with each of the keys you wish to allow or disallow.  An example with one API key is below.
 
 ```
 {
