@@ -4,4 +4,4 @@ WORKDIR /app
 # Copy everything from source directory into /App
 COPY . ./
 EXPOSE 8000
-ENTRYPOINT ["dotnet", "RestDbServer.dll"]
+ENTRYPOINT ["dotnet", "RestDb.dll"]
