@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using DatabaseWrapper.Core;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Collections.Generic;
+    using DatabaseWrapper.Core;
+
     /// <summary>
     /// Database settings.
     /// </summary>

@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System;
+
     /// <summary>
     /// Error response.
     /// </summary>
@@ -26,7 +22,38 @@ namespace RestDb.Classes
         /// <summary>
         /// Message.
         /// </summary>
-        public string Message { get; set; } = null;
+        public string Message
+        {
+            get
+            {
+                switch (Code)
+                {
+                    case ErrorCodeEnum.Conflict:
+                        return "The requested resource already exists.";
+                    case ErrorCodeEnum.DeserializationError:
+                        return "The request body could not be deserialized.";
+                    case ErrorCodeEnum.InternalError:
+                        return "An internal error was encountered.";
+                    case ErrorCodeEnum.InvalidRequest:
+                        return "Your request was invalid.";
+                    case ErrorCodeEnum.LoginFailed:
+                        return "Login failed.";
+                    case ErrorCodeEnum.MissingField:
+                        return "A required field was missing.";
+                    case ErrorCodeEnum.MissingQuery:
+                        return "No query was supplied.";
+                    case ErrorCodeEnum.MissingRequestBody:
+                        return "No request body was supplied.";
+                    case ErrorCodeEnum.NotFound:
+                        return "The requested resource was not found.";
+                    case ErrorCodeEnum.RequestTooLarge:
+                        return "The supplied request body was too large.";
+                    case ErrorCodeEnum.Unknown:
+                    default:
+                        return "An unknown error was encountered.";
+                }
+            }
+        }
 
         /// <summary>
         /// Detail.
@@ -58,16 +85,12 @@ namespace RestDb.Classes
         /// Instantiate.
         /// </summary>
         /// <param name="code">Error code.</param>
-        /// <param name="msg">Message.</param>
         /// <param name="detail">Detail.</param>
-        /// <param name="e">Exception.</param>
-        public ErrorResponse(ErrorCodeEnum code, string msg, string detail, Exception e = null)
+        public ErrorResponse(ErrorCodeEnum code, string detail = null)
         {
             Success = false;
             Code = code;
-            Message = msg;
             Detail = detail;
-            Exception = e;
         }
 
         #endregion

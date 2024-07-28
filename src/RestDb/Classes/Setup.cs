@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using DatabaseWrapper.Core;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Collections.Generic;
+    using DatabaseWrapper.Core;
+    using GetSomeInput;
+
     internal class Setup
     {
         #region Public-Members
@@ -74,9 +70,9 @@ namespace RestDb
             Console.WriteLine("");
 
             ret.Server = new ServerSettings();
-            ret.Server.ListenerHostname = Common.InputString("Hostname?", "localhost", false);
-            ret.Server.ListenerPort = Common.InputInteger("Port number?", 8000, true, false);
-            ret.Server.Ssl = Common.InputBoolean("Require SSL?", false);
+            ret.Server.ListenerHostname = Inputty.GetString("Hostname?", "localhost", false);
+            ret.Server.ListenerPort = Inputty.GetInteger("Port number?", 8000, true, false);
+            ret.Server.Ssl = Inputty.GetBoolean("Require SSL?", false);
             ret.Server.Debug = false;
             ret.Server.ApiKeyHeader = "x-api-key";
 
@@ -110,7 +106,7 @@ namespace RestDb
                 Console.WriteLine("");
 
                 Database curr = new Database();
-                curr.Name = Common.InputString("Database name?", null, true);
+                curr.Name = Inputty.GetString("Database name?", null, true);
 
                 if (String.IsNullOrEmpty(curr.Name))
                 {
@@ -124,7 +120,7 @@ namespace RestDb
                     break;
                 }
                  
-                string currType = Common.InputString("Database type [SqlServer|Mysql|Postgresql|Sqlite]?", "Sqlite", false);
+                string currType = Inputty.GetString("Database type [SqlServer|Mysql|Postgresql|Sqlite]?", "Sqlite", false);
                 if (!currType.Equals("Sqlite") && !currType.Equals("SqlServer") && !currType.Equals("Mysql") && !currType.Equals("Postgresql"))
                 {
                     Console.WriteLine("Error: Use SqlServer, Mysql, Postgresql, or Sqlite for the database type.");
@@ -137,28 +133,28 @@ namespace RestDb
                 switch (curr.Type)
                 {
                     case DbTypeEnum.Sqlite:
-                        curr.Filename = Common.InputString("Filename?", "./database.db", false);
+                        curr.Filename = Inputty.GetString("Filename?", "./database.db", false);
                         break;
                     case DbTypeEnum.SqlServer:
-                        curr.Hostname = Common.InputString("Server hostname?", "localhost", false); 
-                        curr.Port = Common.InputInteger("Server port?", 1433, true, false);
-                        curr.Instance = Common.InputString("Instance name?", null, true);
-                        curr.Username = Common.InputString("Username?", null, false);
-                        curr.Password = Common.InputString("Password?", null, false);
+                        curr.Hostname = Inputty.GetString("Server hostname?", "localhost", false); 
+                        curr.Port = Inputty.GetInteger("Server port?", 1433, true, false);
+                        curr.Instance = Inputty.GetString("Instance name?", null, true);
+                        curr.Username = Inputty.GetString("Username?", null, false);
+                        curr.Password = Inputty.GetString("Password?", null, false);
                         break;
                     case DbTypeEnum.Mysql:
-                        curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
-                        curr.Port = Common.InputInteger("Server port?", 3306, true, false);
+                        curr.Hostname = Inputty.GetString("Server hostname?", "localhost", false);
+                        curr.Port = Inputty.GetInteger("Server port?", 3306, true, false);
                         curr.Instance = null;
-                        curr.Username = Common.InputString("Username?", null, false);
-                        curr.Password = Common.InputString("Password?", null, false);
+                        curr.Username = Inputty.GetString("Username?", null, false);
+                        curr.Password = Inputty.GetString("Password?", null, false);
                         break;
                     case DbTypeEnum.Postgresql:
-                        curr.Hostname = Common.InputString("Server hostname?", "localhost", false);
-                        curr.Port = Common.InputInteger("Server port?", 5432, true, false);
+                        curr.Hostname = Inputty.GetString("Server hostname?", "localhost", false);
+                        curr.Port = Inputty.GetInteger("Server port?", 5432, true, false);
                         curr.Instance = null;
-                        curr.Username = Common.InputString("Username?", null, false);
-                        curr.Password = Common.InputString("Password?", null, false);
+                        curr.Username = Inputty.GetString("Username?", null, false);
+                        curr.Password = Inputty.GetString("Password?", null, false);
                         break;
                     default:
                         throw new ArgumentException("Unknown database type: " + curr.Type.ToString());
@@ -177,15 +173,15 @@ namespace RestDb
 
             //                 0        1         2         3         4         5         6         7
             //                 1234567890123456789012345678901234567890123456789012345678901234567890123456789
-            Console.WriteLine("All set!  We're writing your configuration to System.Json.  It is important");
+            Console.WriteLine("All set!  We're writing your configuration to restdb.json.  It is important");
             Console.WriteLine("to note that, by default, authentication via API key is **DISABLED**.  You");
-            Console.WriteLine("should modify your System.Json file to add API keys to the 'ApiKeys' section.");
+            Console.WriteLine("should modify your restdb.json file to add API keys to the 'ApiKeys' section.");
             Console.WriteLine("Then, set 'RequireAuthentication' to true in the 'Server' section.");
             Console.WriteLine("Once API keys are added and authentication is set to required, requests will");
             Console.WriteLine("need to be made including the x-api-key header.");
             Console.WriteLine("");
 
-            ret.ToFile("System.Json");
+            ret.ToFile("restdb.json");
 
             #endregion
         }

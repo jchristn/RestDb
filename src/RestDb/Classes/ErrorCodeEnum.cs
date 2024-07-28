@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.Serialization;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System.Runtime.Serialization;
+
     /// <summary>
     /// Error code enumeration.
     /// </summary>
@@ -26,11 +23,6 @@ namespace RestDb.Classes
         [EnumMember(Value = "DeserializationError")]
         DeserializationError,
         /// <summary>
-        /// Exception encountered.
-        /// </summary>
-        [EnumMember(Value = "Exception")]
-        Exception,
-        /// <summary>
         /// Internal error.
         /// </summary>
         [EnumMember(Value = "InternalError")]
@@ -51,11 +43,6 @@ namespace RestDb.Classes
         [EnumMember(Value = "MissingField")]
         MissingField,
         /// <summary>
-        /// Missing GUID.
-        /// </summary>
-        [EnumMember(Value = "MissingGuid")]
-        MissingGuid,
-        /// <summary>
         /// Missing query.
         /// </summary>
         [EnumMember(Value = "MissingQuery")]
@@ -65,11 +52,6 @@ namespace RestDb.Classes
         /// </summary>
         [EnumMember(Value = "MissingRequestBody")]
         MissingRequestBody,
-        /// <summary>
-        /// Not authenticated.
-        /// </summary>
-        [EnumMember(Value = "NotAuthenticated")]
-        NotAuthenticated,
         /// <summary>
         /// Not found.
         /// </summary>

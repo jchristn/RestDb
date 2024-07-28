@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using WatsonWebserver;
-using WatsonWebserver.Core;
-using SyslogLogging;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using WatsonWebserver;
+    using WatsonWebserver.Core;
+    using SyslogLogging;
+
     internal class AuthManager
     {
         #region Public-Members

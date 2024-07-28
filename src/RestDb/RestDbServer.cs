@@ -42,9 +42,9 @@ namespace RestDb
 
             #region Load-Configuration
 
-            if (!File.Exists("./system.json")) new Setup();
+            if (!File.Exists("./restdb.json")) new Setup();
 
-            _Settings = Settings.FromFile("./system.json");
+            _Settings = Settings.FromFile("./restdb.json");
 
             #endregion
 
@@ -193,8 +193,8 @@ namespace RestDb
 
                     default:
                         ctx.Response.StatusCode = 400;
-                        ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method", null), true));
+                        ctx.Response.ContentType = Constants.JsonContentType;
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method."), true));
                         return;
                 }
 
@@ -214,8 +214,8 @@ namespace RestDb
                     {
                         _Logging.Warn(header + "authentication failed");
                         ctx.Response.StatusCode = 401;
-                        ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotAuthenticated, "You are not authorized to perform this operation", null), true));
+                        ctx.Response.ContentType = Constants.JsonContentType;
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.LoginFailed), true));
                         return;
                     }
 
@@ -321,23 +321,23 @@ namespace RestDb
 
                     default:
                         ctx.Response.StatusCode = 400;
-                        ctx.Response.ContentType = "application/json";
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method", null), true));
+                        ctx.Response.ContentType = Constants.JsonContentType;
+                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method."), true));
                         return;
                 }
 
                 #endregion
 
                 ctx.Response.StatusCode = 400;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown endpoint", null), true)); 
+                ctx.Response.ContentType = Constants.JsonContentType;
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown endpoint."), true)); 
             }
             catch (Exception e)
             {
                 _Logging.Exception(e);
                 ctx.Response.StatusCode = 500;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InternalError, "Internal server error", e.Message, e), true));
+                ctx.Response.ContentType = Constants.JsonContentType;
+                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InternalError, e.Message), true));
             }
             finally
             {

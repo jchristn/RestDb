@@ -1,17 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RestDb.Classes;
-using SyslogLogging;
-using WatsonWebserver;
-using DatabaseWrapper;
-using DatabaseWrapper.Core;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System.Collections.Generic;
+    using System.Data;
+    using System.Threading.Tasks;
+    using RestDb.Classes;
+    using DatabaseWrapper;
+
     partial class RestDbServer
     {
         static async Task PostTableInsert(RequestMetadata md)
@@ -23,8 +17,8 @@ namespace RestDb
             if (currTable == null)
             {
                 md.Http.Response.StatusCode = 404;
-                md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
+                md.Http.Response.ContentType = Constants.JsonContentType;
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
 
@@ -32,8 +26,8 @@ namespace RestDb
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
-                md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
+                md.Http.Response.ContentType = Constants.JsonContentType;
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
 
@@ -41,8 +35,8 @@ namespace RestDb
             {
                 _Logging.Warn("PostTableInsert no request body supplied");
                 md.Http.Response.StatusCode = 400;
-                md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.MissingRequestBody, "Invalid request", "No request body supplied"), true));
+                md.Http.Response.ContentType = Constants.JsonContentType;
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.MissingRequestBody), true));
                 return;
             }
 
@@ -60,7 +54,7 @@ namespace RestDb
             }
 
             md.Http.Response.StatusCode = 201;
-            md.Http.Response.ContentType = "application/json";
+            md.Http.Response.ContentType = Constants.JsonContentType;
 
             if (result != null)
             {

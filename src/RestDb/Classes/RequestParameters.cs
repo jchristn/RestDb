@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using DatabaseWrapper.Core;
-using WatsonWebserver;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System;
+    using System.Collections.Generic;
+    using DatabaseWrapper.Core;
+    using WatsonWebserver;
+
     /// <summary>
     /// Request parameters.
     /// </summary>

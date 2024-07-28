@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Converters;
-using ExpressionTree;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System;
+    using System.Collections.Generic;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+    using Newtonsoft.Json.Converters;
+    using ExpressionTree;
+
     /// <summary>
     /// Expression converter for JSON.NET.
     /// </summary>

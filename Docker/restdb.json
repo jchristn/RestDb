@@ -1,0 +1,37 @@
+{
+  "Server": {
+    "ListenerHostname": "localhost",
+    "ListenerPort": 8000,
+    "Ssl": false,
+    "Debug": false,
+    "RequireAuthentication": false,
+    "ApiKeyHeader": "x-api-key"
+  },
+  "Logging": {
+    "ServerIp": "127.0.0.1",
+    "ServerPort": 514,
+    "MinimumLevel": 1,
+    "LogHttpRequests": false,
+    "LogHttpResponses": false,
+    "ConsoleLogging": true
+  },
+  "Databases": [
+    {
+      "Name": "sample",
+      "Type": "Sqlite",
+      "Filename": "./sample.db",
+      "Debug": false,
+      "Tables": [],
+      "TableNames": []
+    }
+  ],
+  "ApiKeys": [
+    {
+      "Key": "default",
+      "AllowGet": true,
+      "AllowPost": true,
+      "AllowPut": true,
+      "AllowDelete": true
+    }
+  ]
+}

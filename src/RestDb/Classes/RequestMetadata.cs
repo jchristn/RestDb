@@ -1,10 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using WatsonWebserver;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System;
+    using WatsonWebserver;
+
     /// <summary>
     /// Request metadata.
     /// </summary>

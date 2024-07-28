@@ -1,0 +1,22 @@
+services:
+
+  #
+  # RestDb
+  # See https://hub.docker.com/r/jchristn/restdb
+  # and https://github.com/jchristn/RestDb
+  #
+
+  restdb:
+    container_name: 'restdb'
+    image: 'jchristn/restdb:v2.0.6'
+    network_mode: 'host'
+    ports:
+      - 8000:8000
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./restdb.json:/app/restdb.json
+      - ./sample.db:/app/sample.db
+      - ./logs/:/app/logs/
+    healthcheck:
+      test: curl --fail http://localhost:8000

@@ -1,13 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RestDb.Classes;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using RestDb.Classes;
+
     /// <summary>
     /// Settings.
     /// </summary>

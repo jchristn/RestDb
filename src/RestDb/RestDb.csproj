@@ -5,7 +5,7 @@
 		<TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>2.0.5</Version>
+		<Version>2.0.6</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
 		<Copyright>(c)2024 Joel Christner</Copyright>
@@ -16,9 +16,6 @@
 		<PackageReleaseNotes>Dependency update</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageIconUrl></PackageIconUrl>
-	</PropertyGroup>
-
-	<PropertyGroup>
 		<PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
 		<PackageIcon>database-icon.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
@@ -26,29 +23,43 @@
 
 	<ItemGroup>
 		<None Include="..\..\README.md">
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
 		</None>
 		<None Include="assets\database-icon.png">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>
 		<None Include="LICENSE.md" Pack="true" PackagePath="" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="DatabaseWrapper" Version="6.0.6" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="SyslogLogging" Version="2.0.2" />
-		<PackageReference Include="System.Runtime.Extensions" Version="4.3.1" />
-		<PackageReference Include="Watson" Version="6.1.5" />
-		<PackageReference Include="Watson.Core" Version="6.1.5" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="assets\database-icon.png">
+		<None Include="assets\database-icon.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="Dockerbuild.bat">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="Dockerfile">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="Dockerrun.bat">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="Dockerrun.sh">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="sample.db">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Include="sample.sql">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 
+	<ItemGroup>
+		<PackageReference Include="DatabaseWrapper" Version="6.0.7" />
+		<PackageReference Include="Inputty" Version="1.0.12" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="SyslogLogging" Version="2.0.2" />
+		<PackageReference Include="System.Runtime.Extensions" Version="4.3.1" />
+		<PackageReference Include="Watson" Version="6.2.1" />
+	</ItemGroup>
 </Project>

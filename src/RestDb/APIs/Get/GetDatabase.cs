@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using RestDb.Classes;
-using SyslogLogging;
-using WatsonWebserver;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Threading.Tasks;
+    using RestDb.Classes;
+
     partial class RestDbServer
     {
         static async Task GetDatabase(RequestMetadata md)
@@ -18,8 +13,8 @@ namespace RestDb
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
-                md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
+                md.Http.Response.ContentType = Constants.JsonContentType;
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
 
@@ -36,7 +31,7 @@ namespace RestDb
             }
 
             md.Http.Response.StatusCode = 200;
-            md.Http.Response.ContentType = "application/json";
+            md.Http.Response.ContentType = Constants.JsonContentType;
             await md.Http.Response.Send(SerializationHelper.SerializeJson(db, true));
             return;
         }

@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
-using RestDb.Classes;
-using SyslogLogging;
-using WatsonWebserver;
-using DatabaseWrapper;
-using DatabaseWrapper.Core;
-using ExpressionTree;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Data;
+    using System.Threading.Tasks;
+    using RestDb.Classes;
+    using DatabaseWrapper;
+    using DatabaseWrapper.Core;
+    using ExpressionTree;
+
     partial class RestDbServer
     {
         static async Task GetTableSelect(RequestMetadata md)
@@ -28,8 +22,8 @@ namespace RestDb
             if (currTable == null)
             {
                 md.Http.Response.StatusCode = 404;
-                md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
+                md.Http.Response.ContentType = Constants.JsonContentType;
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
              
@@ -37,8 +31,8 @@ namespace RestDb
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
-                md.Http.Response.ContentType = "application/json";
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound, "The requested object was not found", null), true));
+                md.Http.Response.ContentType = Constants.JsonContentType;
+                await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
 
@@ -47,7 +41,7 @@ namespace RestDb
             if (md.Params.Describe)
             {
                 md.Http.Response.StatusCode = 200;
-                md.Http.Response.ContentType = "application/json";
+                md.Http.Response.ContentType = Constants.JsonContentType;
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(currTable, true));
                 return;
             }
@@ -71,8 +65,8 @@ namespace RestDb
                 {
                     _Logging.Warn("GetTable no primary key defined for table " + tableName + " in database " + dbName);
                     md.Http.Response.StatusCode = 400;
-                    md.Http.Response.ContentType = "application/json";
-                    await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Invalid request", "No primary key for table " + tableName), true));
+                    md.Http.Response.ContentType = Constants.JsonContentType;
+                    await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "No primary key for table " + tableName + "."), true));
                     return;
                 }
 
@@ -132,14 +126,14 @@ namespace RestDb
             if (result == null || result.Rows.Count < 1)
             {
                 md.Http.Response.StatusCode = 200;
-                md.Http.Response.ContentType = "application/json";
+                md.Http.Response.ContentType = Constants.JsonContentType;
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(new List<dynamic>(), true));
                 return;
             }
             else
             {
                 md.Http.Response.StatusCode = 200;
-                md.Http.Response.ContentType = "application/json";
+                md.Http.Response.ContentType = Constants.JsonContentType;
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
                 return;
             }

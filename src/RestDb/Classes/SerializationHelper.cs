@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using ExpressionTree;
-using System.IO;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
+    using ExpressionTree;
+    using System.IO;
+
     internal static class SerializationHelper
     {
         internal static string SerializeJson(object obj, bool pretty)

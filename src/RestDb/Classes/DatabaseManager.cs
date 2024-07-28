@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SyslogLogging;
-using DatabaseWrapper;
-using DatabaseWrapper.Core;
-
-namespace RestDb
+﻿namespace RestDb
 {
+    using System;
+    using System.Collections.Generic;
+    using SyslogLogging;
+    using DatabaseWrapper;
+    using DatabaseWrapper.Core;
+
     internal class DatabaseManager
     {
         #region Public-Members

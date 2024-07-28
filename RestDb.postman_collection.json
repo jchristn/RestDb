@@ -237,14 +237,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8000/test?_describe",
+							"raw": "http://localhost:8000/sample?_describe",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"test"
+								"sample"
 							],
 							"query": [
 								{
@@ -291,15 +291,15 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8000/test/table1?_describe",
+							"raw": "http://localhost:8000/sample/person?_describe",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"test",
-								"table1"
+								"sample",
+								"person"
 							],
 							"query": [
 								{
@@ -383,15 +383,15 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8000/test/table1?_max=10&_index=0",
+							"raw": "http://localhost:8000/sample/person?_max=10&_index=0",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"test",
-								"table1"
+								"sample",
+								"person"
 							],
 							"query": [
 								{
@@ -420,18 +420,18 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"Left\": \"name\",\r\n    \"Operator\": \"Equals\",\r\n    \"Right\": \"joel\"\r\n}"
+							"raw": "{\r\n    \"Left\": \"firstname\",\r\n    \"Operator\": \"Equals\",\r\n    \"Right\": \"joe\"\r\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8000/test/table1?_index=0&_max=10&_return=name&_order=asc&_order_by=id",
+							"raw": "http://localhost:8000/sample/person?_index=0&_max=10&_return=firstname&_order=asc&_order_by=id",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"test",
-								"table1"
+								"sample",
+								"person"
 							],
 							"query": [
 								{
@@ -444,7 +444,7 @@
 								},
 								{
 									"key": "_return",
-									"value": "name"
+									"value": "firstname"
 								},
 								{
 									"key": "_order",
@@ -549,17 +549,17 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "SELECT * FROM table1;"
+							"raw": "SELECT * FROM person;"
 						},
 						"url": {
-							"raw": "http://localhost:8000/test?raw",
+							"raw": "http://localhost:8000/sample?raw",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8000",
 							"path": [
-								"test"
+								"sample"
 							],
 							"query": [
 								{

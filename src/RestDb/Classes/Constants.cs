@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace RestDb.Classes
+﻿namespace RestDb.Classes
 {
+    using System;
+    using System.Collections.Generic;
+
     internal class Constants
     {
         internal static string Logo = 
@@ -52,5 +51,7 @@ namespace RestDb.Classes
         internal static string QueryDebug = "_debug";
 
         internal static string HeaderExpression = "x-expression";
+
+        internal static string JsonContentType = "application/json";
     }
 }

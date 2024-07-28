@@ -15,7 +15,7 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 
 - If you specify a listener other than ```localhost``` or ```127.0.0.1```, you may have to run with elevated privileges.
 - The HTTP HOST header MUST match the listener hostname, otherwise you'll get ```Bad Request``` errors back.
-- By default, access to RestDb is **UNAUTHENTICATED**.  Configure ```system.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
+- By default, access to RestDb is **UNAUTHENTICATED**.  Configure ```restdb.json``` with API keys to enable authentication, and set the ```RequireAuthentication``` value to ```true```.
 
 ## Execution
   
@@ -337,7 +337,7 @@ Resp:
 
 ## Enabling Authentication
 
-To enable authentication, set ```Server.RequireAuthentication``` to ```true``` and specify an API key header in ```Server.ApiKeyHeader``` in the ```System.Json``` file.  Then, add a section called ```ApiKeys``` with each of the keys you wish to allow or disallow.  An example with one API key is below.
+To enable authentication, set ```Server.RequireAuthentication``` to ```true``` and specify an API key header in ```Server.ApiKeyHeader``` in the ```restdb.json``` file.  Then, add a section called ```ApiKeys``` with each of the keys you wish to allow or disallow.  An example with one API key is below.
 
 ```
 {
