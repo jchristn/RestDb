@@ -60,8 +60,11 @@ public static class RestDbTestSuites
             new() { CaseId = "GetDatabases", DisplayName = "GET /_databases returns configured database names", ExecuteAsync = LiveApiAssertions.GetDatabasesPathReturnsConfiguredDatabaseNamesAsync },
             new() { CaseId = "GetDatabaseClients", DisplayName = "GET /_databaseclients returns active database clients", ExecuteAsync = LiveApiAssertions.GetDatabaseClientsPathReturnsActiveDatabaseClientsAsync },
             new() { CaseId = "GetDatabase", DisplayName = "GET /{db} lists tables over HTTP", ExecuteAsync = LiveApiAssertions.GetDatabasePathListsTablesAsync },
+            new() { CaseId = "GetDatabaseWithContext", DisplayName = "GET /{db}?_context returns database and table context over HTTP", ExecuteAsync = LiveApiAssertions.GetDatabasePathReturnsContextWhenRequestedAsync },
             new() { CaseId = "GetDatabaseDescribe", DisplayName = "GET /{db}?_describe returns described tables over HTTP", ExecuteAsync = LiveApiAssertions.GetDatabaseDescribePathReturnsDescribedTablesAsync },
+            new() { CaseId = "GetDatabaseDescribeWithContext", DisplayName = "GET /{db}?_describe&_context returns described tables plus context over HTTP", ExecuteAsync = LiveApiAssertions.GetDatabaseDescribePathReturnsContextWhenRequestedAsync },
             new() { CaseId = "GetTableDescribe", DisplayName = "GET /{db}/{table}?_describe returns table metadata over HTTP", ExecuteAsync = LiveApiAssertions.GetTableDescribePathReturnsTableMetadataAsync },
+            new() { CaseId = "GetTableDescribeWithContext", DisplayName = "GET /{db}/{table}?_describe&_context returns table metadata plus context over HTTP", ExecuteAsync = LiveApiAssertions.GetTableDescribePathReturnsContextWhenRequestedAsync },
             new() { CaseId = "PostTableCreate", DisplayName = "POST /{db} creates tables over HTTP", ExecuteAsync = LiveApiAssertions.PostTableCreatePathCreatesTableAsync },
             new() { CaseId = "GetTableSelectDefault", DisplayName = "GET /{db}/{table} returns unpaged row collections over HTTP", ExecuteAsync = LiveApiAssertions.GetTableSelectPathReturnsDefaultUnpagedResultsAsync },
             new() { CaseId = "GetTableSelectPaged", DisplayName = "GET /{db}/{table} returns filtered paged projected rows over HTTP", ExecuteAsync = LiveApiAssertions.GetTableSelectPathReturnsFilteredPagedProjectedResultsAsync },
@@ -88,7 +91,8 @@ public static class RestDbTestSuites
         {
             List<TestSuiteDescriptor> suites = new List<TestSuiteDescriptor>
             {
-                SerializationSuite()
+                SerializationSuite(),
+                McpBridgeSuite()
             };
 
             foreach (string providerName in TestData.ProviderNames)
@@ -137,6 +141,27 @@ public static class RestDbTestSuites
             suiteId: suiteId,
             displayName: providerName + " Query Builder",
             cases: cases);
+    }
+
+    private static TestSuiteDescriptor McpBridgeSuite()
+    {
+        const string suiteId = "McpBridge";
+        return new TestSuiteDescriptor(
+            suiteId: suiteId,
+            displayName: "MCP HTTP Bridge",
+            cases: new List<TestCaseDescriptor>
+            {
+                new(
+                    suiteId: suiteId,
+                    caseId: "StreamableHttpPostContract",
+                    displayName: "Streamable HTTP accepts standard JSON content types and returns 202 for notifications",
+                    executeAsync: _ => McpBridgeAssertions.StreamableHttpAcceptsStandardJsonContentTypeAndListsToolsAsync()),
+                new(
+                    suiteId: suiteId,
+                    caseId: "StreamableHttpSsePrelude",
+                    displayName: "Streamable HTTP sends an immediate SSE prelude on /mcp",
+                    executeAsync: _ => McpBridgeAssertions.StreamableHttpSendsImmediateSsePreludeAsync())
+            });
     }
 
     private static TestSuiteDescriptor LiveApiSuite()

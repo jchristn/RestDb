@@ -234,6 +234,57 @@ namespace RestDb
             };
         }
 
+        private static async Task ApplyDatabaseResponseContextAsync(Database database)
+        {
+            if (database == null) throw new ArgumentNullException(nameof(database));
+            if (String.IsNullOrWhiteSpace(database.Name)) return;
+
+            DatabaseContextPayload payload = await BuildDatabaseContextPayloadAsync(database.Name).ConfigureAwait(false);
+            if (payload == null) return;
+
+            database.Context = payload.Context;
+
+            if (database.Tables != null && database.Tables.Count > 0)
+            {
+                foreach (Table table in database.Tables)
+                {
+                    if (table == null || String.IsNullOrWhiteSpace(table.Name)) continue;
+
+                    if (payload.Tables != null && payload.Tables.TryGetValue(table.Name, out string tableContext))
+                    {
+                        table.Context = tableContext;
+                    }
+                }
+
+                database.TableContexts = null;
+                return;
+            }
+
+            if (database.TableNames == null || database.TableNames.Count < 1)
+            {
+                database.TableContexts = null;
+                return;
+            }
+
+            Dictionary<string, string> tableContexts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string tableName in database.TableNames)
+            {
+                if (String.IsNullOrWhiteSpace(tableName)) continue;
+                if (payload.Tables != null)
+                {
+                    payload.Tables.TryGetValue(tableName, out string tableContext);
+                    tableContexts[tableName] = tableContext;
+                }
+                else
+                {
+                    tableContexts[tableName] = null;
+                }
+            }
+
+            database.TableContexts = tableContexts;
+        }
+
         private static void ApplyOperationHeaders(HttpContext http, RuntimeConfigurationResult result)
         {
             if (http == null || http.Response == null || result == null) return;

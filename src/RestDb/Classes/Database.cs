@@ -65,6 +65,16 @@
         /// </summary>
         public List<string> TableNames { get; set; } = new List<string>();
 
+        /// <summary>
+        /// Optional database-level context value used in metadata responses.
+        /// </summary>
+        public string Context { get; set; } = null;
+
+        /// <summary>
+        /// Optional per-table context map used when returning table names without full table metadata.
+        /// </summary>
+        public Dictionary<string, string> TableContexts { get; set; } = null;
+
         #endregion
 
         #region Private-Members

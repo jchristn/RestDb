@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RestDb\RestDb.csproj" />
+    <ProjectReference Include="..\RestDb.McpServer\RestDb.McpServer.csproj" />
   </ItemGroup>
 
 </Project>

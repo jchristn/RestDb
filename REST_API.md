@@ -47,9 +47,9 @@ Notes:
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/{database}` | Returns database metadata and table names. |
-| `GET` | `/{database}?_describe=true` | Returns database metadata and full table schema for every table. |
-| `GET` | `/{database}/{table}?_describe=true` | Returns the schema for one table. |
+| `GET` | `/{database}` | Returns database metadata and table names. Add `?_context=true` to also include database context plus a `TableContexts` map for the returned table names. |
+| `GET` | `/{database}?_describe=true` | Returns database metadata and full table schema for every table. Add `&_context=true` to also include database context plus per-table `Context` values in `Tables`. |
+| `GET` | `/{database}/{table}?_describe=true` | Returns the schema for one table. Add `&_context=true` to also include that table's `Context` value. |
 
 ## Record Routes
 
@@ -83,6 +83,7 @@ Notes:
 Supported row-query parameters:
 
 - `_describe`
+- `_context`
 - `_multiple`
 - `_index`
 - `_max`
@@ -100,6 +101,9 @@ Examples:
 - `GET /sample/person?_order_by=person_id&_order=desc&_max=25`
 - `GET /sample/task?person_id=2&project_id=4`
 - `DELETE /sample/person?department_id=3`
+- `GET /sample?_context=true`
+- `GET /sample?_describe=true&_context=true`
+- `GET /sample/person?_describe=true&_context=true`
 
 ## Context Document Shape
 

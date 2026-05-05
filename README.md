@@ -12,9 +12,11 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 - Removed the `DatabaseWrapper` dependency in favor of native SQL Server, MySQL, PostgreSQL, and SQLite implementations.
 - Added the RestDb dashboard for browsing schemas, rows, and table operations from a browser workspace.
 - Added runtime management APIs for `restdb.json` and `context.json`, including dashboard editors for server settings, global context, database context, and table context.
+- Added `_context` enrichment on database and table metadata retrieval routes so callers can inline database and table context into schema responses.
 - Added `RestDb.McpServer` to expose the RestDb API over MCP HTTP, TCP, WebSocket, and stdio transports.
 - Migrated testing to a shared Touchstone suite with CLI, xUnit, and NUnit runners.
 - Added live API validation against SQLite by default and Docker-backed MySQL, PostgreSQL, and SQL Server runs via `RestDb.Test.Automated`.
+- Added direct MCP HTTP bridge coverage for the `/mcp` streamable-HTTP contract used by Codex and similar clients.
 - Added bearer-token authentication support alongside the configured API key header.
 - Fixed provider/runtime issues uncovered by the live test matrix, including filtered DELETE handling, MySQL `LIKE` behavior, and repeated dashboard metadata probes.
 
@@ -90,6 +92,12 @@ Tests are organized around a shared Touchstone suite:
 - `src/RestDb.Test.Xunit` exposes the shared suite through xUnit.
 - `src/RestDb.Test.Nunit` exposes the shared suite through NUnit.
 
+The shared suite covers:
+
+- provider-specific query-builder generation across SQLite, PostgreSQL, SQL Server, and MySQL
+- live REST API semantics against the selected provider
+- MCP streamable-HTTP bridge behavior on `/mcp`, including `notifications/initialized -> 202`, `tools/list`, and the immediate SSE prelude expected by Codex-class clients
+
 Default automated behavior uses a temporary SQLite database. To target another provider, pass connection details on the CLI or use `--docker` for MySQL, PostgreSQL, or SQL Server.
 See [TESTING.md](TESTING.md) for direct live-database and Docker-backed examples.
 
@@ -152,16 +160,16 @@ Common entry points:
 `RestDb.McpServer` also includes an installer for agent environments:
 
 ```
-dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --api-key default --yes
+dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --yes
 ```
 
 Dry-run preview:
 
 ```
-dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --api-key default --dry-run
+dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --dry-run
 ```
 
-The installer updates user-level MCP definitions for Claude Code, Codex, Gemini CLI, and Cursor. When `--api-key` is supplied, it writes both bearer-token and API-key-header auth entries so the generated client config works with either RestDb auth style.
+The installer updates user-level MCP definitions for Claude Code, Codex, Gemini CLI, and Cursor. It only writes client-side MCP endpoint definitions. Configure protected RestDb downstream auth on the `RestDb.McpServer` process itself with `--api-key`, `--bearer-token`, or `RESTDB_MCP_*` environment variables.
 
 See [ADD_TO_AGENTS.md](ADD_TO_AGENTS.md) for the full manual and automatic setup details.
   
@@ -256,6 +264,32 @@ Resp:
   "TableNames": [
     "person"
   ]
+}
+```
+
+### Retrieve a Database with Context
+```
+GET http://localhost:8000/sample?_context=true
+
+Resp:
+200/OK
+{
+  "Name": "sample",
+  "Type": "Sqlite",
+  "Debug": false,
+  "TableNames": [
+    "department",
+    "person",
+    "project",
+    "task"
+  ],
+  "Context": "This SQLite database contains example business data used to explore RestDb and the dashboard.",
+  "TableContexts": {
+    "department": "Reference table for departments. Primary key is department_id.",
+    "person": "Stores people records. Primary key is person_id and department_id relates each person to a department.",
+    "project": "Stores projects owned by departments. Primary key is project_id and department_id links each project to a department.",
+    "task": "Stores task records assigned to people and projects. Primary key is task_id, with project_id and person_id describing ownership and assignment."
+  }
 }
 ```
 
@@ -528,6 +562,12 @@ An example with one API key is below.
 }
 ```
 
+To inline context into metadata responses, add `?_context=true`:
+
+- `GET /sample?_context=true`
+- `GET /sample?_describe=true&_context=true`
+- `GET /sample/person?_describe=true&_context=true`
+
 Example authenticated requests:
 
 ```
@@ -565,6 +605,8 @@ The Postman collection includes the runtime configuration and context routes as 
 - database and table context requests under `/_context/{database}` and `/_context/{database}/{table}`
 
 The collection defines collection-level API-key authentication using `{{apiKeyHeader}}: {{apiKey}}`. If you prefer bearer auth, change the collection authorization type to `Bearer Token` and set the token to `{{apiKey}}`.
+
+The metadata requests in `Database Operations` use `_context=true` so the database and table context values are visible in the default responses.
 
 ## Version History
 

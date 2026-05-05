@@ -21,16 +21,20 @@ namespace RestDb.McpServer.Classes
 
         internal static async Task<int> RunInstallAsync(RestMcpServerSettings settings)
         {
-            string mcpUrl = BuildMcpHttpUrl(settings);
-            Dictionary<string, string> headers = BuildHeaders(settings);
-            List<InstallTarget> targets = BuildTargets(mcpUrl, headers);
+            string streamableHttpUrl = BuildStreamableHttpUrl(settings);
+            List<InstallTarget> targets = BuildTargets(streamableHttpUrl);
             bool failed = false;
 
             Console.WriteLine("RestDb MCP installer");
-            Console.WriteLine("MCP HTTP endpoint: " + mcpUrl);
-            Console.WriteLine("RestDb proxy:      " + settings.RestDbServerUrl);
-            Console.WriteLine("Authentication:    " + DescribeHeaders(headers));
+            Console.WriteLine("MCP HTTP endpoint: " + streamableHttpUrl);
             Console.WriteLine();
+
+            if (!String.IsNullOrWhiteSpace(settings.ApiKey) || !String.IsNullOrWhiteSpace(settings.BearerToken))
+            {
+                Console.WriteLine("Note: install does not persist downstream RestDb credentials.");
+                Console.WriteLine("Configure RESTDB_MCP_API_KEY / RESTDB_MCP_BEARER_TOKEN on the RestDb.McpServer process itself.");
+                Console.WriteLine();
+            }
 
             if (settings.DryRun)
             {
@@ -79,23 +83,23 @@ namespace RestDb.McpServer.Classes
             Console.WriteLine("Next steps");
             Console.WriteLine("----------");
             Console.WriteLine("1. Restart Claude Code, Codex, Gemini CLI, and Cursor if they were already running.");
-            Console.WriteLine("2. Confirm the RestDb MCP server is reachable at " + mcpUrl + ".");
+            Console.WriteLine("2. Confirm the RestDb MCP server is reachable at " + streamableHttpUrl + ".");
             Console.WriteLine("3. Re-run `install --dry-run` any time you want to preview the generated client config.");
             return failed ? 1 : 0;
         }
 
-        internal static string BuildMcpHttpUrl(RestMcpServerSettings settings)
+        internal static string BuildStreamableHttpUrl(RestMcpServerSettings settings)
         {
             string host = NormalizeInstallHostname(settings.HttpHostname);
             return "http://" + host + ":" + settings.HttpPort + "/mcp";
         }
 
-        private static List<InstallTarget> BuildTargets(string mcpUrl, IReadOnlyDictionary<string, string> headers)
+        private static List<InstallTarget> BuildTargets(string streamableHttpUrl)
         {
-            JsonObject claudeConfig = BuildClaudeConfig(mcpUrl, headers);
-            JsonObject geminiConfig = BuildGeminiConfig(mcpUrl, headers);
-            JsonObject cursorConfig = BuildCursorConfig(mcpUrl, headers);
-            string codexToml = BuildCodexToml(mcpUrl, headers);
+            JsonObject claudeConfig = BuildClaudeConfig(streamableHttpUrl);
+            JsonObject geminiConfig = BuildGeminiConfig(streamableHttpUrl);
+            JsonObject cursorConfig = BuildCursorConfig(streamableHttpUrl);
+            string codexToml = BuildCodexToml(streamableHttpUrl);
 
             return new List<InstallTarget>
             {
@@ -177,98 +181,39 @@ namespace RestDb.McpServer.Classes
                 : "Codex MCP entry already matched the expected configuration.");
         }
 
-        private static JsonObject BuildClaudeConfig(string mcpUrl, IReadOnlyDictionary<string, string> headers)
+        private static JsonObject BuildClaudeConfig(string mcpUrl)
         {
-            JsonObject config = new JsonObject
+            return new JsonObject
             {
                 ["type"] = "http",
                 ["url"] = mcpUrl
             };
-
-            AddHeadersIfPresent(config, headers);
-            return config;
         }
 
-        private static JsonObject BuildGeminiConfig(string mcpUrl, IReadOnlyDictionary<string, string> headers)
+        private static JsonObject BuildGeminiConfig(string mcpUrl)
         {
-            JsonObject config = new JsonObject
+            return new JsonObject
             {
                 ["httpUrl"] = mcpUrl,
                 ["timeout"] = 30000
             };
-
-            AddHeadersIfPresent(config, headers);
-            return config;
         }
 
-        private static JsonObject BuildCursorConfig(string mcpUrl, IReadOnlyDictionary<string, string> headers)
+        private static JsonObject BuildCursorConfig(string mcpUrl)
         {
-            JsonObject config = new JsonObject
+            return new JsonObject
             {
                 ["url"] = mcpUrl,
                 ["transport"] = "http"
             };
-
-            AddHeadersIfPresent(config, headers);
-            return config;
         }
 
-        private static void AddHeadersIfPresent(JsonObject config, IReadOnlyDictionary<string, string> headers)
-        {
-            if (headers.Count < 1) return;
-
-            JsonObject headerObject = new JsonObject();
-            foreach (KeyValuePair<string, string> header in headers)
-            {
-                headerObject[header.Key] = header.Value;
-            }
-
-            config["headers"] = headerObject;
-        }
-
-        private static Dictionary<string, string> BuildHeaders(RestMcpServerSettings settings)
-        {
-            Dictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            if (!String.IsNullOrWhiteSpace(settings.BearerToken))
-            {
-                headers["Authorization"] = "Bearer " + settings.BearerToken;
-            }
-            else if (!String.IsNullOrWhiteSpace(settings.ApiKey))
-            {
-                headers["Authorization"] = "Bearer " + settings.ApiKey;
-            }
-
-            if (!String.IsNullOrWhiteSpace(settings.ApiKey) && !String.IsNullOrWhiteSpace(settings.ApiKeyHeader))
-            {
-                headers[settings.ApiKeyHeader] = settings.ApiKey;
-            }
-
-            return headers;
-        }
-
-        private static string DescribeHeaders(IReadOnlyDictionary<string, string> headers)
-        {
-            if (headers.Count < 1) return "none";
-            return String.Join(", ", headers.Keys);
-        }
-
-        private static string BuildCodexToml(string mcpUrl, IReadOnlyDictionary<string, string> headers)
+        private static string BuildCodexToml(string mcpUrl)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(CodexManagedBlockStart);
             sb.AppendLine("[mcp_servers.restdb]");
             sb.AppendLine("url = " + ToTomlString(mcpUrl));
-
-            if (headers.Count > 0)
-            {
-                sb.AppendLine();
-                sb.AppendLine("[mcp_servers.restdb.headers]");
-                foreach (KeyValuePair<string, string> header in headers)
-                {
-                    sb.AppendLine(ToTomlString(header.Key) + " = " + ToTomlString(header.Value));
-                }
-            }
 
             sb.AppendLine(CodexManagedBlockEnd);
             return sb.ToString().TrimEnd();
@@ -368,8 +313,8 @@ namespace RestDb.McpServer.Classes
         private static bool IsCodexRestDbTableHeader(string value)
         {
             return value.Equals("[mcp_servers.restdb]", StringComparison.Ordinal)
-                || value.Equals("[mcp_servers.restdb.headers]", StringComparison.Ordinal)
                 || value.Equals("[mcp_servers.\"restdb\"]", StringComparison.Ordinal)
+                || value.Equals("[mcp_servers.restdb.headers]", StringComparison.Ordinal)
                 || value.Equals("[mcp_servers.\"restdb\".headers]", StringComparison.Ordinal);
         }
 

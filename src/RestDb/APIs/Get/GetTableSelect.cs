@@ -36,6 +36,12 @@ namespace RestDb
 
             if (md.Params.Describe)
             {
+                if (md.Params.Context)
+                {
+                    TableContextPayload payload = await BuildTableContextPayloadAsync(dbName, currTable.Name).ConfigureAwait(false);
+                    currTable.Context = payload?.Context;
+                }
+
                 md.Http.Response.StatusCode = 200;
                 md.Http.Response.ContentType = Constants.JsonContentType;
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(currTable, true));

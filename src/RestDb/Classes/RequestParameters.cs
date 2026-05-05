@@ -22,6 +22,11 @@
         public bool Describe { get; set; } = false;
 
         /// <summary>
+        /// Include available context in compatible metadata responses.
+        /// </summary>
+        public bool Context { get; set; } = false;
+
+        /// <summary>
         /// Multiple.
         /// </summary>
         public bool Multiple { get; set; } = false;
@@ -114,6 +119,10 @@
                 if (ctx.Request.QuerystringExists(Constants.QueryDescribe))
                 {
                     Describe = true;
+                }
+                if (ctx.Request.QuerystringExists(Constants.QueryContext))
+                {
+                    Context = true;
                 }
                 if (ctx.Request.QuerystringExists(Constants.QueryMultiple))
                 {

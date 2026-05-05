@@ -14,7 +14,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Voltaic" Version="0.1.11" />
+    <PackageReference Include="Voltaic" Version="0.2.0" />
   </ItemGroup>
 
 </Project>

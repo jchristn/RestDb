@@ -203,6 +203,42 @@ internal static class LiveApiAssertions
         }
     }
 
+    public static async Task GetDatabasePathReturnsContextWhenRequestedAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string tableName = CreateUniqueTableName("getdbcontext");
+        const string databaseContext = "Database context for metadata retrieval.";
+        const string tableContext = "Table context for metadata retrieval.";
+
+        try
+        {
+            await CreateTableAsync(session, tableName).ConfigureAwait(false);
+            await UpdateDatabaseContextAsync(session, databaseContext, new Dictionary<string, string>
+            {
+                [tableName] = tableContext
+            }).ConfigureAwait(false);
+
+            using HttpResponseMessage response = await session.Client.GetAsync("/" + Encode(session.DatabaseName) + "?_context=true").ConfigureAwait(false);
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            AssertStatus(response, HttpStatusCode.OK, body);
+            using JsonDocument json = ParseJson(body);
+            TestAssert.Equal(databaseContext, GetStringProperty(json.RootElement, "Context", body), body);
+
+            JsonElement tableNames = RequireProperty(json.RootElement, "TableNames", body);
+            TestAssert.True(
+                tableNames.EnumerateArray().Any(e => string.Equals(e.GetString(), tableName, StringComparison.OrdinalIgnoreCase)),
+                body);
+
+            JsonElement tableContexts = RequireProperty(json.RootElement, "TableContexts", body);
+            TestAssert.Equal(tableContext, GetStringProperty(tableContexts, tableName, body), body);
+        }
+        finally
+        {
+            await DropTableIfExistsAsync(session, tableName).ConfigureAwait(false);
+        }
+    }
+
     public static async Task GetDatabaseDescribePathReturnsDescribedTablesAsync()
     {
         RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
@@ -229,6 +265,39 @@ internal static class LiveApiAssertions
         }
     }
 
+    public static async Task GetDatabaseDescribePathReturnsContextWhenRequestedAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string tableName = CreateUniqueTableName("getdbdescribectx");
+        const string databaseContext = "Database context for described metadata.";
+        const string tableContext = "Table context for described metadata.";
+
+        try
+        {
+            await CreateTableAsync(session, tableName).ConfigureAwait(false);
+            await UpdateDatabaseContextAsync(session, databaseContext, new Dictionary<string, string>
+            {
+                [tableName] = tableContext
+            }).ConfigureAwait(false);
+
+            using HttpResponseMessage response = await session.Client.GetAsync("/" + Encode(session.DatabaseName) + "?_describe=true&_context=true").ConfigureAwait(false);
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            AssertStatus(response, HttpStatusCode.OK, body);
+            using JsonDocument json = ParseJson(body);
+            TestAssert.Equal(databaseContext, GetStringProperty(json.RootElement, "Context", body), body);
+
+            JsonElement tables = RequireProperty(json.RootElement, "Tables", body);
+            JsonElement table = FindArrayObjectByStringProperty(tables, "Name", tableName, body);
+            TestAssert.Equal(tableContext, GetStringProperty(table, "Context", body), body);
+            TestAssert.Equal("person_id", GetStringProperty(table, "PrimaryKey", body), body);
+        }
+        finally
+        {
+            await DropTableIfExistsAsync(session, tableName).ConfigureAwait(false);
+        }
+    }
+
     public static async Task GetTableDescribePathReturnsTableMetadataAsync()
     {
         RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
@@ -246,6 +315,32 @@ internal static class LiveApiAssertions
             TestAssert.Equal(tableName, GetStringProperty(json.RootElement, "Name", body), body);
             TestAssert.Equal("person_id", GetStringProperty(json.RootElement, "PrimaryKey", body), body);
             TestAssert.Equal(5, RequireProperty(json.RootElement, "Columns", body).GetArrayLength(), body);
+        }
+        finally
+        {
+            await DropTableIfExistsAsync(session, tableName).ConfigureAwait(false);
+        }
+    }
+
+    public static async Task GetTableDescribePathReturnsContextWhenRequestedAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string tableName = CreateUniqueTableName("gettabledescribectx");
+        const string tableContext = "Table context for single-table describe.";
+
+        try
+        {
+            await CreateTableAsync(session, tableName).ConfigureAwait(false);
+            await UpdateTableContextAsync(session, tableName, tableContext).ConfigureAwait(false);
+
+            using HttpResponseMessage response = await session.Client.GetAsync("/" + Encode(session.DatabaseName) + "/" + Encode(tableName) + "?_describe=true&_context=true").ConfigureAwait(false);
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            AssertStatus(response, HttpStatusCode.OK, body);
+            using JsonDocument json = ParseJson(body);
+            TestAssert.Equal(tableName, GetStringProperty(json.RootElement, "Name", body), body);
+            TestAssert.Equal(tableContext, GetStringProperty(json.RootElement, "Context", body), body);
+            TestAssert.Equal("person_id", GetStringProperty(json.RootElement, "PrimaryKey", body), body);
         }
         finally
         {
@@ -806,6 +901,38 @@ internal static class LiveApiAssertions
 
         using JsonDocument json = ParseJson(body);
         return GetInt64Property(json.RootElement, "person_id", body);
+    }
+
+    private static async Task UpdateDatabaseContextAsync(RestDbLiveApiSession session, string databaseContext, Dictionary<string, string> tableContexts)
+    {
+        using HttpResponseMessage response = await PutJsonAsync(
+            session,
+            "/_context/" + Encode(session.DatabaseName),
+            new
+            {
+                Database = session.DatabaseName,
+                Context = databaseContext,
+                Tables = tableContexts
+            }).ConfigureAwait(false);
+
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        AssertStatus(response, HttpStatusCode.OK, body);
+    }
+
+    private static async Task UpdateTableContextAsync(RestDbLiveApiSession session, string tableName, string tableContext)
+    {
+        using HttpResponseMessage response = await PutJsonAsync(
+            session,
+            "/_context/" + Encode(session.DatabaseName) + "/" + Encode(tableName),
+            new
+            {
+                Database = session.DatabaseName,
+                Table = tableName,
+                Context = tableContext
+            }).ConfigureAwait(false);
+
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        AssertStatus(response, HttpStatusCode.OK, body);
     }
 
     private static async Task DropTableIfExistsAsync(RestDbLiveApiSession session, string tableName)

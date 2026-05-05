@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "311ea6a8-0b2b-4639-9d57-f38e04948b75",
     "name": "RestDb",
-    "description": "Comprehensive Postman collection for RestDb.\n\nRecommended starting point:\n1. Set `baseUrl`, `apiKey`, `apiKeyHeader`, `databaseName`, `tableName`, and `rowId`.\n2. Run `System Operations` to verify connectivity, authentication, runtime settings, and context-management routes.\n3. Run `Database Operations` for metadata, schema, record retrieval, record mutation, and raw SQL.\n\nAuthentication:\n- Collection-level auth is configured as an API key header using `{{apiKeyHeader}}: {{apiKey}}`.\n- RestDb also accepts `Authorization: Bearer {{apiKey}}`. If you prefer bearer auth in Postman, change the collection authorization type to `Bearer Token` and set the token to `{{apiKey}}`.\n\nNotes:\n- Presence-based flags such as `_describe`, `_multiple`, `_truncate`, `_drop`, and `_debug` are shown with `=true` for readability, but the server only checks for their presence.\n- With the bundled Docker stack, the default read examples work against the `sample.person` table.\n- Create, update, delete, truncate, and drop requests target `{{tableName}}` directly. Change `tableName` before running destructive requests if you do not want to modify the current target table.",
+    "description": "Comprehensive Postman collection for RestDb.\n\nRecommended starting point:\n1. Set `baseUrl`, `apiKey`, `apiKeyHeader`, `databaseName`, `tableName`, and `rowId`.\n2. Run `System Operations` to verify connectivity, authentication, runtime settings, and context-management routes.\n3. Run `Database Operations` for metadata, schema, record retrieval, record mutation, and raw SQL.\n\nAuthentication:\n- Collection-level auth is configured as an API key header using `{{apiKeyHeader}}: {{apiKey}}`.\n- RestDb also accepts `Authorization: Bearer {{apiKey}}`. If you prefer bearer auth in Postman, change the collection authorization type to `Bearer Token` and set the token to `{{apiKey}}`.\n\nNotes:\n- Presence-based flags such as `_describe`, `_context`, `_multiple`, `_truncate`, `_drop`, and `_debug` are shown with `=true` for readability, but the server only checks for their presence.\n- With the bundled Docker stack, the default read examples work against the `sample.person` table.\n- Create, update, delete, truncate, and drop requests target `{{tableName}}` directly. Change `tableName` before running destructive requests if you do not want to modify the current target table.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "720438"
   },
@@ -281,9 +281,9 @@
           "name": "Retrieve database metadata",
           "request": {
             "method": "GET",
-            "description": "Returns the redacted database configuration plus `TableNames`.",
+            "description": "Returns the redacted database configuration plus `TableNames`, and includes database context plus `TableContexts` because `_context=true` is supplied.",
             "header": [],
-            "url": "{{baseUrl}}/{{databaseName}}"
+            "url": "{{baseUrl}}/{{databaseName}}?_context=true"
           },
           "response": []
         },
@@ -291,9 +291,9 @@
           "name": "Describe database schema",
           "request": {
             "method": "GET",
-            "description": "Returns the redacted database configuration plus fully described `Tables` metadata.",
+            "description": "Returns the redacted database configuration plus fully described `Tables` metadata, with database and table context included because `_context=true` is supplied.",
             "header": [],
-            "url": "{{baseUrl}}/{{databaseName}}?_describe=true"
+            "url": "{{baseUrl}}/{{databaseName}}?_describe=true&_context=true"
           },
           "response": []
         },
@@ -301,9 +301,9 @@
           "name": "Describe table",
           "request": {
             "method": "GET",
-            "description": "Describes a single table, including primary key and columns.",
+            "description": "Describes a single table, including primary key, columns, and table context because `_context=true` is supplied.",
             "header": [],
-            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?_describe=true"
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?_describe=true&_context=true"
           },
           "response": []
         },

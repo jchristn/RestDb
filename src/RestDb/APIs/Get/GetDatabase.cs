@@ -19,13 +19,18 @@ namespace RestDb
 
             db = Database.Redact(db);
 
-            if (md.Http.Request.QuerystringExists(Constants.QueryDescribe))
+            if (md.Params.Describe)
             {
                 db.Tables = await _Databases.GetTablesAsync(dbName, true);
             }
             else
             {
                 db.TableNames = await _Databases.GetTableNamesAsync(dbName);
+            }
+
+            if (md.Params.Context)
+            {
+                await ApplyDatabaseResponseContextAsync(db).ConfigureAwait(false);
             }
 
             md.Http.Response.StatusCode = 200;

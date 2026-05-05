@@ -19,6 +19,7 @@
         internal static List<string> QueryKeys = new List<string>
         {
             "_describe",
+            "_context",
             "_multiple",
             "_index",
             "_max",
@@ -31,6 +32,8 @@
         };
 
         internal static string QueryDescribe = "_describe";
+
+        internal static string QueryContext = "_context";
 
         internal static string QueryMultiple = "_multiple";
 

@@ -21,13 +21,25 @@ It uses the MCP HTTP endpoint exposed by `RestDb.McpServer`, not the raw RestDb 
 Example:
 
 ```powershell
-dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --api-key default --yes
+restdb.mcpserver install --yes
+```
+
+From source without installing the executable on your `PATH`:
+
+```powershell
+dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --yes
 ```
 
 Preview without writing files:
 
 ```powershell
-dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --api-key default --dry-run
+restdb.mcpserver install --dry-run
+```
+
+From source:
+
+```powershell
+dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --dry-run
 ```
 
 By default, the installer targets these user-level files:
@@ -37,12 +49,9 @@ By default, the installer targets these user-level files:
 - Gemini CLI: `~/.gemini/settings.json`
 - Cursor: `~/.cursor/mcp.json`
 
-If you supply `--api-key`, the installer writes both:
+The agent client configs written by `install` are URL-only HTTP MCP definitions. The agent does not need to send the RestDb API key to the MCP server.
 
-- `Authorization: Bearer <api-key>`
-- the configured API key header, usually `x-api-key: <api-key>`
-
-That keeps the installed definitions compatible with both RestDb auth styles.
+`install` does not persist downstream RestDb credentials. Configure those on the `RestDb.McpServer` process itself with `--api-key`, `--bearer-token`, or the `RESTDB_MCP_*` environment variables described below.
 
 ## Defaults In This Repo
 
@@ -54,20 +63,28 @@ If you started the Docker stack from this repo with the default ports, the relev
 
 If your ports or key are different, replace them in the examples below.
 
-## Recommended Authentication Header
+## Where Authentication Happens
 
 RestDb supports both:
 
 - `Authorization: Bearer <api-key>`
 - `x-api-key: <api-key>`
 
-For cross-client consistency, the examples below use:
+Those headers are for the RestDb HTTP API itself.
 
-```text
-Authorization: Bearer default
+`RestDb.McpServer` is a proxy. Configure the API key on the MCP server process:
+
+```powershell
+restdb.mcpserver --server-url http://localhost:8000 --api-key default
 ```
 
-That is usually the easiest way to configure an authenticated HTTP MCP server across multiple agent clients.
+or in Docker Compose through:
+
+- `RESTDB_MCP_API_KEY`
+- `RESTDB_MCP_API_KEY_HEADER`
+- `RESTDB_MCP_BEARER_TOKEN`
+
+The agent client then connects to the MCP HTTP endpoint without extra RestDb auth headers.
 
 ## Important Note About Localhost
 
@@ -83,12 +100,12 @@ with a host name or IP address that the client can actually reach.
 
 ## Claude Code
 
-Claude Code's MCP docs explicitly support remote HTTP MCP servers and custom headers.
+Claude Code's MCP docs explicitly support remote HTTP MCP servers.
 
 ### Add It
 
 ```powershell
-claude mcp add --scope user --transport http restdb http://localhost:8010/mcp --header "Authorization: Bearer default"
+claude mcp add --scope user --transport http restdb http://localhost:8010/mcp
 ```
 
 ### Verify It
@@ -112,7 +129,7 @@ OpenAI's Codex docs explicitly show:
 - `codex mcp add <name> --url <mcp-url>`
 - direct editing of `~/.codex/config.toml`
 
-The docs page used here does not show a protected-header example, so the header block below is the practical config to use for a RestDb MCP endpoint that requires an API key.
+Codex should point at the RestDb MCP HTTP endpoint directly. The RestDb API key belongs on the `RestDb.McpServer` process, not in the Codex MCP client config.
 
 ### Add The Server URL
 
@@ -120,14 +137,11 @@ The docs page used here does not show a protected-header example, so the header 
 codex mcp add restdb --url http://localhost:8010/mcp
 ```
 
-### Add The Header In `~/.codex/config.toml`
+### Or Add It Directly In `~/.codex/config.toml`
 
 ```toml
 [mcp_servers.restdb]
 url = "http://localhost:8010/mcp"
-
-[mcp_servers.restdb.headers]
-Authorization = "Bearer default"
 ```
 
 ### Verify It
@@ -146,11 +160,7 @@ Use the RestDb MCP server and tell me which databases are available.
 
 ## Gemini CLI
 
-Gemini CLI's MCP docs explicitly support:
-
-- HTTP MCP via `httpUrl`
-- custom `headers`
-- CLI add via `gemini mcp add --transport http`
+Gemini CLI's MCP docs explicitly support HTTP MCP via `httpUrl` and CLI add via `gemini mcp add --transport http`.
 
 Gemini CLI stores user settings in:
 
@@ -163,7 +173,7 @@ and project settings in:
 ### Add It With The CLI
 
 ```powershell
-gemini mcp add --transport http --header "Authorization: Bearer default" restdb http://localhost:8010/mcp
+gemini mcp add --transport http restdb http://localhost:8010/mcp
 ```
 
 ### Or Add It Directly In `~/.gemini/settings.json`
@@ -173,9 +183,6 @@ gemini mcp add --transport http --header "Authorization: Bearer default" restdb 
   "mcpServers": {
     "restdb": {
       "httpUrl": "http://localhost:8010/mcp",
-      "headers": {
-        "Authorization": "Bearer default"
-      },
       "timeout": 30000
     }
   }
@@ -198,11 +205,7 @@ Use the restdb MCP server and list the databases it exposes.
 
 ## Cursor
 
-Cursor's MCP docs explicitly support:
-
-- streamable HTTP MCP servers
-- a `headers` object for authentication
-- shared MCP configuration between the editor and `cursor-agent`
+Cursor's MCP docs explicitly support streamable HTTP MCP servers and shared MCP configuration between the editor and `cursor-agent`.
 
 ### Add It In `mcp.json`
 
@@ -214,10 +217,7 @@ Use:
 {
   "mcpServers": {
     "restdb": {
-      "url": "http://localhost:8010/mcp",
-      "headers": {
-        "Authorization": "Bearer default"
-      }
+      "url": "http://localhost:8010/mcp"
     }
   }
 }
@@ -243,68 +243,6 @@ In Cursor Agent mode, ask:
 Use the RestDb MCP server and enumerate the databases and tables.
 ```
 
-## Using `x-api-key` Instead
-
-If you prefer the explicit RestDb header instead of bearer auth, replace:
-
-```text
-Authorization: Bearer default
-```
-
-with:
-
-```text
-x-api-key: default
-```
-
-Examples:
-
-### Claude Code
-
-```powershell
-claude mcp add --scope user --transport http restdb http://localhost:8010/mcp --header "x-api-key: default"
-```
-
-### Gemini CLI
-
-```json
-{
-  "mcpServers": {
-    "restdb": {
-      "httpUrl": "http://localhost:8010/mcp",
-      "headers": {
-        "x-api-key": "default"
-      }
-    }
-  }
-}
-```
-
-### Cursor
-
-```json
-{
-  "mcpServers": {
-    "restdb": {
-      "url": "http://localhost:8010/mcp",
-      "headers": {
-        "x-api-key": "default"
-      }
-    }
-  }
-}
-```
-
-### Codex
-
-```toml
-[mcp_servers.restdb]
-url = "http://localhost:8010/mcp"
-
-[mcp_servers.restdb.headers]
-x-api-key = "default"
-```
-
 ## Troubleshooting
 
 If a client does not connect:
@@ -312,21 +250,23 @@ If a client does not connect:
 1. Confirm the MCP service is running:
 
 ```powershell
-curl.exe http://localhost:8010/
+curl.exe -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}" http://localhost:8010/mcp
 ```
 
-2. Confirm the RestDb API itself is healthy:
+2. Confirm the RestDb API itself is healthy and that the MCP server can authenticate to it:
 
 ```powershell
 curl.exe -H "Authorization: Bearer default" http://localhost:8000/_databases
 ```
 
-3. Confirm you used the MCP endpoint, not the REST endpoint:
+3. Confirm you used the MCP streamable HTTP endpoint, not the REST endpoint:
 
 - Correct: `http://localhost:8010/mcp`
 - Incorrect: `http://localhost:8000`
 
 4. If the client is not local, do not use `localhost`.
+
+5. If you are using `restdb.mcpserver install`, rerun it after updating the binary so the generated agent config picks up the `/mcp` endpoint.
 
 ## Sources
 

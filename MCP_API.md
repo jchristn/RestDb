@@ -15,6 +15,8 @@ Compose defaults:
 - `RESTDB_MCP_API_KEY=default`
 - `RESTDB_MCP_API_KEY_HEADER=x-api-key`
 
+`RESTDB_MCP_API_KEY`, `RESTDB_MCP_API_KEY_HEADER`, and `RESTDB_MCP_BEARER_TOKEN` are used by `RestDb.McpServer` when it calls the protected RestDb HTTP API. MCP clients connecting to the HTTP endpoint do not need to send those RestDb auth headers.
+
 Optional CLI flags:
 
 - `install`
@@ -44,13 +46,13 @@ Optional CLI flags:
 Example:
 
 ```powershell
-dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --api-key default --yes
+dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --yes
 ```
 
 Preview the generated config without writing files:
 
 ```powershell
-dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --api-key default --dry-run
+dotnet run --project src\RestDb.McpServer\RestDb.McpServer.csproj -- install --dry-run
 ```
 
 The installer writes user-scoped config files:
@@ -60,7 +62,7 @@ The installer writes user-scoped config files:
 - `~/.gemini/settings.json`
 - `~/.cursor/mcp.json`
 
-When `--api-key` is supplied, the generated client definitions include both `Authorization: Bearer <api-key>` and the configured API-key header so the installed entry works with either RestDb auth style.
+The installer only writes client-side MCP endpoint definitions. Configure downstream RestDb authentication on the `RestDb.McpServer` process itself with `--api-key`, `--bearer-token`, or `RESTDB_MCP_*` environment variables. The generated MCP client definitions remain plain HTTP endpoint definitions and do not inject RestDb API-key headers into the client transport.
 
 ## Tool Coverage
 
@@ -94,9 +96,9 @@ Each tool returns the proxied REST result with:
 
 | Tool | REST route |
 | --- | --- |
-| `restdb_inspect_database` | `GET /{database}` |
-| `restdb_inspect_database_with_schema` | `GET /{database}?_describe=true` |
-| `restdb_inspect_table_schema` | `GET /{database}/{table}?_describe=true` |
+| `restdb_inspect_database` | `GET /{database}` or `GET /{database}?_context=true` |
+| `restdb_inspect_database_with_schema` | `GET /{database}?_describe=true` or `GET /{database}?_describe=true&_context=true` |
+| `restdb_inspect_table_schema` | `GET /{database}/{table}?_describe=true` or `GET /{database}/{table}?_describe=true&_context=true` |
 
 ### Records and SQL
 
@@ -119,6 +121,7 @@ Each tool returns the proxied REST result with:
 
 - Database tools use `databaseName`.
 - Table tools use `databaseName` and `tableName`.
+- Metadata inspection tools also accept `includeContext`. When `true`, the MCP proxy appends `?_context=true` to the underlying REST metadata route.
 - Row-by-ID tools use `rowId`.
 - Equality query filters are passed as a `filters` object.
 - `restdb_search_table_records` accepts an `expression` payload compatible with the `ExpressionTree` REST body.
@@ -127,6 +130,8 @@ Each tool returns the proxied REST result with:
 
 ## Transport Notes
 
+- HTTP and WebSocket both use `/mcp` on their respective transports.
+- On HTTP streamable transport, `notifications/initialized` and other notification-only POSTs return `202 Accepted` with an empty body.
 - HTTP and stdio expose proper MCP tools and tool metadata.
 - TCP and WebSocket expose the same operations as registered methods and also publish `tools/list`.
 - The MCP service uses the configured RestDb API key or bearer token when proxying requests downstream.

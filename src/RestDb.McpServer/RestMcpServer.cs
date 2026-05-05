@@ -4,6 +4,7 @@ namespace RestDb.McpServer
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Net.Sockets;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
@@ -68,12 +69,15 @@ namespace RestDb.McpServer
 
         private static async Task<int> RunNetworkServersAsync(RestMcpServerSettings settings, List<RestMcpToolDefinition> tools)
         {
-            using McpHttpServer httpServer = new McpHttpServer(settings.HttpHostname, settings.HttpPort, "/rpc", "/events", includeDefaultMethods: true, mcpPath: "/mcp")
+            int innerHttpPort = ReserveLoopbackPort();
+
+            using McpHttpServer httpServer = new McpHttpServer("127.0.0.1", innerHttpPort, includeDefaultMethods: true, mcpPath: null)
             {
                 ServerName = ServerName,
                 ServerVersion = ServerVersion
             };
 
+            using RestMcpHttpBridge httpBridge = new RestMcpHttpBridge(settings.HttpHostname, settings.HttpPort, "http://127.0.0.1:" + innerHttpPort, httpServer);
             using McpTcpServer tcpServer = new McpTcpServer(IPAddress.Parse(settings.TcpHostname), settings.TcpPort, includeDefaultMethods: true)
             {
                 ServerName = ServerName,
@@ -86,7 +90,8 @@ namespace RestDb.McpServer
                 ServerVersion = ServerVersion
             };
 
-            httpServer.Log += (sender, message) => Console.WriteLine("[MCP HTTP] " + message);
+            httpServer.Log += (sender, message) => Console.WriteLine("[MCP HTTP INNER] " + message);
+            httpBridge.Log += (sender, message) => Console.WriteLine("[MCP HTTP] " + message);
             tcpServer.Log += (sender, message) => Console.WriteLine("[MCP TCP] " + message);
             wsServer.Log += (sender, message) => Console.WriteLine("[MCP WS] " + message);
 
@@ -104,6 +109,7 @@ namespace RestDb.McpServer
             {
                 e.Cancel = true;
                 tokenSource.Cancel();
+                httpBridge.Stop();
                 httpServer.Stop();
                 tcpServer.Stop();
                 wsServer.Stop();
@@ -118,11 +124,12 @@ namespace RestDb.McpServer
 
             try
             {
-                Task httpTask = Task.Run(async () => await httpServer.StartAsync(tokenSource.Token).ConfigureAwait(false));
+                Task httpServerTask = Task.Run(async () => await httpServer.StartAsync(tokenSource.Token).ConfigureAwait(false));
+                Task httpBridgeTask = Task.Run(async () => await httpBridge.StartAsync(tokenSource.Token).ConfigureAwait(false));
                 Task tcpTask = Task.Run(async () => await tcpServer.StartAsync(tokenSource.Token).ConfigureAwait(false));
                 Task wsTask = Task.Run(async () => await wsServer.StartAsync(tokenSource.Token).ConfigureAwait(false));
 
-                await Task.WhenAll(httpTask, tcpTask, wsTask).ConfigureAwait(false);
+                await Task.WhenAll(httpServerTask, httpBridgeTask, tcpTask, wsTask).ConfigureAwait(false);
                 return 0;
             }
             catch (OperationCanceledException)
@@ -133,6 +140,13 @@ namespace RestDb.McpServer
             {
                 Console.Error.WriteLine("RestDb.McpServer failed: " + ex.Message);
                 return 1;
+            }
+            finally
+            {
+                httpBridge.Stop();
+                httpServer.Stop();
+                tcpServer.Stop();
+                wsServer.Stop();
             }
         }
 
@@ -165,7 +179,12 @@ namespace RestDb.McpServer
             Console.WriteLine("Examples:");
             Console.WriteLine("  RestDb.McpServer --server-url http://localhost:8000 --api-key default");
             Console.WriteLine("  RestDb.McpServer --stdio --server-url http://localhost:8000 --api-key default");
-            Console.WriteLine("  RestDb.McpServer install --api-key default --yes");
+            Console.WriteLine("  RestDb.McpServer install --yes");
+            Console.WriteLine();
+            Console.WriteLine("Notes:");
+            Console.WriteLine("  - install only writes MCP client definitions.");
+            Console.WriteLine("  - Configure downstream RestDb auth on the RestDb.McpServer process itself");
+            Console.WriteLine("    using --api-key / --bearer-token or RESTDB_MCP_* environment variables.");
         }
 
         private static void RegisterTools(
@@ -214,6 +233,20 @@ namespace RestDb.McpServer
                     inputSchema = tool.InputSchema
                 }).ToArray()
             }));
+        }
+
+        private static int ReserveLoopbackPort()
+        {
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            try
+            {
+                return ((IPEndPoint)listener.LocalEndpoint).Port;
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
     }
 }

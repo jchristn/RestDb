@@ -164,23 +164,31 @@ namespace RestDb.McpServer.Registrations
 
                 new RestMcpToolDefinition(
                     "restdb_inspect_database",
-                    "Returns metadata for a configured database, including its provider and table list.",
-                    DatabaseTargetSchema(),
-                    async (args, token) => await proxy.SendAsync(HttpMethod.Get, "/" + RestMcpRestProxy.Escape(RequireString(args, "databaseName")), null, token).ConfigureAwait(false)),
+                    "Returns metadata for a configured database, including its provider and table list, with optional context enrichment.",
+                    DatabaseTargetSchema(includeContext: true),
+                    async (args, token) => await proxy.SendAsync(
+                        HttpMethod.Get,
+                        "/" + RestMcpRestProxy.Escape(RequireString(args, "databaseName")) + BuildContextQuery(args),
+                        null,
+                        token).ConfigureAwait(false)),
 
                 new RestMcpToolDefinition(
                     "restdb_inspect_database_with_schema",
-                    "Returns metadata for a configured database and describes every table in that database.",
-                    DatabaseTargetSchema(),
-                    async (args, token) => await proxy.SendAsync(HttpMethod.Get, "/" + RestMcpRestProxy.Escape(RequireString(args, "databaseName")) + "?_describe=true", null, token).ConfigureAwait(false)),
+                    "Returns metadata for a configured database and describes every table in that database, with optional context enrichment.",
+                    DatabaseTargetSchema(includeContext: true),
+                    async (args, token) => await proxy.SendAsync(
+                        HttpMethod.Get,
+                        "/" + RestMcpRestProxy.Escape(RequireString(args, "databaseName")) + "?_describe=true" + BuildContextQuery(args, hasExistingQuery: true),
+                        null,
+                        token).ConfigureAwait(false)),
 
                 new RestMcpToolDefinition(
                     "restdb_inspect_table_schema",
-                    "Returns the schema description for a specific table.",
-                    DatabaseTableTargetSchema(),
+                    "Returns the schema description for a specific table, with optional context enrichment.",
+                    DatabaseTableTargetSchema(includeContext: true),
                     async (args, token) => await proxy.SendAsync(
                         HttpMethod.Get,
-                        "/" + RestMcpRestProxy.Escape(RequireString(args, "databaseName")) + "/" + RestMcpRestProxy.Escape(RequireString(args, "tableName")) + "?_describe=true",
+                        "/" + RestMcpRestProxy.Escape(RequireString(args, "databaseName")) + "/" + RestMcpRestProxy.Escape(RequireString(args, "tableName")) + "?_describe=true" + BuildContextQuery(args, hasExistingQuery: true),
                         null,
                         token).ConfigureAwait(false)),
 
@@ -392,29 +400,43 @@ namespace RestDb.McpServer.Registrations
             };
         }
 
-        private static object DatabaseTargetSchema()
+        private static object DatabaseTargetSchema(bool includeContext = false)
         {
+            Dictionary<string, object> properties = new Dictionary<string, object>
+            {
+                ["databaseName"] = new { type = "string", description = "Configured RestDb database name." }
+            };
+
+            if (includeContext)
+            {
+                properties["includeContext"] = new { type = "boolean", description = "If true, appends `_context=true` so database and table context are included when the HTTP response shape supports it." };
+            }
+
             return new
             {
                 type = "object",
-                properties = new
-                {
-                    databaseName = new { type = "string", description = "Configured RestDb database name." }
-                },
+                properties,
                 required = new[] { "databaseName" }
             };
         }
 
-        private static object DatabaseTableTargetSchema()
+        private static object DatabaseTableTargetSchema(bool includeContext = false)
         {
+            Dictionary<string, object> properties = new Dictionary<string, object>
+            {
+                ["databaseName"] = new { type = "string", description = "Configured RestDb database name." },
+                ["tableName"] = new { type = "string", description = "Table name." }
+            };
+
+            if (includeContext)
+            {
+                properties["includeContext"] = new { type = "boolean", description = "If true, appends `_context=true` so table context is included when the HTTP response shape supports it." };
+            }
+
             return new
             {
                 type = "object",
-                properties = new
-                {
-                    databaseName = new { type = "string", description = "Configured RestDb database name." },
-                    tableName = new { type = "string", description = "Table name." }
-                },
+                properties,
                 required = new[] { "databaseName", "tableName" }
             };
         }
@@ -495,6 +517,13 @@ namespace RestDb.McpServer.Registrations
             List<string> pairs = new List<string>();
             AppendFilterPairs(pairs, args);
             return ToQueryString(pairs);
+        }
+
+        private static string BuildContextQuery(JsonElement? args, bool hasExistingQuery = false)
+        {
+            return GetOptionalBool(args, "includeContext")
+                ? (hasExistingQuery ? "&" : "?") + "_context=true"
+                : String.Empty;
         }
 
         private static void AppendFilterPairs(List<string> pairs, JsonElement? args)

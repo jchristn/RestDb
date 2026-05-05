@@ -24,6 +24,11 @@
         /// </summary>
         public List<Column> Columns { get; set; } = new List<Column>();
 
+        /// <summary>
+        /// Optional table-level context value used in metadata responses.
+        /// </summary>
+        public string Context { get; set; } = null;
+
         #endregion
 
         #region Private-Members
