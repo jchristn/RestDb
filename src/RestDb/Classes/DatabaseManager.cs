@@ -1,22 +1,19 @@
-﻿namespace RestDb
+namespace RestDb
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using RestDb.Storage;
     using SyslogLogging;
-    using DatabaseWrapper;
-    using DatabaseWrapper.Core;
 
-    internal class DatabaseManager
+    internal class DatabaseManager : IDisposable
     {
-        #region Public-Members
-
-        #endregion
-
         #region Private-Members
 
         private Settings _Settings;
         private LoggingModule _Logging;
-        private Dictionary<string, DatabaseClient> _Databases;
+        private Dictionary<string, DatabaseDriverBase> _Databases;
         private readonly object _DatabasesLock;
 
         #endregion
@@ -30,7 +27,7 @@
 
             _Settings = settings;
             _Logging = logging;
-            _Databases = new Dictionary<string, DatabaseClient>();
+            _Databases = new Dictionary<string, DatabaseDriverBase>();
             _DatabasesLock = new object();
 
             InitializeDatabases();
@@ -40,13 +37,28 @@
 
         #region Internal-Methods
 
+        public void Dispose()
+        {
+            lock (_DatabasesLock)
+            {
+                if (_Databases == null || _Databases.Count < 1) return;
+
+                foreach (KeyValuePair<string, DatabaseDriverBase> curr in _Databases)
+                {
+                    curr.Value?.Dispose();
+                }
+
+                _Databases.Clear();
+            }
+        }
+
         internal List<string> ListDatabasesByName()
         {
             List<string> ret = new List<string>();
 
             lock (_DatabasesLock)
             {
-                foreach (KeyValuePair<string, DatabaseClient> curr in _Databases)
+                foreach (KeyValuePair<string, DatabaseDriverBase> curr in _Databases)
                 {
                     ret.Add(curr.Key);
                 }
@@ -57,43 +69,41 @@
 
         internal Database GetDatabaseByName(string dbName)
         {
-            if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
             return _Settings.GetDatabaseByName(dbName);
         }
 
-        internal List<Table> GetTables(string dbName, bool describe)
+        internal async Task<List<Table>> GetTablesAsync(string dbName, bool describe)
         {
-            if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
-            
-            DatabaseClient db = GetDatabaseClient(dbName);
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+
+            DatabaseDriverBase db = GetDatabaseDriver(dbName);
             if (db == null)
             {
                 _Logging.Warn("GetTables unable to find client for database " + dbName);
                 return null;
             }
 
-            List<string> tableNames = db.ListTables();
+            List<string> tableNames = await db.Schema.ListTablesAsync().ConfigureAwait(false);
             if (tableNames == null || tableNames.Count < 1)
             {
                 _Logging.Warn("GetTables no tables returned from list tables for database " + dbName);
                 return new List<Table>();
             }
-            else
-            {
-                _Logging.Debug("GetTables returning " + tableNames.Count + " tables for database " + dbName);
-            }
+
+            _Logging.Debug("GetTables returning " + tableNames.Count + " tables for database " + dbName);
 
             List<Table> ret = new List<Table>();
-
             foreach (string curr in tableNames)
             {
-                Table currTable = new Table();
-                currTable.Name = curr;
-                
+                Table currTable = new Table
+                {
+                    Name = curr
+                };
+
                 if (describe)
                 {
-                    currTable.Columns = new List<Column>();
-                    List<DatabaseWrapper.Core.Column> columns = db.DescribeTable(curr);
+                    List<Column> columns = await db.Schema.DescribeTableAsync(curr).ConfigureAwait(false);
                     if (columns == null || columns.Count < 1)
                     {
                         _Logging.Warn("GetTables no columns found for table " + curr + " in database " + dbName);
@@ -101,17 +111,12 @@
                         continue;
                     }
 
-                    foreach (DatabaseWrapper.Core.Column currColumn in columns)
+                    currTable.Columns = new List<Column>();
+                    foreach (Column currColumn in columns)
                     {
-                        Column tempColumn = new Column();
-                        tempColumn.Name = currColumn.Name;
-                        tempColumn.Nullable = currColumn.Nullable;
-                        tempColumn.MaxLength = currColumn.MaxLength;
-                        tempColumn.Type = currColumn.Type;
+                        Column tempColumn = currColumn.Copy();
                         if (currColumn.PrimaryKey) currTable.PrimaryKey = tempColumn.Name;
-
                         currTable.Columns.Add(tempColumn);
-                        // _Logging.Debug("GetTables adding column " + tempColumn.Name + " for table " + currTable.Name + " database " + dbName);
                     }
                 }
 
@@ -121,18 +126,18 @@
             return ret;
         }
 
-        internal List<string> GetTableNames(string dbName)
-        {            
-            if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
-             
-            DatabaseClient db = GetDatabaseClient(dbName);
+        internal async Task<List<string>> GetTableNamesAsync(string dbName)
+        {
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+
+            DatabaseDriverBase db = GetDatabaseDriver(dbName);
             if (db == null)
             {
                 _Logging.Warn("GetTableNames unable to find client for database " + dbName);
                 return null;
             }
 
-            List<string> tableNames = db.ListTables();
+            List<string> tableNames = await db.Schema.ListTablesAsync().ConfigureAwait(false);
             if (tableNames == null || tableNames.Count < 1)
             {
                 _Logging.Debug("GetTableNames no tables returned from list tables for database " + dbName);
@@ -142,36 +147,41 @@
             return tableNames;
         }
 
-        internal Table GetTableByName(string dbName, string tableName)
+        internal async Task<Table> GetTableByNameAsync(string dbName, string tableName)
         {
-            if (String.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
-            if (String.IsNullOrEmpty(tableName)) throw new ArgumentNullException(nameof(tableName));
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+            if (string.IsNullOrEmpty(tableName)) throw new ArgumentNullException(nameof(tableName));
 
-            DatabaseClient db = GetDatabaseClient(dbName);
+            DatabaseDriverBase db = GetDatabaseDriver(dbName);
             if (db == null)
             {
                 _Logging.Warn("GetTableByName unable to find client for database " + dbName);
                 return null;
             }
 
-            Table ret = new Table();
-            ret.Name = tableName;
-            ret.Columns = new List<Column>();
-
-            List<DatabaseWrapper.Core.Column> columns = db.DescribeTable(tableName);
-            if (columns == null || columns.Count < 1)
+            string actualTableName = await ResolveTableNameAsync(db, tableName).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(actualTableName))
             {
-                _Logging.Warn("GetTableByName no columns found for table " + tableName + " in database " + dbName);
+                _Logging.Warn("GetTableByName unable to resolve table " + tableName + " in database " + dbName);
                 return null;
             }
-             
+
+            List<Column> columns = await db.Schema.DescribeTableAsync(actualTableName).ConfigureAwait(false);
+            if (columns == null || columns.Count < 1)
+            {
+                _Logging.Warn("GetTableByName no columns found for table " + actualTableName + " in database " + dbName);
+                return null;
+            }
+
+            Table ret = new Table
+            {
+                Name = actualTableName,
+                Columns = new List<Column>()
+            };
+
             foreach (Column currColumn in columns)
             {
-                Column tempColumn = new Column();
-                tempColumn.Name = currColumn.Name;
-                tempColumn.Nullable = currColumn.Nullable;
-                tempColumn.MaxLength = currColumn.MaxLength; 
-                tempColumn.Type = currColumn.Type;
+                Column tempColumn = currColumn.Copy();
                 if (currColumn.PrimaryKey)
                 {
                     tempColumn.PrimaryKey = true;
@@ -184,13 +194,13 @@
             return ret;
         }
 
-        internal DatabaseClient GetDatabaseClient(string dbName)
+        internal DatabaseDriverBase GetDatabaseDriver(string dbName)
         {
             lock (_DatabasesLock)
             {
-                foreach (KeyValuePair<string, DatabaseClient> curr in _Databases)
+                foreach (KeyValuePair<string, DatabaseDriverBase> curr in _Databases)
                 {
-                    if (curr.Key.ToLower().Equals(dbName.ToLower())) return curr.Value;
+                    if (curr.Key.Equals(dbName, StringComparison.OrdinalIgnoreCase)) return curr.Value;
                 }
 
                 return null;
@@ -203,44 +213,24 @@
 
         private void InitializeDatabases()
         {
-            _Databases = new Dictionary<string, DatabaseClient>();
+            _Databases = new Dictionary<string, DatabaseDriverBase>();
 
             foreach (Database curr in _Settings.Databases)
             {
-                _Logging.Debug("InitializeDatabases initializing db " + curr.ToString());
-
-                DatabaseClient db = null;
-
-                switch (curr.Type)
-                {
-                    case DbTypeEnum.Sqlite:
-                        db = new DatabaseClient(curr.Filename);
-                        break;
-                    case DbTypeEnum.SqlServer:
-                    case DbTypeEnum.Mysql:
-                    case DbTypeEnum.Postgresql:
-                        db = new DatabaseClient(
-                            curr.Type,
-                            curr.Hostname,
-                            Convert.ToInt32(curr.Port),
-                            curr.Username,
-                            curr.Password,
-                            curr.Instance,
-                            curr.Name);
-                        break;
-                    default:
-                        throw new ArgumentException("Unknown database type: " + curr.Type.ToString()); 
-                } 
-
-                if (curr.Debug)
-                {
-                    db.Settings.Debug.Logger = Logger;
-                    db.Settings.Debug.EnableForQueries = true;
-                    db.Settings.Debug.EnableForResults = true;
-                }
-
+                _Logging.Debug("InitializeDatabases initializing db " + curr);
+                DatabaseDriverBase db = DatabaseDriverFactory.Create(curr, Logger);
+                db.InitializeAsync().GetAwaiter().GetResult();
                 _Databases.Add(curr.Name, db);
             }
+        }
+
+        private async Task<string> ResolveTableNameAsync(DatabaseDriverBase db, string requestedTableName)
+        {
+            List<string> tableNames = await db.Schema.ListTablesAsync().ConfigureAwait(false);
+            if (tableNames == null || tableNames.Count < 1) return requestedTableName;
+
+            string exact = tableNames.FirstOrDefault(t => t.Equals(requestedTableName, StringComparison.OrdinalIgnoreCase));
+            return exact ?? requestedTableName;
         }
 
         private void Logger(string msg)
@@ -248,6 +238,6 @@
             _Logging.Debug(msg);
         }
 
-        #endregion 
+        #endregion
     }
 }

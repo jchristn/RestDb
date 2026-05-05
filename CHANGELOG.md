@@ -2,9 +2,24 @@
 
 ## Current Version
 
-v2.0.2
+v2.0.7
 
-- Dependency update to silence dependabot
+- Retargeted to `net8.0` and `net10.0`.
+- Removed `DatabaseWrapper` in favor of native SQL Server, MySQL, PostgreSQL, and SQLite implementations.
+- Added the RestDb dashboard and Docker Compose workspace flow for the bundled sample database.
+- Added runtime-editable `restdb.json` and `context.json` APIs, plus dashboard editors for server settings and context metadata.
+- Added `RestDb.McpServer` using Voltaic with HTTP, TCP, WebSocket, and stdio transports covering the RestDb API surface.
+- Added a built-in `RestDb.McpServer install` workflow to configure Claude Code, Codex, Gemini CLI, and Cursor MCP definitions from the command line.
+- Added `REST_API.md` and `MCP_API.md` to document the HTTP and MCP surfaces.
+- Migrated tests to a shared Touchstone suite exposed through CLI, xUnit, and NUnit runners.
+- Added exhaustive query-builder coverage for every SQL-emitting API route across all supported providers.
+- Added live API coverage through `RestDb.Test.Automated`, including Docker-backed MySQL, PostgreSQL, and SQL Server runs.
+- Strengthened live tests to validate inserted, updated, retrieved, and deleted data rather than only status codes or row counts.
+- Added bearer-token authentication alongside the configured API key header.
+- Rebuilt the Postman collection around the current routes, corrected request naming, added runtime settings/context management requests, and aligned the default examples with the bundled `sample.db` data.
+- Reduced repeated dashboard metadata requests by narrowing initial workspace fetches to database and selected-table metadata.
+- Fixed filtered DELETE route handling to correctly apply querystring filters.
+- Fixed provider-specific `LIKE` generation so MySQL no longer emits invalid escape syntax.
 
 ## Previous Versions
 

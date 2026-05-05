@@ -1,577 +1,560 @@
 {
-	"info": {
-		"_postman_id": "311ea6a8-0b2b-4639-9d57-f38e04948b75",
-		"name": "RestDb",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "720438"
-	},
-	"item": [
-		{
-			"name": "v1.0",
-			"item": [
-				{
-					"name": "GET databases",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/_databases",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"_databases"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GET database describe",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/test?_describe",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test"
-							],
-							"query": [
-								{
-									"key": "_describe",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "POST table create",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"Name\": \"table1\",\n  \"PrimaryKey\": \"id\",\n  \"Columns\": [\n    {\n      \"Name\": \"id\",\n      \"PrimaryKey\": true,\n      \"Type\": \"Int\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"name\",\n      \"PrimaryKey\": false,\n      \"Type\": \"Nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GET table rows",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/test/table1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GET table describe",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/test/table1?_describe",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							],
-							"query": [
-								{
-									"key": "_describe",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "DELETE table truncate",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/test/table1?_truncate",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							],
-							"query": [
-								{
-									"key": "_truncate",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "POST table object",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Joel\"\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test/table1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "POST raw query",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "SELECT * FROM table1;"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test?raw",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test"
-							],
-							"query": [
-								{
-									"key": "raw",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "v2.0",
-			"item": [
-				{
-					"name": "List databases",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/_databases",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"_databases"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Describe a database",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/sample?_describe",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"sample"
-							],
-							"query": [
-								{
-									"key": "_describe",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create a table",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"Name\": \"table1\",\n  \"PrimaryKey\": \"id\",\n  \"Columns\": [\n    {\n      \"Name\": \"id\",\n      \"PrimaryKey\": true,\n      \"Type\": \"Int\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"name\",\n      \"PrimaryKey\": false,\n      \"Type\": \"Nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Describe a table",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/sample/person?_describe",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"sample",
-								"person"
-							],
-							"query": [
-								{
-									"key": "_describe",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create table row",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"name\": \"Joel\"\r\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test/table1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create multiple rows",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "[\r\n    {\r\n        \"name\": \"created1\"\r\n    },\r\n    {\r\n        \"name\": \"created2\"\r\n    },\r\n    {\r\n        \"name\": \"created3\"\r\n    }\r\n]"
-						},
-						"url": {
-							"raw": "http://localhost:8000/test/table1?_multiple",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							],
-							"query": [
-								{
-									"key": "_multiple",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Retrieve table rows",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/sample/person?_max=10&_index=0",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"sample",
-								"person"
-							],
-							"query": [
-								{
-									"key": "_max",
-									"value": "10"
-								},
-								{
-									"key": "_index",
-									"value": "0"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Search table rows",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"Left\": \"firstname\",\r\n    \"Operator\": \"Equals\",\r\n    \"Right\": \"joe\"\r\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/sample/person?_index=0&_max=10&_return=firstname&_order=asc&_order_by=id",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"sample",
-								"person"
-							],
-							"query": [
-								{
-									"key": "_index",
-									"value": "0"
-								},
-								{
-									"key": "_max",
-									"value": "10"
-								},
-								{
-									"key": "_return",
-									"value": "firstname"
-								},
-								{
-									"key": "_order",
-									"value": "asc"
-								},
-								{
-									"key": "_order_by",
-									"value": "id"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Truncate a table",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/test/table1?_truncate",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							],
-							"query": [
-								{
-									"key": "_truncate",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Drop a table",
-					"request": {
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "http://localhost:8000/test/table1?_drop",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1"
-							],
-							"query": [
-								{
-									"key": "_drop",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete by primary key ID",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "content-type",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "http://localhost:8000/test/table1/1",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"test",
-								"table1",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Execute raw query",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "SELECT * FROM person;"
-						},
-						"url": {
-							"raw": "http://localhost:8000/sample?raw",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"sample"
-							],
-							"query": [
-								{
-									"key": "raw",
-									"value": null
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		}
-	]
+  "info": {
+    "_postman_id": "311ea6a8-0b2b-4639-9d57-f38e04948b75",
+    "name": "RestDb",
+    "description": "Comprehensive Postman collection for RestDb.\n\nRecommended starting point:\n1. Set `baseUrl`, `apiKey`, `apiKeyHeader`, `databaseName`, `tableName`, and `rowId`.\n2. Run `System Operations` to verify connectivity, authentication, runtime settings, and context-management routes.\n3. Run `Database Operations` for metadata, schema, record retrieval, record mutation, and raw SQL.\n\nAuthentication:\n- Collection-level auth is configured as an API key header using `{{apiKeyHeader}}: {{apiKey}}`.\n- RestDb also accepts `Authorization: Bearer {{apiKey}}`. If you prefer bearer auth in Postman, change the collection authorization type to `Bearer Token` and set the token to `{{apiKey}}`.\n\nNotes:\n- Presence-based flags such as `_describe`, `_multiple`, `_truncate`, `_drop`, and `_debug` are shown with `=true` for readability, but the server only checks for their presence.\n- With the bundled Docker stack, the default read examples work against the `sample.person` table.\n- Create, update, delete, truncate, and drop requests target `{{tableName}}` directly. Change `tableName` before running destructive requests if you do not want to modify the current target table.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "720438"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "{{apiKeyHeader}}",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string",
+      "description": "Root URL for the RestDb server."
+    },
+    {
+      "key": "apiKey",
+      "value": "default",
+      "type": "string",
+      "description": "API key used when authentication is enabled."
+    },
+    {
+      "key": "apiKeyHeader",
+      "value": "x-api-key",
+      "type": "string",
+      "description": "Configured RestDb API key header name."
+    },
+    {
+      "key": "origin",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Origin header used by the preflight example."
+    },
+    {
+      "key": "databaseName",
+      "value": "sample",
+      "type": "string",
+      "description": "Target database name. With the bundled Docker stack, `sample` is the included SQLite database."
+    },
+    {
+      "key": "tableName",
+      "value": "person",
+      "type": "string",
+      "description": "Target table name. Defaults to the bundled `person` table in `sample.db`."
+    },
+    {
+      "key": "rowId",
+      "value": "1",
+      "type": "string",
+      "description": "Primary-key value for single-record routes. Defaults to the first bundled `person` record and is overwritten by the insert request test script."
+    }
+  ],
+  "item": [
+    {
+      "name": "System Operations",
+      "description": "Connectivity, authentication, runtime settings, and context-management routes.",
+      "item": [
+        {
+          "name": "Check system health",
+          "request": {
+            "method": "GET",
+            "description": "Unauthenticated status page used to verify the service is running.",
+            "header": [],
+            "url": "{{baseUrl}}/"
+          },
+          "response": []
+        },
+        {
+          "name": "Inspect CORS preflight behavior",
+          "request": {
+            "method": "OPTIONS",
+            "description": "Browser-style CORS preflight example. This route should succeed even when RestDb requires authentication.",
+            "header": [
+              {
+                "key": "Origin",
+                "value": "{{origin}}",
+                "type": "text"
+              },
+              {
+                "key": "Access-Control-Request-Method",
+                "value": "GET",
+                "type": "text"
+              },
+              {
+                "key": "Access-Control-Request-Headers",
+                "value": "{{apiKeyHeader}}, x-dashboard-trace",
+                "type": "text"
+              }
+            ],
+            "url": "{{baseUrl}}/_databases"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve database list",
+          "request": {
+            "method": "GET",
+            "description": "Lists configured database names as a JSON array.",
+            "header": [],
+            "url": "{{baseUrl}}/_databases"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve active database clients",
+          "request": {
+            "method": "GET",
+            "description": "Lists the active database clients currently initialized by RestDb.",
+            "header": [],
+            "url": "{{baseUrl}}/_databaseclients"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve live server settings",
+          "request": {
+            "method": "GET",
+            "description": "Returns the live `restdb.json` document currently loaded by the running server.",
+            "header": [],
+            "url": "{{baseUrl}}/_settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Replace live server settings",
+          "request": {
+            "method": "PUT",
+            "description": "Replaces and persists the full `restdb.json` document. If listener host, port, or SSL changes, the response includes `x-restart-required: true`.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Server\": {\n    \"ListenerHostname\": \"*\",\n    \"ListenerPort\": 8000,\n    \"Ssl\": false,\n    \"Debug\": false,\n    \"RequireAuthentication\": true,\n    \"ApiKeyHeader\": \"x-api-key\"\n  },\n  \"Logging\": {\n    \"ServerIp\": \"127.0.0.1\",\n    \"ServerPort\": 514,\n    \"MinimumLevel\": 1,\n    \"LogHttpRequests\": false,\n    \"LogHttpResponses\": false,\n    \"ConsoleLogging\": true\n  },\n  \"Databases\": [\n    {\n      \"Name\": \"sample\",\n      \"Type\": \"Sqlite\",\n      \"Filename\": \"./sample.db\",\n      \"Debug\": false,\n      \"Tables\": [],\n      \"TableNames\": []\n    }\n  ],\n  \"ApiKeys\": [\n    {\n      \"Key\": \"default\",\n      \"AllowGet\": true,\n      \"AllowPost\": true,\n      \"AllowPut\": true,\n      \"AllowDelete\": true\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/_settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Reload live server settings from disk",
+          "request": {
+            "method": "POST",
+            "description": "Reloads `restdb.json` from disk and returns the live settings document plus restart-required headers when applicable.",
+            "header": [],
+            "url": "{{baseUrl}}/_settings/reload"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve full context document",
+          "request": {
+            "method": "GET",
+            "description": "Returns the full shared `context.json` document.",
+            "header": [],
+            "url": "{{baseUrl}}/_context"
+          },
+          "response": []
+        },
+        {
+          "name": "Replace full context document",
+          "request": {
+            "method": "PUT",
+            "description": "Replaces and persists the full shared `context.json` document.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Databases\": {\n    \"sample\": {\n      \"Context\": \"This SQLite database contains example business data used to explore RestDb and the dashboard.\",\n      \"Tables\": {\n        \"department\": \"Reference table for departments. Primary key is department_id.\",\n        \"person\": \"Stores people records. Primary key is person_id and department_id relates each person to a department.\",\n        \"project\": \"Stores projects owned by departments. Primary key is project_id and department_id links each project to a department.\",\n        \"task\": \"Stores task records assigned to people and projects. Primary key is task_id, with project_id and assignee_person_id describing ownership and assignment.\"\n      }\n    }\n  }\n}"
+            },
+            "url": "{{baseUrl}}/_context"
+          },
+          "response": []
+        },
+        {
+          "name": "Reload full context document from disk",
+          "request": {
+            "method": "POST",
+            "description": "Reloads `context.json` from disk and returns the live document.",
+            "header": [],
+            "url": "{{baseUrl}}/_context/reload"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve database context",
+          "request": {
+            "method": "GET",
+            "description": "Returns the database-level context plus per-table context entries for the selected database.",
+            "header": [],
+            "url": "{{baseUrl}}/_context/{{databaseName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update database context",
+          "request": {
+            "method": "PUT",
+            "description": "Updates the database-level context entry and the known table-context map for the selected database.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Database\": \"{{databaseName}}\",\n  \"Context\": \"This SQLite database contains example business data used to explore RestDb and the dashboard.\",\n  \"Tables\": {\n    \"department\": \"Reference table for departments. Primary key is department_id.\",\n    \"person\": \"Stores people records. Primary key is person_id and department_id relates each person to a department.\",\n    \"project\": \"Stores projects owned by departments. Primary key is project_id and department_id links each project to a department.\",\n    \"task\": \"Stores task records assigned to people and projects. Primary key is task_id, with project_id and assignee_person_id describing ownership and assignment.\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/_context/{{databaseName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve table context",
+          "request": {
+            "method": "GET",
+            "description": "Returns the table-level context entry for the selected database and table.",
+            "header": [],
+            "url": "{{baseUrl}}/_context/{{databaseName}}/{{tableName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update table context",
+          "request": {
+            "method": "PUT",
+            "description": "Updates the table-level context entry for the selected database and table.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Database\": \"{{databaseName}}\",\n  \"Table\": \"{{tableName}}\",\n  \"Context\": \"Stores people records. Primary key is person_id and department_id relates each person to a department.\"\n}"
+            },
+            "url": "{{baseUrl}}/_context/{{databaseName}}/{{tableName}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Database Operations",
+      "description": "Database metadata, schema, records, table management, and raw SQL.",
+      "item": [
+        {
+          "name": "Retrieve database metadata",
+          "request": {
+            "method": "GET",
+            "description": "Returns the redacted database configuration plus `TableNames`.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Describe database schema",
+          "request": {
+            "method": "GET",
+            "description": "Returns the redacted database configuration plus fully described `Tables` metadata.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}?_describe=true"
+          },
+          "response": []
+        },
+        {
+          "name": "Describe table",
+          "request": {
+            "method": "GET",
+            "description": "Describes a single table, including primary key and columns.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?_describe=true"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve records",
+          "request": {
+            "method": "GET",
+            "description": "Returns rows from the target table, ordered by primary key ascending by default. With the default variables this reads the bundled `sample.person` table.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Enumerate records",
+          "request": {
+            "method": "GET",
+            "description": "Demonstrates equality filters plus `_index`, `_max`, `_order_by`, `_order`, and `_return` against the bundled sample data.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?department_id=1&active=1&_index=0&_max=2&_order_by=person_id&_order=asc&_return=person_id,first_name,last_name,title"
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve record by ID",
+          "request": {
+            "method": "GET",
+            "description": "Retrieves a single row by primary key. With the default variables, `rowId=1` returns the first bundled `person` row.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}/{{rowId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create table",
+          "request": {
+            "method": "POST",
+            "description": "Creates `{{tableName}}` using the schema below. If the table already exists, the provider may reject the request or leave the existing table unchanged.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Name\": \"{{tableName}}\",\n  \"PrimaryKey\": \"person_id\",\n  \"Columns\": [\n    {\n      \"Name\": \"person_id\",\n      \"Type\": \"int\",\n      \"PrimaryKey\": true,\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"first_name\",\n      \"Type\": \"nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"last_name\",\n      \"Type\": \"nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"email\",\n      \"Type\": \"nvarchar\",\n      \"MaxLength\": 128,\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"title\",\n      \"Type\": \"nvarchar\",\n      \"MaxLength\": 64,\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"department_id\",\n      \"Type\": \"int\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"hire_date\",\n      \"Type\": \"datetime\",\n      \"Nullable\": false\n    },\n    {\n      \"Name\": \"active\",\n      \"Type\": \"int\",\n      \"Nullable\": false\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Insert record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Single insert returns 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "if (json.person_id !== undefined && json.person_id !== null) {",
+                  "  pm.collectionVariables.set('rowId', String(json.person_id));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "description": "Inserts one row into `{{tableName}}` and stores the returned `person_id` into `rowId` when present.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"department_id\": 1,\n  \"first_name\": \"Joel\",\n  \"last_name\": \"Christner\",\n  \"email\": \"joel.christner@example.com\",\n  \"title\": \"Principal Analyst\",\n  \"hire_date\": \"2024-01-01 00:00:00\",\n  \"active\": 1\n}"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Insert multiple records",
+          "request": {
+            "method": "POST",
+            "description": "Bulk insert example for `{{tableName}}`. Returns `201 Created` with an empty body.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"department_id\": 2,\n    \"first_name\": \"Jane\",\n    \"last_name\": \"Doe\",\n    \"email\": \"jane.doe@example.com\",\n    \"title\": \"Program Lead\",\n    \"hire_date\": \"2024-01-02 00:00:00\",\n    \"active\": 1\n  },\n  {\n    \"department_id\": 3,\n    \"first_name\": \"Max\",\n    \"last_name\": \"Roe\",\n    \"email\": \"max.roe@example.com\",\n    \"title\": \"Analyst\",\n    \"hire_date\": \"2024-01-03 00:00:00\",\n    \"active\": 1\n  }\n]"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?_multiple=true"
+          },
+          "response": []
+        },
+        {
+          "name": "Search records",
+          "request": {
+            "method": "PUT",
+            "description": "ExpressionTree search request. Returns matching rows as a JSON array. The default payload targets the bundled `person` table schema.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Left\": {\n    \"Left\": \"department_id\",\n    \"Operator\": \"In\",\n    \"Right\": [1, 3]\n  },\n  \"Operator\": \"Or\",\n  \"Right\": {\n    \"Left\": {\n      \"Left\": \"title\",\n      \"Operator\": \"Contains\",\n      \"Right\": \"Manager\"\n    },\n    \"Operator\": \"And\",\n    \"Right\": {\n      \"Left\": \"active\",\n      \"Operator\": \"Equals\",\n      \"Right\": 1\n    }\n  }\n}"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Search records with filters and debug expression",
+          "request": {
+            "method": "PUT",
+            "description": "ExpressionTree search plus querystring filters. `_debug=true` causes RestDb to emit the translated expression in the `x-expression` response header.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"Left\": {\n    \"Left\": \"title\",\n    \"Operator\": \"Contains\",\n    \"Right\": \"Engineer\"\n  },\n  \"Operator\": \"And\",\n  \"Right\": {\n    \"Left\": \"active\",\n    \"Operator\": \"Equals\",\n    \"Right\": 1\n  }\n}"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?department_id=1&_index=0&_max=10&_order_by=person_id&_order=asc&_return=person_id,first_name,last_name,title&_debug=true"
+          },
+          "response": []
+        },
+        {
+          "name": "Update record by ID",
+          "request": {
+            "method": "PUT",
+            "description": "Updates the row captured in `rowId`. RestDb returns `200 OK` with an empty body for this route.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Principal Analyst\",\n  \"active\": 1\n}"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}/{{rowId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete filtered records",
+          "request": {
+            "method": "DELETE",
+            "description": "Deletes rows that match the supplied querystring filters. RestDb returns `204 No Content`.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?first_name=Joel&department_id=1"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete record by ID",
+          "request": {
+            "method": "DELETE",
+            "description": "Deletes one row by primary key.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}/{{rowId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete record by ID with additional filters",
+          "request": {
+            "method": "DELETE",
+            "description": "Deletes one row by primary key while also requiring the extra querystring equality filter to match.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}/{{rowId}}?active=1"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete all records",
+          "request": {
+            "method": "DELETE",
+            "description": "Deletes all rows from `{{tableName}}` without dropping the table.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Truncate table",
+          "request": {
+            "method": "DELETE",
+            "description": "Clears the table using the provider's truncate or clear semantics. Returns `204 No Content`.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?_truncate=true"
+          },
+          "response": []
+        },
+        {
+          "name": "Drop table",
+          "request": {
+            "method": "DELETE",
+            "description": "Drops `{{tableName}}`.",
+            "header": [],
+            "url": "{{baseUrl}}/{{databaseName}}/{{tableName}}?_drop=true"
+          },
+          "response": []
+        },
+        {
+          "name": "Execute raw SQL query",
+          "request": {
+            "method": "POST",
+            "description": "Executes raw SQL against the selected database and returns any result set as JSON. The default query targets the bundled `person` table.",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "SELECT COUNT(*) AS record_count FROM {{tableName}};"
+            },
+            "url": "{{baseUrl}}/{{databaseName}}?raw=true"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
 }

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AssemblyName>RestDb.McpServer</AssemblyName>
+    <RootNamespace>RestDb.McpServer</RootNamespace>
+    <PackageId>RestDb.McpServer</PackageId>
+    <Version>2.0.7</Version>
+    <Description>MCP server for RestDb. Exposes the RestDb HTTP API over MCP HTTP, TCP, WebSocket, and stdio transports.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Voltaic" Version="0.1.11" />
+  </ItemGroup>
+
+</Project>

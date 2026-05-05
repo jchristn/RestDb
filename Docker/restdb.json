@@ -4,7 +4,7 @@
     "ListenerPort": 8000,
     "Ssl": false,
     "Debug": false,
-    "RequireAuthentication": false,
+    "RequireAuthentication": true,
     "ApiKeyHeader": "x-api-key"
   },
   "Logging": {

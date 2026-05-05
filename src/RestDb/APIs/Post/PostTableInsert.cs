@@ -1,19 +1,18 @@
-﻿namespace RestDb
+namespace RestDb
 {
     using System.Collections.Generic;
     using System.Data;
     using System.Threading.Tasks;
     using RestDb.Classes;
-    using DatabaseWrapper;
 
     partial class RestDbServer
     {
         static async Task PostTableInsert(RequestMetadata md)
         {
             string dbName = md.Http.Request.Url.Elements[0];
-            string tableName = md.Http.Request.Url.Elements[1]; 
+            string tableName = md.Http.Request.Url.Elements[1];
 
-            Table currTable = _Databases.GetTableByName(dbName, tableName);
+            Table currTable = await _Databases.GetTableByNameAsync(dbName, tableName);
             if (currTable == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -22,7 +21,7 @@
                 return;
             }
 
-            DatabaseClient db = _Databases.GetDatabaseClient(dbName);
+            var db = _Databases.GetDatabaseDriver(dbName);
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -45,12 +44,12 @@
             if (!md.Params.Multiple)
             {
                 Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(md.Http.Request.DataAsBytes);
-                result = db.Insert(tableName, dict);
+                result = await db.Records.InsertAsync(currTable.Name, currTable.Columns, dict);
             }
             else
             {
                 List<Dictionary<string, object>> dicts = SerializationHelper.DeserializeJson<List<Dictionary<string, object>>>(md.Http.Request.DataAsBytes);
-                db.InsertMultiple(tableName, dicts);
+                await db.Records.InsertMultipleAsync(currTable.Name, currTable.Columns, dicts);
             }
 
             md.Http.Response.StatusCode = 201;
@@ -64,7 +63,6 @@
             {
                 await md.Http.Response.Send();
             }
-            return;
         }
     }
 }

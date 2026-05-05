@@ -42,9 +42,7 @@ namespace RestDb
 
             #region Load-Configuration
 
-            if (!File.Exists("./restdb.json")) new Setup();
-
-            _Settings = Settings.FromFile("./restdb.json");
+            InitializeRuntimeState();
 
             #endregion
 
@@ -63,17 +61,17 @@ namespace RestDb
 
             _Auth = new AuthManager(_Settings, _Logging);
 
-            _WebserverSettings = new WebserverSettings() {
-                Hostname = _Settings.Server.ListenerHostname,
-                Port = _Settings.Server.ListenerPort,
-                Ssl = new WebserverSettings.SslSettings() {
-                    Enable = _Settings.Server.Ssl,
-                }
-            };
+            _WebserverSettings = new WebserverSettings();
+            _WebserverSettings.Hostname = _Settings.Server.ListenerHostname;
+            _WebserverSettings.Port = _Settings.Server.ListenerPort;
+            _WebserverSettings.Ssl.Enable = _Settings.Server.Ssl;
 
             _Server = new Webserver(
                 _WebserverSettings,
                 DefaultRoute);
+            _Server.Routes.PreRouting = PreRouting;
+            _Server.Routes.PostRouting = PostRouting;
+            _Server.Routes.Preflight = PreflightRoute;
 
             _Server.Start();
 
@@ -186,7 +184,6 @@ namespace RestDb
 
                     case HttpMethod.OPTIONS:
                         #region OPTIONS
-
                         break;
 
                     #endregion
@@ -238,6 +235,32 @@ namespace RestDb
                             return;
                         }
 
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_settings"))
+                        {
+                            await GetServerSettings(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_context"))
+                        {
+                            await GetContextFile(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.Elements.Length == 2
+                            && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await GetDatabaseContext(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.Elements.Length == 3
+                            && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await GetTableContext(md);
+                            return;
+                        }
+
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_databases"))
                         {
                             await GetDatabases(md);
@@ -263,6 +286,32 @@ namespace RestDb
                     case HttpMethod.PUT:
                         #region PUT
 
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_settings"))
+                        {
+                            await PutServerSettings(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_context"))
+                        {
+                            await PutContextFile(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.Elements.Length == 2
+                            && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await PutDatabaseContext(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.Elements.Length == 3
+                            && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await PutTableContext(md);
+                            return;
+                        }
+
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
                             await PutTable(md);
@@ -274,6 +323,18 @@ namespace RestDb
 
                     case HttpMethod.POST:
                         #region POST
+
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_settings/reload"))
+                        {
+                            await PostServerSettingsReload(md);
+                            return;
+                        }
+
+                        if (ctx.Request.Url.RawWithoutQuery.Equals("/_context/reload"))
+                        {
+                            await PostContextReload(md);
+                            return;
+                        }
 
                         if (ctx.Request.Url.Elements.Length == 1)
                         {
@@ -312,12 +373,8 @@ namespace RestDb
 
                     case HttpMethod.OPTIONS:
                         #region OPTIONS
-                        ctx.Response.StatusCode = 200;
-                        ctx.Response.Headers.Add("Allow", "GET, PUT, POST, DELETE, OPTIONS");
-                        await ctx.Response.Send();
-                        return;
-
-                    #endregion
+                        #endregion
+                        break;
 
                     default:
                         ctx.Response.StatusCode = 400;

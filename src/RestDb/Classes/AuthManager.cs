@@ -45,10 +45,10 @@
 
             #region Extract-API-Key
 
-            apiKey = ctx.Request.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
+            apiKey = ExtractApiKey(ctx);
             if (String.IsNullOrEmpty(apiKey))
             {
-                _Logging.Warn("Authenticate unable to retrieve API key from headers");
+                _Logging.Warn("Authenticate unable to retrieve API key from the configured header or Authorization bearer token");
                 return false;
             }
 
@@ -104,6 +104,30 @@
         #endregion
 
         #region Private-Methods
+
+        private string ExtractApiKey(HttpContext ctx)
+        {
+            if (ctx == null || ctx.Request == null) return null;
+
+            string apiKey = ctx.Request.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
+            if (!String.IsNullOrWhiteSpace(apiKey))
+            {
+                return apiKey.Trim();
+            }
+
+            string authorization = ctx.Request.RetrieveHeaderValue("Authorization");
+            if (!String.IsNullOrWhiteSpace(authorization)
+                && authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                string token = authorization.Substring("Bearer ".Length).Trim();
+                if (!String.IsNullOrWhiteSpace(token))
+                {
+                    return token;
+                }
+            }
+
+            return null;
+        }
 
         #endregion
 

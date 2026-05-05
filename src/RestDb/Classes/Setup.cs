@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using DatabaseWrapper.Core;
     using GetSomeInput;
 
     internal class Setup
@@ -182,6 +181,7 @@
             Console.WriteLine("");
 
             ret.ToFile("restdb.json");
+            new ContextDocument().ToFile("context.json");
 
             #endregion
         }

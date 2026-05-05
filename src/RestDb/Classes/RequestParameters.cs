@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using DatabaseWrapper.Core;
     using WatsonWebserver;
 
     /// <summary>
@@ -75,6 +74,11 @@
         public List<string> ReturnFields { get; set; } = null;
 
         /// <summary>
+        /// Whether pagination parameters were explicitly requested.
+        /// </summary>
+        public bool PaginationRequested { get; private set; } = false;
+
+        /// <summary>
         /// Truncate table.
         /// </summary>
         public bool Truncate { get; set; } = false;
@@ -111,29 +115,31 @@
                 {
                     Describe = true;
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryMultiple))
+                if (ctx.Request.QuerystringExists(Constants.QueryMultiple))
                 {
                     Multiple = true;
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryIndexStart))
+                if (ctx.Request.QuerystringExists(Constants.QueryIndexStart))
                 {
+                    PaginationRequested = true;
                     if (Int32.TryParse(ctx.Request.Query.Elements[Constants.QueryIndexStart], out int testInt))
                     {
                         IndexStart = testInt;
                     }
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryMaxResults))
+                if (ctx.Request.QuerystringExists(Constants.QueryMaxResults))
                 {
+                    PaginationRequested = true;
                     if (Int32.TryParse(ctx.Request.Query.Elements[Constants.QueryMaxResults], out int testInt))
                     {
                         MaxResults = testInt;
                     }
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryOrderBy))
+                if (ctx.Request.QuerystringExists(Constants.QueryOrderBy))
                 {
                     OrderBy = Common.CsvToStringList(ctx.Request.Query.Elements[Constants.QueryOrderBy]);
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryOrderDirection))
+                if (ctx.Request.QuerystringExists(Constants.QueryOrderDirection))
                 {
                     string orderDirection = ctx.Request.Query.Elements[Constants.QueryOrderDirection];
                     if (!String.IsNullOrEmpty(orderDirection))
@@ -142,7 +148,7 @@
                         else if (orderDirection.ToLower().Equals("desc")) OrderDirection = OrderDirectionEnum.Descending;
                     }
                 }
-                else if (ctx.Request.QuerystringExists(Constants.QueryReturnFields))
+                if (ctx.Request.QuerystringExists(Constants.QueryReturnFields))
                 {
                     ReturnFields = Common.CsvToStringList(ctx.Request.Query.Elements[Constants.QueryReturnFields]);
                 }

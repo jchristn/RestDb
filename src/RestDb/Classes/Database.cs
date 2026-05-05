@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using DatabaseWrapper.Core;
 
     /// <summary>
     /// Database settings.

@@ -1,13 +1,11 @@
-﻿namespace RestDb
+namespace RestDb
 {
     using System;
     using System.Collections.Generic;
     using System.Data;
     using System.Threading.Tasks;
-    using RestDb.Classes;
-    using DatabaseWrapper;
-    using DatabaseWrapper.Core;
     using ExpressionTree;
+    using RestDb.Classes;
 
     partial class RestDbServer
     {
@@ -18,7 +16,7 @@
             int idVal = 0;
             if (md.Http.Request.Url.Elements.Length == 3) Int32.TryParse(md.Http.Request.Url.Elements[2], out idVal);
 
-            Table currTable = _Databases.GetTableByName(dbName, tableName);
+            Table currTable = await _Databases.GetTableByNameAsync(dbName, tableName);
             if (currTable == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -26,8 +24,8 @@
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
-             
-            DatabaseClient db = _Databases.GetDatabaseClient(dbName);
+
+            var db = _Databases.GetDatabaseDriver(dbName);
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -35,8 +33,6 @@
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.NotFound), true));
                 return;
             }
-
-            #region Check-for-Describe
 
             if (md.Params.Describe)
             {
@@ -46,14 +42,10 @@
                 return;
             }
 
-            #endregion
-            
-            #region Retrieve-Objects
-
             DataTable result = null;
             Expr filter = null;
             ResultOrder[] resultOrder = null;
-            if (!String.IsNullOrEmpty(currTable.PrimaryKey))
+            if (!string.IsNullOrEmpty(currTable.PrimaryKey))
             {
                 resultOrder = new ResultOrder[1];
                 resultOrder[0] = new ResultOrder(currTable.PrimaryKey, OrderDirectionEnum.Ascending);
@@ -61,7 +53,7 @@
 
             if (idVal > 0)
             {
-                if (String.IsNullOrEmpty(currTable.PrimaryKey))
+                if (string.IsNullOrEmpty(currTable.PrimaryKey))
                 {
                     _Logging.Warn("GetTable no primary key defined for table " + tableName + " in database " + dbName);
                     md.Http.Response.StatusCode = 400;
@@ -79,13 +71,11 @@
                 {
                     string currKey = md.Http.Request.Query.Elements.GetKey(i);
                     string currVal = md.Http.Request.Query.Elements.Get(i);
-                    if (String.IsNullOrEmpty(currKey)) continue;
+                    if (string.IsNullOrEmpty(currKey)) continue;
                     if (Constants.QueryKeys.Contains(currKey)) continue;
 
                     if (filter == null) filter = new Expr(currKey, OperatorEnum.Equals, currVal);
-                    else filter = Expr.PrependAndClause(
-                        new Expr(currKey, OperatorEnum.Equals, currVal),
-                        filter);
+                    else filter = Expr.PrependAndClause(new Expr(currKey, OperatorEnum.Equals, currVal), filter);
                 }
             }
 
@@ -97,30 +87,28 @@
                 {
                     if (md.Params.OrderDirection == OrderDirectionEnum.Descending)
                     {
-                        ResultOrder ro = new ResultOrder(curr, OrderDirectionEnum.Descending);
+                        resultOrderList.Add(new ResultOrder(curr, OrderDirectionEnum.Descending));
                     }
-                    else if (md.Params.OrderDirection == OrderDirectionEnum.Ascending)
+                    else
                     {
-                        ResultOrder ro = new ResultOrder(curr, OrderDirectionEnum.Ascending);
+                        resultOrderList.Add(new ResultOrder(curr, OrderDirectionEnum.Ascending));
                     }
                 }
 
                 if (resultOrderList.Count > 0)
                 {
-                    resultOrder = new ResultOrder[resultOrderList.Count];
-                    for (int i = 0; i < resultOrderList.Count; i++)
-                    {
-                        resultOrder[i] = resultOrderList[i];
-                    }
+                    resultOrder = resultOrderList.ToArray();
                 }
             }
 
-            result = db.Select(
-                tableName, 
-                md.Params.IndexStart, 
-                md.Params.MaxResults, 
-                md.Params.ReturnFields, 
-                filter, 
+            result = await db.Records.SelectAsync(
+                currTable.Name,
+                currTable.Columns,
+                md.Params.IndexStart,
+                md.Params.MaxResults,
+                md.Params.PaginationRequested,
+                md.Params.ReturnFields,
+                filter,
                 resultOrder);
 
             if (result == null || result.Rows.Count < 1)
@@ -130,15 +118,10 @@
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(new List<dynamic>(), true));
                 return;
             }
-            else
-            {
-                md.Http.Response.StatusCode = 200;
-                md.Http.Response.ContentType = Constants.JsonContentType;
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
-                return;
-            }
 
-            #endregion 
+            md.Http.Response.StatusCode = 200;
+            md.Http.Response.ContentType = Constants.JsonContentType;
+            await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
         }
     }
 }

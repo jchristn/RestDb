@@ -1,18 +1,16 @@
-﻿namespace RestDb
+namespace RestDb
 {
     using System;
     using System.Linq;
     using System.Threading.Tasks;
     using RestDb.Classes;
-    using DatabaseWrapper;
-    using DatabaseWrapper.Core;
 
     partial class RestDbServer
     {
         static async Task PostTableCreate(RequestMetadata md)
         {
             string dbName = md.Http.Request.Url.Elements[0];
-            DatabaseClient db = _Databases.GetDatabaseClient(dbName);
+            var db = _Databases.GetDatabaseDriver(dbName);
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -32,13 +30,14 @@
 
             Table table = SerializationHelper.DeserializeJson<Table>(md.Http.Request.DataAsString);
 
-            if (!String.IsNullOrEmpty(table.PrimaryKey))
+            if (!string.IsNullOrEmpty(table.PrimaryKey))
             {
-                if (table.Columns.Any(c => c.Name.Equals(table.PrimaryKey)))
+                if (table.Columns.Any(c => c.Name.Equals(table.PrimaryKey, StringComparison.OrdinalIgnoreCase)))
                 {
-                    Column primaryKey = table.Columns.First(c => c.Name.Equals(table.PrimaryKey));
+                    Column primaryKey = table.Columns.First(c => c.Name.Equals(table.PrimaryKey, StringComparison.OrdinalIgnoreCase));
                     table.Columns.Remove(primaryKey);
                     primaryKey.PrimaryKey = true;
+                    primaryKey.Nullable = false;
                     table.Columns.Add(primaryKey);
                 }
                 else
@@ -60,14 +59,13 @@
                 return;
             }
 
-            db.CreateTable(table.Name, table.Columns);
+            await db.Schema.CreateTableAsync(table.Name, table.Columns);
 
             _Logging.Info("PostTableCreate created table " + table.Name + " in database " + dbName);
 
             md.Http.Response.StatusCode = 201;
             md.Http.Response.ContentType = Constants.JsonContentType;
             await md.Http.Response.Send();
-            return;
         }
     }
 }

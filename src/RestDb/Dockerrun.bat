@@ -21,7 +21,7 @@ docker run ^
   -v .\restdb.json:/app/restdb.json ^
   -v .\sample.db:/app/sample.db ^
   -v .\logs\:/app/logs/ ^
-  jchristn/restdb:%1
+  jchristn77/restdb:%1
 
 GOTO :Done
 

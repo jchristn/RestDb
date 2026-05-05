@@ -1,16 +1,15 @@
-﻿namespace RestDb
+namespace RestDb
 {
     using System.Data;
     using System.Threading.Tasks;
     using RestDb.Classes;
-    using DatabaseWrapper;
 
     partial class RestDbServer
     {
         static async Task PostRawQuery(RequestMetadata md)
         {
             string dbName = md.Http.Request.Url.Elements[0];
-            DatabaseClient db = _Databases.GetDatabaseClient(dbName);
+            var db = _Databases.GetDatabaseDriver(dbName);
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -28,7 +27,7 @@
                 return;
             }
 
-            DataTable result = db.Query(md.Http.Request.DataAsString);
+            DataTable result = await db.RawSql.QueryAsync(md.Http.Request.DataAsString);
 
             if (result != null && result.Rows.Count > 0)
             {
@@ -37,13 +36,10 @@
                 await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
                 return;
             }
-            else
-            {
-                md.Http.Response.StatusCode = 200;
-                md.Http.Response.ContentType = Constants.JsonContentType;
-                await md.Http.Response.Send();
-                return;
-            }
+
+            md.Http.Response.StatusCode = 200;
+            md.Http.Response.ContentType = Constants.JsonContentType;
+            await md.Http.Response.Send();
         }
     }
 }

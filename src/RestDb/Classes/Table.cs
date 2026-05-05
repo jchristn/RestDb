@@ -1,7 +1,6 @@
 ﻿namespace RestDb
 {
     using System.Collections.Generic;
-    using DatabaseWrapper.Core;
 
     /// <summary>
     /// Database table.

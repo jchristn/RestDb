@@ -1,11 +1,9 @@
-﻿namespace RestDb 
+namespace RestDb
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
-    using RestDb.Classes;
-    using DatabaseWrapper;
     using ExpressionTree;
+    using RestDb.Classes;
 
     partial class RestDbServer
     {
@@ -15,8 +13,8 @@
             string tableName = md.Http.Request.Url.Elements[1];
             int idVal = 0;
             if (md.Http.Request.Url.Elements.Length == 3) Int32.TryParse(md.Http.Request.Url.Elements[2], out idVal);
-            
-            Table currTable = _Databases.GetTableByName(dbName, tableName);
+
+            Table currTable = await _Databases.GetTableByNameAsync(dbName, tableName);
             if (currTable == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -25,7 +23,7 @@
                 return;
             }
 
-            DatabaseClient db = _Databases.GetDatabaseClient(dbName);
+            var db = _Databases.GetDatabaseDriver(dbName);
             if (db == null)
             {
                 md.Http.Response.StatusCode = 404;
@@ -36,37 +34,29 @@
 
             if (md.Params.Truncate)
             {
-                #region Truncate
-
-                db.Truncate(tableName);
+                await db.Schema.ClearTableAsync(currTable.Name);
                 _Logging.Warn("DeleteTable truncated table " + tableName + " in database " + dbName);
                 md.Http.Response.StatusCode = 204;
                 await md.Http.Response.Send();
                 return;
-
-                #endregion
             }
-            else if (md.Params.Drop)
-            {
-                #region Drop
 
-                db.DropTable(tableName);
+            if (md.Params.Drop)
+            {
+                await db.Schema.DropTableAsync(currTable.Name);
                 _Logging.Warn("DeleteTable dropped table " + tableName + " in database " + dbName);
                 md.Http.Response.StatusCode = 204;
                 await md.Http.Response.Send();
                 return;
-
-                #endregion
             }
-            else if (md.Http.Request.Url.Elements.Length >= 2)
+
+            if (md.Http.Request.Url.Elements.Length >= 2)
             {
-                #region Delete-Objects
-                 
-                Expr filter = null; 
+                Expr filter = null;
 
                 if (idVal > 0)
                 {
-                    if (String.IsNullOrEmpty(currTable.PrimaryKey))
+                    if (string.IsNullOrEmpty(currTable.PrimaryKey))
                     {
                         _Logging.Warn("DeleteTable no primary key defined for table " + tableName + " in database " + dbName);
                         md.Http.Response.StatusCode = 400;
@@ -80,20 +70,21 @@
 
                 if (md.Http.Request.Query.Elements != null && md.Http.Request.Query.Elements.Count > 0)
                 {
-                    foreach (KeyValuePair<string, string> currKvp in md.Http.Request.Query.Elements)
+                    for (int i = 0; i < md.Http.Request.Query.Elements.Count; i++)
                     {
-                        if (Constants.QueryKeys.Contains(currKvp.Key)) continue;
-                        if (filter == null) filter = new Expr(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
-                        else filter.PrependAnd(currKvp.Key, OperatorEnum.Equals, currKvp.Value);
+                        string currKey = md.Http.Request.Query.Elements.GetKey(i);
+                        string currVal = md.Http.Request.Query.Elements.Get(i);
+                        if (string.IsNullOrEmpty(currKey)) continue;
+                        if (Constants.QueryKeys.Contains(currKey)) continue;
+
+                        if (filter == null) filter = new Expr(currKey, OperatorEnum.Equals, currVal);
+                        else filter = Expr.PrependAndClause(new Expr(currKey, OperatorEnum.Equals, currVal), filter);
                     }
                 }
 
-                db.Delete(tableName, filter);
+                await db.Records.DeleteAsync(currTable.Name, currTable.Columns, filter);
                 md.Http.Response.StatusCode = 204;
                 await md.Http.Response.Send();
-                return;
-
-                #endregion
             }
         }
     }

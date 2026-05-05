@@ -1,6 +1,5 @@
-﻿namespace RestDb
+namespace RestDb
 {
-    using System;
     using System.Threading.Tasks;
     using RestDb.Classes;
 
@@ -20,20 +19,18 @@
 
             db = Database.Redact(db);
 
-            string describe = md.Http.Request.RetrieveHeaderValue("_describe");
-            if (!String.IsNullOrEmpty(describe) && describe.Equals("true"))
+            if (md.Http.Request.QuerystringExists(Constants.QueryDescribe))
             {
-                db.Tables = _Databases.GetTables(dbName, true);
+                db.Tables = await _Databases.GetTablesAsync(dbName, true);
             }
             else
             {
-                db.TableNames = _Databases.GetTableNames(dbName);
+                db.TableNames = await _Databases.GetTableNamesAsync(dbName);
             }
 
             md.Http.Response.StatusCode = 200;
             md.Http.Response.ContentType = Constants.JsonContentType;
             await md.Http.Response.Send(SerializationHelper.SerializeJson(db, true));
-            return;
         }
     }
 }
