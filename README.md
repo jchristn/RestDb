@@ -29,17 +29,23 @@ RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing
 ## Running in Docker and Docker Compose
 
 The easiest way to get started in Docker is to clone the repository and run the Compose stack in the `Docker` directory.
-The provided `Docker/compose.yaml` builds the RestDb API, dashboard, and MCP server directly from the local source tree in this repository.
-The README does not assume or require any prepublished RestDb images from Docker Hub.
+The provided `Docker/compose.yaml` runs the RestDb API, dashboard, and MCP server from the published, versioned images on Docker Hub (`jchristn77/restdb`, `jchristn77/restdb-dashboard`, and `jchristn77/restdb-mcp`).
 
 ```
 git clone https://github.com/jchristn/restdb
 cd restdb/Docker
-docker compose build
 docker compose up -d
 ```
 
-If you change application code, Dockerfiles, or the dashboard, rerun `docker compose up --build -d` so the stack is rebuilt from your local checkout.
+Compose pulls the pinned image versions automatically. To move to a newer release, update the `image:` tags in `Docker/compose.yaml` (and `Docker/factory/compose.yaml`) and rerun `docker compose pull` followed by `docker compose up -d`.
+
+To build and publish the images from source instead of pulling them, use the `build-*.bat` scripts in the repository root (each takes a version tag and pushes multi-architecture images to Docker Hub):
+
+```
+build-all.bat v2.0.0
+```
+
+`build-all.bat` builds and pushes the server, dashboard, and MCP images; `build-server.bat`, `build-dashboard.bat`, and `build-mcp.bat` build them individually.
 
 The Docker Compose stack exposes:
 
