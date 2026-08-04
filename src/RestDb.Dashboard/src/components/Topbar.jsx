@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import GithubIcon from './GithubIcon';
@@ -5,6 +6,31 @@ import LanguageSelector from './LanguageSelector';
 import ThemeIcon from './ThemeIcon';
 
 const REPO_URL = 'https://github.com/jchristn/restdb';
+
+function QueryConsoleIcon() {
+  return (
+    <svg aria-hidden="true" className="icon" viewBox="0 0 24 24">
+      <rect
+        x="3.5"
+        y="5"
+        width="17"
+        height="14"
+        rx="2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M7 10l2.5 2L7 14M12.5 14.5H16"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.8"
+      />
+    </svg>
+  );
+}
 
 function LogoutIcon() {
   return (
@@ -93,6 +119,7 @@ function Topbar({
 }) {
   const { t } = useTranslation('translation');
   const { theme, toggleTheme } = useApp();
+  const navigate = useNavigate();
 
   return (
     <div className="topbar">
@@ -107,6 +134,17 @@ function Topbar({
       </div>
 
       <div className="topbar__actions">
+        <button
+          aria-label={t('query.title', { defaultValue: 'Query console' })}
+          className="icon-button"
+          onClick={() => navigate('/query')}
+          title={t('query.openConsoleTooltip', {
+            defaultValue: 'Open the SQL query console to run a query and export the results.'
+          })}
+          type="button"
+        >
+          <QueryConsoleIcon />
+        </button>
         <LanguageSelector />
         <button
           aria-label={theme === 'dark' ? t('theme.switchToLight') : t('theme.switchToDark')}

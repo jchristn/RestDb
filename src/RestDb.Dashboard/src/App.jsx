@@ -1,8 +1,9 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import Login from './components/Login';
 import ToastRegion from './components/ToastRegion';
 import { useAuth } from './context/AuthContext';
+import QueryView from './views/QueryView';
 import WorkspaceView from './views/WorkspaceView';
 
 function LoadingScreen() {
@@ -64,6 +65,14 @@ function App() {
           element={
             <ProtectedRoute>
               <WorkspaceView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/query"
+          element={
+            <ProtectedRoute>
+              <QueryView />
             </ProtectedRoute>
           }
         />
