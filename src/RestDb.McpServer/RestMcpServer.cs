@@ -16,7 +16,7 @@ namespace RestDb.McpServer
     internal static class RestMcpServer
     {
         private const string ServerName = "RestDb.McpServer";
-        private const string ServerVersion = "2.0.7";
+        private const string ServerVersion = "2.0.8";
 
         private static async Task<int> Main(string[] args)
         {
@@ -58,10 +58,10 @@ namespace RestDb.McpServer
                     name,
                     description,
                     schema,
-                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
+                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
                 (name, handler) => server.RegisterMethod(
                     name,
-                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
+                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
 
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             Console.CancelKeyPress += (sender, e) =>
@@ -108,10 +108,10 @@ namespace RestDb.McpServer
                     name,
                     description,
                     schema,
-                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
+                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
                 (name, handler) => httpServer.RegisterMethod(
                     name,
-                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
+                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
 
             RegisterMethodOnlyTools(tcpServer, tools);
             RegisterMethodOnlyTools(wsServer, tools);
@@ -219,10 +219,10 @@ namespace RestDb.McpServer
                 RestMcpToolDefinition current = tool;
                 server.RegisterMethod(
                     current.Name,
-                    (RpcParameters parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
+                    (RpcParameters? parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
             }
 
-            server.RegisterMethod("tools/list", (Func<RpcParameters, object>)(_ => new
+            server.RegisterMethod("tools/list", (Func<RpcParameters?, object>)(_ => new
             {
                 tools = tools.Select(tool => new
                 {
@@ -240,10 +240,10 @@ namespace RestDb.McpServer
                 RestMcpToolDefinition current = tool;
                 server.RegisterMethod(
                     current.Name,
-                    (RpcParameters parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
+                    (RpcParameters? parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
             }
 
-            server.RegisterMethod("tools/list", (Func<RpcParameters, object>)(_ => new
+            server.RegisterMethod("tools/list", (Func<RpcParameters?, object>)(_ => new
             {
                 tools = tools.Select(tool => new
                 {
@@ -258,7 +258,7 @@ namespace RestDb.McpServer
         {
             if (parameters == null || !parameters.HasValue) return null;
 
-            string rawJson = parameters.RawJson;
+            string? rawJson = parameters.RawJson;
             if (String.IsNullOrWhiteSpace(rawJson)) return null;
 
             using JsonDocument document = JsonDocument.Parse(rawJson);

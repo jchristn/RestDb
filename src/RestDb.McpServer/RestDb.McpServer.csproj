@@ -9,7 +9,7 @@
     <AssemblyName>RestDb.McpServer</AssemblyName>
     <RootNamespace>RestDb.McpServer</RootNamespace>
     <PackageId>RestDb.McpServer</PackageId>
-    <Version>2.0.7</Version>
+    <Version>2.0.8</Version>
     <Description>MCP server for RestDb. Exposes the RestDb HTTP API over MCP HTTP, TCP, WebSocket, and stdio transports.</Description>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>

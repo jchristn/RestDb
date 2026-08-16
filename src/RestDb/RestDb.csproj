@@ -7,7 +7,7 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<Version>2.0.7</Version>
+		<Version>2.0.8</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
 		<Copyright>(c)2024 Joel Christner</Copyright>
@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/jchristn/restdb</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageTags>rest,database,api,db</PackageTags>
-		<PackageReleaseNotes>Patch release: native provider migration, net8.0/net10.0 retargeting, Touchstone-based automated testing, and query/runtime fixes validated across supported databases.</PackageReleaseNotes>
+		<PackageReleaseNotes>Patch release: dependency refresh across all providers (Microsoft.Data.SqlClient 7.0.2, Microsoft.Data.Sqlite 10.0.11, MySqlConnector 2.6.2, Npgsql 10.0.3, Watson 7.1.0, SyslogLogging 2.2.1, Newtonsoft.Json 13.0.4, Inputty 1.0.13). Pins SQLitePCLRaw.bundle_e_sqlite3 3.0.5 (SQLite &gt;= 3.50.2) to resolve CVE-2025-6965. Adds symbol packages. No public API changes.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageIconUrl></PackageIconUrl>
 		<PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
