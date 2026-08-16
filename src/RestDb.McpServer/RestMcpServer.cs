@@ -10,7 +10,8 @@ namespace RestDb.McpServer
     using System.Threading.Tasks;
     using RestDb.McpServer.Classes;
     using RestDb.McpServer.Registrations;
-    using Voltaic;
+    using Voltaic.Core;
+    using Voltaic.Mcp;
 
     internal static class RestMcpServer
     {
@@ -53,8 +54,14 @@ namespace RestDb.McpServer
 
             RegisterTools(
                 tools,
-                (name, description, schema, handler) => server.RegisterTool(name, description, schema, handler),
-                (name, handler) => server.RegisterMethod(name, handler));
+                (name, description, schema, handler) => server.RegisterTool(
+                    name,
+                    description,
+                    schema,
+                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
+                (name, handler) => server.RegisterMethod(
+                    name,
+                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
 
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             Console.CancelKeyPress += (sender, e) =>
@@ -97,8 +104,14 @@ namespace RestDb.McpServer
 
             RegisterTools(
                 tools,
-                (name, description, schema, handler) => httpServer.RegisterTool(name, description, schema, handler),
-                (name, handler) => httpServer.RegisterMethod(name, handler));
+                (name, description, schema, handler) => httpServer.RegisterTool(
+                    name,
+                    description,
+                    schema,
+                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
+                (name, handler) => httpServer.RegisterMethod(
+                    name,
+                    (RpcParameters parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
 
             RegisterMethodOnlyTools(tcpServer, tools);
             RegisterMethodOnlyTools(wsServer, tools);
@@ -203,10 +216,13 @@ namespace RestDb.McpServer
         {
             foreach (RestMcpToolDefinition tool in tools)
             {
-                server.RegisterMethod(tool.Name, tool.Handler);
+                RestMcpToolDefinition current = tool;
+                server.RegisterMethod(
+                    current.Name,
+                    (RpcParameters parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
             }
 
-            server.RegisterMethod("tools/list", (Func<JsonElement?, object>)(args => new
+            server.RegisterMethod("tools/list", (Func<RpcParameters, object>)(_ => new
             {
                 tools = tools.Select(tool => new
                 {
@@ -221,10 +237,13 @@ namespace RestDb.McpServer
         {
             foreach (RestMcpToolDefinition tool in tools)
             {
-                server.RegisterMethod(tool.Name, tool.Handler);
+                RestMcpToolDefinition current = tool;
+                server.RegisterMethod(
+                    current.Name,
+                    (RpcParameters parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
             }
 
-            server.RegisterMethod("tools/list", (Func<JsonElement?, object>)(args => new
+            server.RegisterMethod("tools/list", (Func<RpcParameters, object>)(_ => new
             {
                 tools = tools.Select(tool => new
                 {
@@ -233,6 +252,17 @@ namespace RestDb.McpServer
                     inputSchema = tool.InputSchema
                 }).ToArray()
             }));
+        }
+
+        private static JsonElement? ToArguments(RpcParameters? parameters)
+        {
+            if (parameters == null || !parameters.HasValue) return null;
+
+            string rawJson = parameters.RawJson;
+            if (String.IsNullOrWhiteSpace(rawJson)) return null;
+
+            using JsonDocument document = JsonDocument.Parse(rawJson);
+            return document.RootElement.Clone();
         }
 
         private static int ReserveLoopbackPort()

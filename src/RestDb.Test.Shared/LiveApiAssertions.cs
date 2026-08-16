@@ -873,6 +873,139 @@ internal static class LiveApiAssertions
         }
     }
 
+    public static async Task ProtectedRequestWithoutCredentialsIsRejectedAsync()
+    {
+        await using RestDbLiveApiSession session = await RestDbLiveApiSession.StartAsync(
+            RestDbTestRuntime.Configuration,
+            requireAuthentication: true).ConfigureAwait(false);
+        using HttpClient unauthenticatedClient = new HttpClient
+        {
+            BaseAddress = session.BaseAddress,
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+
+        using HttpResponseMessage response = await unauthenticatedClient.GetAsync("/_databases").ConfigureAwait(false);
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        AssertStatus(response, HttpStatusCode.Unauthorized, body);
+        TestAssert.Contains("Login failed", body, StringComparison.OrdinalIgnoreCase, body);
+    }
+
+    public static async Task ProtectedRequestWithInvalidApiKeyIsRejectedAsync()
+    {
+        await using RestDbLiveApiSession session = await RestDbLiveApiSession.StartAsync(
+            RestDbTestRuntime.Configuration,
+            requireAuthentication: true).ConfigureAwait(false);
+        using HttpClient invalidClient = new HttpClient
+        {
+            BaseAddress = session.BaseAddress,
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+        invalidClient.DefaultRequestHeaders.Add(session.ApiKeyHeader, "restdb-invalid-" + Guid.NewGuid().ToString("N"));
+
+        using HttpResponseMessage response = await invalidClient.GetAsync("/_databases").ConfigureAwait(false);
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        AssertStatus(response, HttpStatusCode.Unauthorized, body);
+    }
+
+    public static async Task GetDatabasePathReturnsNotFoundForUnknownDatabaseAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string unknownDatabase = "restdb_missing_" + Guid.NewGuid().ToString("N");
+
+        using HttpResponseMessage response = await session.Client.GetAsync("/" + Encode(unknownDatabase)).ConfigureAwait(false);
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        AssertStatus(response, HttpStatusCode.NotFound, body);
+    }
+
+    public static async Task GetTableSelectPathReturnsNotFoundForUnknownTableAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string unknownTable = CreateUniqueTableName("missingselect");
+
+        using HttpResponseMessage response = await session.Client.GetAsync(
+            "/" + Encode(session.DatabaseName) + "/" + Encode(unknownTable)).ConfigureAwait(false);
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        AssertStatus(response, HttpStatusCode.NotFound, body);
+    }
+
+    public static async Task PostTableInsertPathReturnsNotFoundForUnknownTableAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string unknownTable = CreateUniqueTableName("missinginsert");
+
+        using HttpResponseMessage response = await PostJsonAsync(
+            session,
+            "/" + Encode(session.DatabaseName) + "/" + Encode(unknownTable),
+            CreatePerson("joel", "christner", 40, "2024-01-01 00:00:00")).ConfigureAwait(false);
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        AssertStatus(response, HttpStatusCode.NotFound, body);
+    }
+
+    public static async Task PostTableInsertPathRejectsEmptyBodyAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string tableName = CreateUniqueTableName("insertemptybody");
+
+        try
+        {
+            await CreateTableAsync(session, tableName).ConfigureAwait(false);
+
+            using HttpResponseMessage response = await session.Client.PostAsync(
+                "/" + Encode(session.DatabaseName) + "/" + Encode(tableName),
+                new StringContent(string.Empty, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            AssertStatus(response, HttpStatusCode.BadRequest, body);
+        }
+        finally
+        {
+            await DropTableIfExistsAsync(session, tableName).ConfigureAwait(false);
+        }
+    }
+
+    public static async Task PostTableCreatePathRejectsEmptyBodyAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+
+        using HttpResponseMessage response = await session.Client.PostAsync(
+            "/" + Encode(session.DatabaseName),
+            new StringContent(string.Empty, Encoding.UTF8, "application/json")).ConfigureAwait(false);
+        string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+        AssertStatus(response, HttpStatusCode.BadRequest, body);
+    }
+
+    public static async Task PostTableCreatePathRejectsPrimaryKeyNotInColumnListAsync()
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        string tableName = CreateUniqueTableName("badpk");
+
+        try
+        {
+            using HttpResponseMessage response = await PostJsonAsync(
+                session,
+                "/" + Encode(session.DatabaseName),
+                new Table
+                {
+                    Name = tableName,
+                    PrimaryKey = "missing_id",
+                    Columns = TestData.SampleColumns()
+                }).ConfigureAwait(false);
+            string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            AssertStatus(response, HttpStatusCode.BadRequest, body);
+        }
+        finally
+        {
+            await DropTableIfExistsAsync(session, tableName).ConfigureAwait(false);
+        }
+    }
+
     private static async Task CreateTableAsync(RestDbLiveApiSession session, string tableName)
     {
         using HttpResponseMessage response = await PostJsonAsync(

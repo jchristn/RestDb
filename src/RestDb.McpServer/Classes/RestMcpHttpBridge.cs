@@ -10,7 +10,7 @@ namespace RestDb.McpServer.Classes
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Voltaic;
+    using Voltaic.Mcp;
 
     internal sealed class RestMcpHttpBridge : IDisposable
     {

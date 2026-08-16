@@ -82,7 +82,15 @@ public static class RestDbTestSuites
             new() { CaseId = "DeleteFiltered", DisplayName = "DELETE /{db}/{table} applies querystring filters over HTTP", ExecuteAsync = LiveApiAssertions.DeletePathRemovesQuerystringMatchesAsync },
             new() { CaseId = "DeleteTruncate", DisplayName = "DELETE /{db}/{table}?_truncate clears tables over HTTP", ExecuteAsync = LiveApiAssertions.DeleteTruncatePathClearsTableAsync },
             new() { CaseId = "DeleteDrop", DisplayName = "DELETE /{db}/{table}?_drop removes tables over HTTP", ExecuteAsync = LiveApiAssertions.DeleteDropPathRemovesTableAsync },
-            new() { CaseId = "RawQuery", DisplayName = "POST /{db}?raw executes provider SQL over HTTP", ExecuteAsync = LiveApiAssertions.PostRawQueryPathExecutesAgainstSelectedProviderAsync }
+            new() { CaseId = "RawQuery", DisplayName = "POST /{db}?raw executes provider SQL over HTTP", ExecuteAsync = LiveApiAssertions.PostRawQueryPathExecutesAgainstSelectedProviderAsync },
+            new() { CaseId = "AuthMissingCredentials", DisplayName = "Protected routes reject requests without credentials (401)", ExecuteAsync = LiveApiAssertions.ProtectedRequestWithoutCredentialsIsRejectedAsync },
+            new() { CaseId = "AuthInvalidApiKey", DisplayName = "Protected routes reject an unknown API key (401)", ExecuteAsync = LiveApiAssertions.ProtectedRequestWithInvalidApiKeyIsRejectedAsync },
+            new() { CaseId = "GetDatabaseUnknown", DisplayName = "GET /{db} returns 404 for an unknown database", ExecuteAsync = LiveApiAssertions.GetDatabasePathReturnsNotFoundForUnknownDatabaseAsync },
+            new() { CaseId = "GetTableUnknown", DisplayName = "GET /{db}/{table} returns 404 for an unknown table", ExecuteAsync = LiveApiAssertions.GetTableSelectPathReturnsNotFoundForUnknownTableAsync },
+            new() { CaseId = "PostInsertUnknownTable", DisplayName = "POST /{db}/{table} returns 404 when inserting into an unknown table", ExecuteAsync = LiveApiAssertions.PostTableInsertPathReturnsNotFoundForUnknownTableAsync },
+            new() { CaseId = "PostInsertEmptyBody", DisplayName = "POST /{db}/{table} returns 400 for an empty insert body", ExecuteAsync = LiveApiAssertions.PostTableInsertPathRejectsEmptyBodyAsync },
+            new() { CaseId = "PostCreateEmptyBody", DisplayName = "POST /{db} returns 400 for an empty create-table body", ExecuteAsync = LiveApiAssertions.PostTableCreatePathRejectsEmptyBodyAsync },
+            new() { CaseId = "PostCreateBadPrimaryKey", DisplayName = "POST /{db} returns 400 when the primary key is absent from the column list", ExecuteAsync = LiveApiAssertions.PostTableCreatePathRejectsPrimaryKeyNotInColumnListAsync }
         };
 
     public static IReadOnlyList<TestSuiteDescriptor> All

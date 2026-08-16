@@ -5,6 +5,8 @@
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Version>2.0.7</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
@@ -56,13 +58,15 @@
 
 	<ItemGroup>
 		<PackageReference Include="ExpressionTree" Version="1.1.2" />
-		<PackageReference Include="Inputty" Version="1.0.12" />
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.3" />
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.1" />
-		<PackageReference Include="MySqlConnector" Version="2.4.0" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="Npgsql" Version="10.0.1" />
-		<PackageReference Include="SyslogLogging" Version="2.0.2" />
-		<PackageReference Include="Watson" Version="7.0.14" />
+		<PackageReference Include="Inputty" Version="1.0.13" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+		<!-- Pin the native SQLite bundle to a build that ships SQLite >= 3.50.2 to resolve CVE-2025-6965 (GHSA-2m69-gcr7-jv3q). -->
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
+		<PackageReference Include="MySqlConnector" Version="2.6.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="Npgsql" Version="10.0.3" />
+		<PackageReference Include="SyslogLogging" Version="2.2.1" />
+		<PackageReference Include="Watson" Version="7.1.0" />
 	</ItemGroup>
 </Project>

@@ -11,7 +11,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using RestDb.McpServer.Classes;
-using Voltaic;
+using Voltaic.Mcp;
 
 internal static class McpBridgeAssertions
 {
