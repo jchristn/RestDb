@@ -2,6 +2,23 @@
 
 ## Current Version
 
+v2.0.8
+
+- Upgraded `RestDb.McpServer` to Voltaic 2.0.0.
+- MCP `tools/list` now publishes only the RestDb tools on every transport. Voltaic's demo tools (`ping`, `echo`, `getTime`, `getSessions` on HTTP, `getClients` on TCP) are no longer listed or callable; `getSessions` disclosed every client's `Mcp-Session-Id`.
+- MCP `ping` now returns `{}` (plus `resultType: "complete"` under `2026-07-28`) as the MCP specification requires, instead of `"pong"`.
+- Tool arguments are now validated against `additionalProperties` schemas. `restdb_update_database_context` rejects non-string `tables` values with `-32602`; `filters` objects still accept any property.
+- Fixed the HTTP MCP endpoint for stateless `2026-07-28` clients such as Claude Code 2.1.x, which previously connected but failed to list tools with "missing required resultType". The `/mcp` bridge now forwards to Voltaic's native Streamable HTTP endpoint instead of the `/rpc` compatibility endpoint. Handshake-era clients (`initialize` plus `Mcp-Session-Id`) continue to work unchanged.
+- Fixed `tools/call` on the TCP and WebSocket MCP transports, which listed the RestDb tools but rejected calls to them. Every transport now registers real MCP tools; tools remain callable as direct JSON-RPC methods.
+- MCP `tools/call` results for failed downstream RestDb requests (non-2xx) are now flagged `isError: true`. The text content is unchanged and still carries `Success`, `StatusCode`, and the response body. Direct JSON-RPC method calls still return the raw response.
+- Added MCP test coverage for the stateless and session paths, SSE notification relay, session termination, TCP and WebSocket `tools/call`, downstream error flagging, and negative cases (unknown tool, missing required argument, failing handler, unknown protocol version, malformed JSON, mismatched `Mcp-Method`, invalid sessions, unsupported HTTP methods), plus Voltaic 2.0 coverage on HTTP, TCP, and WebSocket: `tools/list` contains exactly the RestDb tools, `ping` returns an empty result, removed demo tools return `-32602` through `tools/call` and `-32601` as bare methods, RestDb direct JSON-RPC methods still work, and the production catalog's `additionalProperties` schemas accept and reject arguments as declared.
+- Updated dependencies: Microsoft.Data.SqlClient 7.1.0, Microsoft.Data.Sqlite 10.0.12, SyslogLogging 2.2.2, Watson 7.2.0, Microsoft.NET.Test.Sdk 18.10.1, NUnit.Analyzers 4.15.0, NUnit3TestAdapter 6.3.0.
+- Refreshed .NET and dashboard dependencies, including pinning `SQLitePCLRaw.bundle_e_sqlite3` 3.0.5 to ship SQLite >= 3.50.2 (CVE-2025-6965), and negative live-API coverage (401, 404, and 400 cases).
+- Added a SQL query console to the dashboard (`/query`) with JSON copy and CSV download, and resolved dashboard Dependabot alerts.
+- Docker Compose now runs the published `restdb`, `restdb-dashboard`, and `restdb-mcp` images, and root `build-*.bat` scripts publish multi-arch images.
+
+## Previous Versions
+
 v2.0.7
 
 - Retargeted to `net8.0` and `net10.0`.
@@ -24,8 +41,6 @@ v2.0.7
 - Reduced repeated dashboard metadata requests by narrowing initial workspace fetches to database and selected-table metadata.
 - Fixed filtered DELETE route handling to correctly apply querystring filters.
 - Fixed provider-specific `LIKE` generation so MySQL no longer emits invalid escape syntax.
-
-## Previous Versions
 
 v2.0.1
 

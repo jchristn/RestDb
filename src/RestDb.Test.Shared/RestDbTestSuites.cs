@@ -100,7 +100,8 @@ public static class RestDbTestSuites
             List<TestSuiteDescriptor> suites = new List<TestSuiteDescriptor>
             {
                 SerializationSuite(),
-                McpBridgeSuite()
+                McpBridgeSuite(),
+                McpTransportSuite()
             };
 
             foreach (string providerName in TestData.ProviderNames)
@@ -168,8 +169,72 @@ public static class RestDbTestSuites
                     suiteId: suiteId,
                     caseId: "StreamableHttpSsePrelude",
                     displayName: "Streamable HTTP sends an immediate SSE prelude on /mcp",
-                    executeAsync: _ => McpBridgeAssertions.StreamableHttpSendsImmediateSsePreludeAsync())
+                    executeAsync: _ => McpBridgeAssertions.StreamableHttpSendsImmediateSsePreludeAsync()),
+                McpCase(suiteId, "SseRelaysNotifications", "GET /mcp relays server notifications for the session", McpBridgeAssertions.SseRelaysServerNotificationsAsync),
+                McpCase(suiteId, "StatelessToolsList", "Stateless 2026-07-28 tools/list carries resultType, ttlMs, and cacheScope without a session", McpBridgeAssertions.StatelessToolsListCarriesResultTypeAsync),
+                McpCase(suiteId, "StatelessServerDiscover", "Stateless server/discover advertises the 2026-07-28 revision", McpBridgeAssertions.StatelessServerDiscoverAdvertisesStatelessRevisionAsync),
+                McpCase(suiteId, "StatelessToolsCall", "Stateless tools/call invokes a registered RestDb tool", McpBridgeAssertions.StatelessToolsCallInvokesRegisteredToolAsync),
+                McpCase(suiteId, "HandshakeToolsCall", "Session tools/call invokes a registered RestDb tool without stateless fields", McpBridgeAssertions.HandshakeToolsCallInvokesRegisteredToolAsync),
+                McpCase(suiteId, "InitializeStatelessVersion", "initialize requesting 2026-07-28 negotiates the newest handshake revision", McpBridgeAssertions.InitializeNegotiatesNewestHandshakeRevisionForStatelessVersionAsync),
+                McpCase(suiteId, "DeleteTerminatesSession", "DELETE /mcp terminates the session", McpBridgeAssertions.DeleteTerminatesSessionAsync),
+                McpCase(suiteId, "UnknownTool", "tools/call rejects an unknown tool (-32602)", McpBridgeAssertions.ToolsCallRejectsUnknownToolAsync),
+                McpCase(suiteId, "MissingRequiredArgument", "tools/call rejects a missing required argument (-32602)", McpBridgeAssertions.ToolsCallRejectsMissingRequiredArgumentAsync),
+                McpCase(suiteId, "HandlerFailure", "tools/call surfaces a failing tool handler as an error", McpBridgeAssertions.ToolsCallSurfacesHandlerFailureAsync),
+                McpCase(suiteId, "DownstreamFailureIsError", "tools/call flags a failed (404) RestDb response with isError", McpBridgeAssertions.ToolsCallFlagsFailedDownstreamResponseAsErrorAsync),
+                McpCase(suiteId, "DownstreamSuccessNotError", "tools/call leaves a successful RestDb response unflagged", McpBridgeAssertions.ToolsCallLeavesSuccessfulDownstreamResponseUnflaggedAsync),
+                McpCase(suiteId, "MismatchedMethodHeader", "Stateless request rejects an Mcp-Method header that does not match the body (400)", McpBridgeAssertions.StatelessRequestRejectsMismatchedMethodHeaderAsync),
+                McpCase(suiteId, "UnknownProtocolVersion", "initialize rejects an unknown protocol version (-32602)", McpBridgeAssertions.InitializeRejectsUnknownProtocolVersionAsync),
+                McpCase(suiteId, "MalformedJson", "Malformed JSON returns a parse error (-32700)", McpBridgeAssertions.MalformedJsonReturnsParseErrorAsync),
+                McpCase(suiteId, "SseInvalidSession", "GET /mcp rejects a missing or unknown session (400)", McpBridgeAssertions.SseRejectsMissingOrUnknownSessionAsync),
+                McpCase(suiteId, "DeleteInvalidSession", "DELETE /mcp rejects a missing (400) or unknown (404) session", McpBridgeAssertions.DeleteRejectsMissingOrUnknownSessionAsync),
+                McpCase(suiteId, "UnsupportedHttpMethod", "PUT /mcp returns 405", McpBridgeAssertions.UnsupportedHttpMethodReturnsMethodNotAllowedAsync),
+                McpCase(suiteId, "UnknownPath", "Unknown bridge path returns 404", McpBridgeAssertions.UnknownPathReturnsNotFoundAsync),
+                McpCase(suiteId, "HandshakeToolsListExact", "Session tools/list publishes only the RestDb tools (no Voltaic demo tools)", McpBridgeAssertions.HandshakeToolsListPublishesOnlyRestDbToolsAsync),
+                McpCase(suiteId, "StatelessToolsListExact", "Stateless tools/list publishes only the RestDb tools (no Voltaic demo tools)", McpBridgeAssertions.StatelessToolsListPublishesOnlyRestDbToolsAsync),
+                McpCase(suiteId, "HandshakePingEmpty", "Session ping returns an empty object instead of \"pong\"", McpBridgeAssertions.HandshakePingReturnsEmptyResultAsync),
+                McpCase(suiteId, "StatelessPingComplete", "Stateless ping returns only resultType: complete", McpBridgeAssertions.StatelessPingReturnsCompleteResultAsync),
+                McpCase(suiteId, "RemovedDemoTools", "tools/call rejects the removed Voltaic demo tools (-32602)", McpBridgeAssertions.ToolsCallRejectsRemovedVoltaicDemoToolsAsync),
+                McpCase(suiteId, "BareDemoMethods", "Bare echo/getTime/getSessions/getClients calls return method not found (-32601)", McpBridgeAssertions.BareVoltaicDemoMethodsReturnMethodNotFoundAsync),
+                McpCase(suiteId, "DirectRestDbMethod", "A RestDb tool stays callable as a direct JSON-RPC method over HTTP", McpBridgeAssertions.RestDbToolRemainsCallableAsDirectMethodAsync)
             });
+    }
+
+    private static TestSuiteDescriptor McpTransportSuite()
+    {
+        const string suiteId = "McpTransports";
+        return new TestSuiteDescriptor(
+            suiteId: suiteId,
+            displayName: "MCP TCP and WebSocket Transports",
+            cases: new List<TestCaseDescriptor>
+            {
+                McpCase(suiteId, "TcpToolsListAndCall", "TCP tools/list publishes and tools/call invokes RestDb tools", McpTransportAssertions.TcpListsAndCallsRegisteredToolsAsync),
+                McpCase(suiteId, "TcpDirectMethod", "TCP invokes a RestDb tool as a direct JSON-RPC method", McpTransportAssertions.TcpInvokesToolAsDirectMethodAsync),
+                McpCase(suiteId, "TcpInvalidCalls", "TCP rejects unknown tools, missing arguments, unknown methods, and failing handlers", McpTransportAssertions.TcpRejectsInvalidToolCallsAsync),
+                McpCase(suiteId, "TcpDownstreamErrors", "TCP tools/call flags failed RestDb responses with isError; direct methods return them raw", McpTransportAssertions.TcpFlagsFailedDownstreamResponsesAsync),
+                McpCase(suiteId, "WebSocketToolsListAndCall", "WebSocket tools/list publishes and tools/call invokes RestDb tools", McpTransportAssertions.WebSocketListsAndCallsRegisteredToolsAsync),
+                McpCase(suiteId, "WebSocketDirectMethod", "WebSocket invokes a RestDb tool as a direct JSON-RPC method", McpTransportAssertions.WebSocketInvokesToolAsDirectMethodAsync),
+                McpCase(suiteId, "WebSocketInvalidCalls", "WebSocket rejects unknown tools, missing arguments, unknown methods, and failing handlers", McpTransportAssertions.WebSocketRejectsInvalidToolCallsAsync),
+                McpCase(suiteId, "WebSocketDownstreamErrors", "WebSocket tools/call flags failed RestDb responses with isError; direct methods return them raw", McpTransportAssertions.WebSocketFlagsFailedDownstreamResponsesAsync),
+                McpCase(suiteId, "TcpToolsListExact", "TCP tools/list publishes only the RestDb tools (no Voltaic demo tools)", McpTransportAssertions.TcpListsOnlyRestDbToolsAsync),
+                McpCase(suiteId, "WebSocketToolsListExact", "WebSocket tools/list publishes only the RestDb tools (no Voltaic demo tools)", McpTransportAssertions.WebSocketListsOnlyRestDbToolsAsync),
+                McpCase(suiteId, "TcpPingEmpty", "TCP ping returns an empty object instead of \"pong\"", McpTransportAssertions.TcpPingReturnsEmptyResultAsync),
+                McpCase(suiteId, "WebSocketPingEmpty", "WebSocket ping returns an empty object instead of \"pong\"", McpTransportAssertions.WebSocketPingReturnsEmptyResultAsync),
+                McpCase(suiteId, "TcpRemovedDemoTools", "TCP rejects the removed Voltaic demo tools via tools/call (-32602) and bare calls (-32601)", McpTransportAssertions.TcpRejectsRemovedVoltaicDemoToolsAsync),
+                McpCase(suiteId, "WebSocketRemovedDemoTools", "WebSocket rejects the removed Voltaic demo tools via tools/call (-32602) and bare calls (-32601)", McpTransportAssertions.WebSocketRejectsRemovedVoltaicDemoToolsAsync),
+                McpCase(suiteId, "CatalogToolsListExact", "tools/list publishes exactly the production RestDb tool catalog", McpTransportAssertions.TcpCatalogListsExactlyRestDbToolsAsync),
+                McpCase(suiteId, "CatalogRejectsNonStringTableContext", "restdb_update_database_context rejects a non-string table context (additionalProperties schema, -32602)", McpTransportAssertions.TcpCatalogRejectsNonStringTableContextAsync),
+                McpCase(suiteId, "CatalogAcceptsStringTableContext", "restdb_update_database_context accepts string table contexts", McpTransportAssertions.TcpCatalogAcceptsStringTableContextAsync),
+                McpCase(suiteId, "CatalogAcceptsArbitraryFilters", "restdb_enumerate_table_records accepts arbitrary filters (additionalProperties: true)", McpTransportAssertions.TcpCatalogAcceptsArbitraryFiltersAsync)
+            });
+    }
+
+    private static TestCaseDescriptor McpCase(string suiteId, string caseId, string displayName, Func<Task> execute)
+    {
+        return new TestCaseDescriptor(
+            suiteId: suiteId,
+            caseId: caseId,
+            displayName: displayName,
+            executeAsync: _ => execute());
     }
 
     private static TestSuiteDescriptor LiveApiSuite()

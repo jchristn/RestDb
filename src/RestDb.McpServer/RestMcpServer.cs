@@ -2,15 +2,12 @@ namespace RestDb.McpServer
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Net;
     using System.Net.Sockets;
-    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using RestDb.McpServer.Classes;
     using RestDb.McpServer.Registrations;
-    using Voltaic.Core;
     using Voltaic.Mcp;
 
     internal static class RestMcpServer
@@ -46,22 +43,13 @@ namespace RestDb.McpServer
 
         private static async Task<int> RunStdioAsync(List<RestMcpToolDefinition> tools)
         {
-            using McpServer server = new McpServer(includeDefaultMethods: true)
+            using McpServer server = new McpServer()
             {
                 ServerName = ServerName,
                 ServerVersion = ServerVersion
             };
 
-            RegisterTools(
-                tools,
-                (name, description, schema, handler) => server.RegisterTool(
-                    name,
-                    description,
-                    schema,
-                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
-                (name, handler) => server.RegisterMethod(
-                    name,
-                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
+            RestMcpToolRegistrar.Register(server, tools);
 
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             Console.CancelKeyPress += (sender, e) =>
@@ -78,20 +66,20 @@ namespace RestDb.McpServer
         {
             int innerHttpPort = ReserveLoopbackPort();
 
-            using McpHttpServer httpServer = new McpHttpServer("127.0.0.1", innerHttpPort, includeDefaultMethods: true, mcpPath: null)
+            using McpHttpServer httpServer = new McpHttpServer("127.0.0.1", innerHttpPort, mcpPath: RestMcpHttpBridge.McpPath)
             {
                 ServerName = ServerName,
                 ServerVersion = ServerVersion
             };
 
             using RestMcpHttpBridge httpBridge = new RestMcpHttpBridge(settings.HttpHostname, settings.HttpPort, "http://127.0.0.1:" + innerHttpPort, httpServer);
-            using McpTcpServer tcpServer = new McpTcpServer(IPAddress.Parse(settings.TcpHostname), settings.TcpPort, includeDefaultMethods: true)
+            using McpTcpServer tcpServer = new McpTcpServer(IPAddress.Parse(settings.TcpHostname), settings.TcpPort)
             {
                 ServerName = ServerName,
                 ServerVersion = ServerVersion
             };
 
-            using McpWebsocketsServer wsServer = new McpWebsocketsServer(settings.WebSocketHostname, settings.WebSocketPort, "/mcp", includeDefaultMethods: true)
+            using McpWebsocketsServer wsServer = new McpWebsocketsServer(settings.WebSocketHostname, settings.WebSocketPort, "/mcp")
             {
                 ServerName = ServerName,
                 ServerVersion = ServerVersion
@@ -102,19 +90,9 @@ namespace RestDb.McpServer
             tcpServer.Log += (sender, message) => Console.WriteLine("[MCP TCP] " + message);
             wsServer.Log += (sender, message) => Console.WriteLine("[MCP WS] " + message);
 
-            RegisterTools(
-                tools,
-                (name, description, schema, handler) => httpServer.RegisterTool(
-                    name,
-                    description,
-                    schema,
-                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)),
-                (name, handler) => httpServer.RegisterMethod(
-                    name,
-                    (RpcParameters? parameters, CancellationToken token) => handler(ToArguments(parameters), token)));
-
-            RegisterMethodOnlyTools(tcpServer, tools);
-            RegisterMethodOnlyTools(wsServer, tools);
+            RestMcpToolRegistrar.Register(httpServer, tools);
+            RestMcpToolRegistrar.Register(tcpServer, tools);
+            RestMcpToolRegistrar.Register(wsServer, tools);
 
             CancellationTokenSource tokenSource = new CancellationTokenSource();
 
@@ -198,71 +176,6 @@ namespace RestDb.McpServer
             Console.WriteLine("  - install only writes MCP client definitions.");
             Console.WriteLine("  - Configure downstream RestDb auth on the RestDb.McpServer process itself");
             Console.WriteLine("    using --api-key / --bearer-token or RESTDB_MCP_* environment variables.");
-        }
-
-        private static void RegisterTools(
-            IEnumerable<RestMcpToolDefinition> tools,
-            Action<string, string, object, Func<JsonElement?, CancellationToken, Task<object>>> registerTool,
-            Action<string, Func<JsonElement?, CancellationToken, Task<object>>> registerMethod)
-        {
-            foreach (RestMcpToolDefinition tool in tools)
-            {
-                registerTool(tool.Name, tool.Description, tool.InputSchema, tool.Handler);
-                registerMethod(tool.Name, tool.Handler);
-            }
-        }
-
-        private static void RegisterMethodOnlyTools(McpTcpServer server, List<RestMcpToolDefinition> tools)
-        {
-            foreach (RestMcpToolDefinition tool in tools)
-            {
-                RestMcpToolDefinition current = tool;
-                server.RegisterMethod(
-                    current.Name,
-                    (RpcParameters? parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
-            }
-
-            server.RegisterMethod("tools/list", (Func<RpcParameters?, object>)(_ => new
-            {
-                tools = tools.Select(tool => new
-                {
-                    name = tool.Name,
-                    description = tool.Description,
-                    inputSchema = tool.InputSchema
-                }).ToArray()
-            }));
-        }
-
-        private static void RegisterMethodOnlyTools(McpWebsocketsServer server, List<RestMcpToolDefinition> tools)
-        {
-            foreach (RestMcpToolDefinition tool in tools)
-            {
-                RestMcpToolDefinition current = tool;
-                server.RegisterMethod(
-                    current.Name,
-                    (RpcParameters? parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token));
-            }
-
-            server.RegisterMethod("tools/list", (Func<RpcParameters?, object>)(_ => new
-            {
-                tools = tools.Select(tool => new
-                {
-                    name = tool.Name,
-                    description = tool.Description,
-                    inputSchema = tool.InputSchema
-                }).ToArray()
-            }));
-        }
-
-        private static JsonElement? ToArguments(RpcParameters? parameters)
-        {
-            if (parameters == null || !parameters.HasValue) return null;
-
-            string? rawJson = parameters.RawJson;
-            if (String.IsNullOrWhiteSpace(rawJson)) return null;
-
-            using JsonDocument document = JsonDocument.Parse(rawJson);
-            return document.RootElement.Clone();
         }
 
         private static int ReserveLoopbackPort()

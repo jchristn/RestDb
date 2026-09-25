@@ -132,8 +132,12 @@ Each tool returns the proxied REST result with:
 
 - HTTP and WebSocket both use `/mcp` on their respective transports.
 - On HTTP streamable transport, `notifications/initialized` and other notification-only POSTs return `202 Accepted` with an empty body.
-- HTTP and stdio expose proper MCP tools and tool metadata.
-- TCP and WebSocket expose the same operations as registered methods and also publish `tools/list`.
+- HTTP `/mcp` serves both handshake-era clients (`initialize` plus an `Mcp-Session-Id`, protocol revisions `2024-11-05` through `2025-11-25`) and stateless `2026-07-28` clients such as Claude Code 2.1.x (`server/discover` plus per-request `MCP-Protocol-Version` and `Mcp-Method` headers). Stateless results carry `resultType`, and list results also carry `ttlMs` and `cacheScope`.
+- HTTP, stdio, TCP, and WebSocket all expose proper MCP tools and tool metadata through `tools/list` and `tools/call`. `tools/list` returns only the RestDb tools listed above.
+- `ping` is the MCP protocol method and returns an empty result (`{}`, or `{"resultType":"complete"}` under `2026-07-28`).
+- Tool arguments are validated against each tool's input schema before the tool runs. Missing required arguments and values that violate the schema (for example a non-string entry in the `tables` map of `restdb_update_database_context`) return JSON-RPC error `-32602`.
+- Every tool is also registered as a JSON-RPC method of the same name, so callers can invoke it directly (for example `{"method":"restdb_retrieve_database_list"}`).
+- When the downstream RestDb request fails (non-2xx), `tools/call` returns the usual text content (`Success`, `StatusCode`, `ReasonPhrase`, `Headers`, `Body`) with `isError: true`. Direct JSON-RPC method calls return the raw response object without the `isError` wrapper.
 - The MCP service uses the configured RestDb API key or bearer token when proxying requests downstream.
 
 ## Related Docs

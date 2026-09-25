@@ -14,6 +14,8 @@ namespace RestDb.McpServer.Classes
 
     internal sealed class RestMcpHttpBridge : IDisposable
     {
+        internal const string McpPath = "/mcp";
+
         private readonly string _Hostname;
         private readonly int _Port;
         private readonly string _InnerBaseUrl;
@@ -151,7 +153,7 @@ namespace RestDb.McpServer.Classes
                     return;
                 }
 
-                if (path == "/mcp")
+                if (path == McpPath)
                 {
                     await HandleMcpAsync(context, token).ConfigureAwait(false);
                     return;
@@ -223,22 +225,13 @@ namespace RestDb.McpServer.Classes
 
             if (String.Equals(method, "GET", StringComparison.OrdinalIgnoreCase))
             {
-                await ProxySseAsync(context, "/events", sendPrelude: true, token).ConfigureAwait(false);
+                await ProxySseAsync(context, McpPath, sendPrelude: true, token).ConfigureAwait(false);
                 return;
             }
 
             if (String.Equals(method, "DELETE", StringComparison.OrdinalIgnoreCase))
             {
-                string? sessionId = GetSessionId(context.Request);
-                if (!String.IsNullOrWhiteSpace(sessionId))
-                {
-                    _InnerServer.RemoveSession(sessionId);
-                    LogMessage("Removed MCP session " + sessionId);
-                }
-
-                WriteCorsHeaders(context.Response);
-                context.Response.StatusCode = 200;
-                context.Response.Close();
+                await ProxyBufferedAsync(context, HttpMethod.Delete, McpPath, token).ConfigureAwait(false);
                 return;
             }
 
@@ -259,7 +252,10 @@ namespace RestDb.McpServer.Classes
 
             JsonRpcEnvelopeKind requestKind = ClassifyJsonRpcEnvelope(requestBody);
 
-            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, _InnerBaseUrl + "/rpc");
+            // Forward to the inner server's native Streamable HTTP endpoint rather than the /rpc
+            // compatibility endpoint so Voltaic applies protocol version negotiation, stateless
+            // (2026-07-28) routing, and the resultType/ttlMs/cacheScope result fields.
+            using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, _InnerBaseUrl + McpPath);
             CopyRequestHeaders(context.Request, request);
             request.Content = new StringContent(
                 requestBody,

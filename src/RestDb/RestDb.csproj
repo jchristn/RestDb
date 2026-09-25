@@ -59,14 +59,14 @@
 	<ItemGroup>
 		<PackageReference Include="ExpressionTree" Version="1.1.2" />
 		<PackageReference Include="Inputty" Version="1.0.13" />
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
 		<!-- Pin the native SQLite bundle to a build that ships SQLite >= 3.50.2 to resolve CVE-2025-6965 (GHSA-2m69-gcr7-jv3q). -->
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
 		<PackageReference Include="MySqlConnector" Version="2.6.2" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Npgsql" Version="10.0.3" />
-		<PackageReference Include="SyslogLogging" Version="2.2.1" />
-		<PackageReference Include="Watson" Version="7.1.0" />
+		<PackageReference Include="SyslogLogging" Version="2.2.2" />
+		<PackageReference Include="Watson" Version="7.2.0" />
 	</ItemGroup>
 </Project>
