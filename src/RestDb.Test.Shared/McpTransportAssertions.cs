@@ -145,6 +145,153 @@ internal static class McpTransportAssertions
         }
     }
 
+    public static void ProxyKeepsOnlyApplicationHeaders()
+    {
+        Dictionary<string, string> headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Date"] = "Sat, 26 Sep 2026 00:00:00 GMT",
+            ["Connection"] = "close",
+            ["Content-Type"] = "application/json",
+            ["Content-Length"] = "16",
+            ["Access-Control-Allow-Origin"] = "*",
+            ["Access-Control-Expose-Headers"] = "x-expression",
+            ["x-expression"] = "(age >= 18)",
+            ["X-Restart-Required"] = "true",
+            ["x-operation-message"] = "Settings saved."
+        };
+
+        Dictionary<string, string>? selected = RestMcpRestProxy.SelectApplicationHeaders(headers);
+        TestAssert.NotNull(selected, "Expected the x- headers to be kept.");
+        TestAssert.Equal(3, selected!.Count, string.Join(", ", selected.Keys));
+        TestAssert.Equal("(age >= 18)", selected["x-expression"], "x-expression value");
+        TestAssert.Equal("true", selected["x-restart-required"], "Header lookup stays case-insensitive.");
+        TestAssert.Equal("Settings saved.", selected["x-operation-message"], "x-operation-message value");
+
+        Dictionary<string, string> transportOnly = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Date"] = "Sat, 26 Sep 2026 00:00:00 GMT",
+            ["Access-Control-Allow-Origin"] = "*"
+        };
+        TestAssert.Null(RestMcpRestProxy.SelectApplicationHeaders(transportOnly), "Headers must be omitted when there are no application headers.");
+    }
+
+    public static Task LiveCatalogOmitsTransportHeadersAsync() => WithLiveCatalogAsync(async (call, session) =>
+    {
+        JsonElement result = await call("tools/call", new { name = "restdb_retrieve_database_list", arguments = new { } }).ConfigureAwait(false);
+        string text = ToolText(result);
+        using JsonDocument document = JsonDocument.Parse(text);
+        JsonElement root = document.RootElement;
+
+        TestAssert.True(McpBridgeAssertions.RequireProperty(root, "Success", text).GetBoolean(), text);
+        TestAssert.Equal(200, McpBridgeAssertions.RequireProperty(root, "StatusCode", text).GetInt32(), text);
+        TestAssert.Contains(session.DatabaseName, McpBridgeAssertions.RequireProperty(root, "Body", text).GetRawText(), StringComparison.Ordinal, text);
+        TestAssert.False(root.TryGetProperty("Headers", out _), "Transport-only responses must not carry a Headers property. " + text);
+
+        foreach (string noise in new[] { "Date", "Connection", "Access-Control", "Content-Length", "Cache-Control" })
+        {
+            TestAssert.DoesNotContain(noise, text, StringComparison.OrdinalIgnoreCase, "Transport header '" + noise + "' leaked into the tool result. " + text);
+        }
+
+        // Direct JSON-RPC method calls return the same trimmed response object.
+        JsonElement direct = await call("restdb_retrieve_database_list", new { }).ConfigureAwait(false);
+        TestAssert.False(direct.TryGetProperty("Headers", out _), "Direct calls must not carry transport headers. " + direct.GetRawText());
+    });
+
+    public static Task LiveCatalogKeepsExpressionDebugHeaderAsync() => WithLiveCatalogAsync(async (call, session) =>
+    {
+        string tableName = "restdb_mcp_hdr_" + Guid.NewGuid().ToString("N").Substring(0, 20);
+
+        try
+        {
+            JsonElement created = await call("tools/call", new
+            {
+                name = "restdb_create_table",
+                arguments = new
+                {
+                    databaseName = session.DatabaseName,
+                    table = new { Name = tableName, PrimaryKey = "person_id", Columns = TestData.SampleColumns() }
+                }
+            }).ConfigureAwait(false);
+            TestAssert.Contains("\\u0022Success\\u0022:true", created.GetRawText(), StringComparison.Ordinal, "Create table failed: " + created.GetRawText());
+
+            JsonElement inserted = await call("tools/call", new
+            {
+                name = "restdb_insert_table_record",
+                arguments = new { databaseName = session.DatabaseName, tableName, record = TestData.SampleInsertValues() }
+            }).ConfigureAwait(false);
+            TestAssert.Contains("\\u0022Success\\u0022:true", inserted.GetRawText(), StringComparison.Ordinal, "Insert failed: " + inserted.GetRawText());
+
+            object expression = new { Left = "age", Operator = "GreaterThanOrEqualTo", Right = 18 };
+
+            JsonElement debugResult = await call("tools/call", new
+            {
+                name = "restdb_search_table_records",
+                arguments = new { databaseName = session.DatabaseName, tableName, expression, debug = true }
+            }).ConfigureAwait(false);
+            string debugText = ToolText(debugResult);
+            using (JsonDocument debugDocument = JsonDocument.Parse(debugText))
+            {
+                JsonElement headers = McpBridgeAssertions.RequireProperty(debugDocument.RootElement, "Headers", debugText);
+                bool foundExpression = false;
+                foreach (JsonProperty header in headers.EnumerateObject())
+                {
+                    TestAssert.True(header.Name.StartsWith("x-", StringComparison.OrdinalIgnoreCase), "Only x- headers may be returned, found '" + header.Name + "'. " + debugText);
+                    if (header.Name.Equals("x-expression", StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundExpression = !string.IsNullOrWhiteSpace(header.Value.GetString());
+                    }
+                }
+
+                TestAssert.True(foundExpression, "Expected the x-expression debug header with debug=true. " + debugText);
+                TestAssert.Contains("joel", McpBridgeAssertions.RequireProperty(debugDocument.RootElement, "Body", debugText).GetRawText(), StringComparison.Ordinal, debugText);
+            }
+
+            JsonElement plainResult = await call("tools/call", new
+            {
+                name = "restdb_search_table_records",
+                arguments = new { databaseName = session.DatabaseName, tableName, expression }
+            }).ConfigureAwait(false);
+            string plainText = ToolText(plainResult);
+            TestAssert.DoesNotContain("x-expression", plainText, StringComparison.OrdinalIgnoreCase, "Without debug there is no x-expression header. " + plainText);
+        }
+        finally
+        {
+            try
+            {
+                await call("tools/call", new { name = "restdb_drop_table", arguments = new { databaseName = session.DatabaseName, tableName } }).ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
+    });
+
+    private static string ToolText(JsonElement toolResult)
+    {
+        string raw = toolResult.GetRawText();
+        foreach (JsonElement item in McpBridgeAssertions.RequireProperty(toolResult, "content", raw).EnumerateArray())
+        {
+            if (item.TryGetProperty("text", out JsonElement text)) return text.GetString() ?? string.Empty;
+        }
+
+        throw new InvalidOperationException("Expected text content in the tool result. " + raw);
+    }
+
+    private static async Task WithLiveCatalogAsync(Func<McpCall, RestDbLiveApiSession, Task> body)
+    {
+        RestDbLiveApiSession session = await RestDbLiveApiHost.GetAsync().ConfigureAwait(false);
+        RestMcpServerSettings settings = new RestMcpServerSettings
+        {
+            RestDbServerUrl = session.BaseAddress.ToString().TrimEnd('/'),
+            ApiKey = session.ApiKey,
+            ApiKeyHeader = session.ApiKeyHeader
+        };
+
+        using RestMcpRestProxy proxy = new RestMcpRestProxy(settings);
+        List<RestMcpToolDefinition> catalog = RestMcpToolCatalog.Build(proxy);
+        await WithTcpAsync(catalog, call => body(call, session)).ConfigureAwait(false);
+    }
+
     private static async Task WithCatalogAsync(Func<McpCall, List<RestMcpToolDefinition>, Task> body)
     {
         RestMcpServerSettings settings = new RestMcpServerSettings

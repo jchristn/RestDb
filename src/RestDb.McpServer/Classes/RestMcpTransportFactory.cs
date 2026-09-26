@@ -19,7 +19,7 @@ namespace RestDb.McpServer.Classes
     {
         internal const string McpPath = "/mcp";
         internal const string ServerName = "RestDb.McpServer";
-        internal const string ServerVersion = "2.0.8";
+        internal const string ServerVersion = "2.0.0";
         internal const string TokenPrincipal = "mcp-token";
 
         internal static McpHttpServer CreateHttpServer(string hostname, int port, IEnumerable<string>? allowedOrigins, string? mcpToken)

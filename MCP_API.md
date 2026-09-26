@@ -84,7 +84,7 @@ Each tool returns the proxied REST result with:
 - `Success`
 - `StatusCode`
 - `ReasonPhrase`
-- `Headers`
+- `Headers`: only RestDb's own `x-` response headers, such as `x-expression` (search debug output) and `x-restart-required` / `x-operation-message` (settings updates). Omitted when there are none; transport headers such as `Date`, `Connection`, and CORS are never included.
 - `Body`
 
 ### System and Configuration

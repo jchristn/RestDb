@@ -6,19 +6,16 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, TRUNCATE, and DROP against tables in Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite.
  
-## New in v2.0.7
+## New in v2.0.0
 
-- Retargeted the library to `net8.0` and `net10.0`.
-- Removed the `DatabaseWrapper` dependency in favor of native SQL Server, MySQL, PostgreSQL, and SQLite implementations.
-- Added the RestDb dashboard for browsing schemas, rows, and table operations from a browser workspace.
-- Added runtime management APIs for `restdb.json` and `context.json`, including dashboard editors for server settings, global context, database context, and table context.
-- Added `_context` enrichment on database and table metadata retrieval routes so callers can inline database and table context into schema responses.
-- Added `RestDb.McpServer` to expose the RestDb API over MCP HTTP, TCP, WebSocket, and stdio transports.
-- Migrated testing to a shared Touchstone suite with CLI, xUnit, and NUnit runners.
-- Added live API validation against SQLite by default and Docker-backed MySQL, PostgreSQL, and SQL Server runs via `RestDb.Test.Automated`.
-- Added direct MCP HTTP bridge coverage for the `/mcp` streamable-HTTP contract used by Codex and similar clients.
-- Added bearer-token authentication support alongside the configured API key header.
-- Fixed provider/runtime issues uncovered by the live test matrix, including filtered DELETE handling, MySQL `LIKE` behavior, and repeated dashboard metadata probes.
+- Targets `net8.0` and `net10.0`, with native SQL Server, MySQL, PostgreSQL, and SQLite implementations (no `DatabaseWrapper`).
+- Bearer-token authentication alongside the API key header, and runtime-editable `restdb.json` and `context.json` APIs with `_context` enrichment on metadata routes.
+- The RestDb dashboard for browsing schemas, rows, and table operations, with settings and context editors and a SQL query console.
+- `RestDb.McpServer` exposes the RestDb API over MCP HTTP, TCP, WebSocket, and stdio (Voltaic 2.1.0), and works with current MCP clients including Claude Code 2.1.x, Codex, and the MCP Inspector.
+- **Security:** MCP listeners bind to loopback by default, reject browser origins other than loopback (extend with `--allowed-origins`), and support an optional bearer token on HTTP and WebSocket (`--mcp-token`). See [MCP_API.md](MCP_API.md#access-control).
+- Docker Compose runs the published `restdb`, `restdb-dashboard`, and `restdb-mcp` images.
+
+See [CHANGELOG.md](CHANGELOG.md) for full details and earlier versions.
 
 ## Important Notes
 

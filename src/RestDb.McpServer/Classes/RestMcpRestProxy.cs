@@ -7,6 +7,7 @@ namespace RestDb.McpServer.Classes
     using System.Net.Http.Headers;
     using System.Text;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -81,9 +82,30 @@ namespace RestDb.McpServer.Classes
                 Success = response.IsSuccessStatusCode,
                 StatusCode = (int)response.StatusCode,
                 ReasonPhrase = response.ReasonPhrase ?? String.Empty,
-                Headers = headers,
+                Headers = SelectApplicationHeaders(headers),
                 Body = ParseBody(body, headers.TryGetValue("Content-Type", out string? contentType) ? contentType : null)
             };
+        }
+
+        /// <summary>
+        /// Keeps only RestDb's own "x-" response headers (for example x-expression, x-restart-required, and
+        /// x-operation-message). Transport headers such as Date, Connection, and CORS carry no meaning for an MCP
+        /// client and only cost tokens. Returns null when no application headers are present.
+        /// </summary>
+        internal static Dictionary<string, string>? SelectApplicationHeaders(IDictionary<string, string> headers)
+        {
+            if (headers == null) throw new ArgumentNullException(nameof(headers));
+
+            Dictionary<string, string> selected = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (KeyValuePair<string, string> header in headers)
+            {
+                if (header.Key.StartsWith("x-", StringComparison.OrdinalIgnoreCase))
+                {
+                    selected[header.Key] = header.Value;
+                }
+            }
+
+            return selected.Count > 0 ? selected : null;
         }
 
         public static string Escape(string value)
@@ -127,7 +149,11 @@ namespace RestDb.McpServer.Classes
 
         public string ReasonPhrase { get; set; } = String.Empty;
 
-        public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        /// <summary>
+        /// RestDb's application headers ("x-" prefixed). Omitted from the serialized result when there are none.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Dictionary<string, string>? Headers { get; set; } = null;
 
         public object? Body { get; set; } = null;
     }
