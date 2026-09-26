@@ -15,7 +15,7 @@ Compose defaults:
 - `RESTDB_MCP_API_KEY=default`
 - `RESTDB_MCP_API_KEY_HEADER=x-api-key`
 
-`RESTDB_MCP_API_KEY`, `RESTDB_MCP_API_KEY_HEADER`, and `RESTDB_MCP_BEARER_TOKEN` are used by `RestDb.McpServer` when it calls the protected RestDb HTTP API. MCP clients connecting to the HTTP endpoint do not need to send those RestDb auth headers.
+`RESTDB_MCP_API_KEY`, `RESTDB_MCP_API_KEY_HEADER`, and `RESTDB_MCP_BEARER_TOKEN` are used by `RestDb.McpServer` when it calls the protected RestDb HTTP API. MCP clients connecting to the HTTP endpoint do not need to send those RestDb auth headers. `RESTDB_MCP_TOKEN` and `RESTDB_MCP_ALLOWED_ORIGINS` control who may connect to `RestDb.McpServer` itself; see [Access Control](#access-control).
 
 Optional CLI flags:
 
@@ -30,9 +30,22 @@ Optional CLI flags:
 - `--tcp-port`
 - `--ws-host`
 - `--ws-port`
+- `--allowed-origins`
+- `--mcp-token`
 - `--stdio`
 - `--dry-run`
 - `--yes`
+
+## Access Control
+
+Voltaic (2.1.0 or later) enforces these rules on every request, before it reaches a tool. TCP and stdio are intentionally unauthenticated.
+
+- **Loopback by default.** HTTP and WebSocket listen on `localhost` and TCP on `127.0.0.1`. When a listener is bound to a loopback host, requests from non-loopback addresses are refused with `403`, even if they spoof `Host: localhost`. Use `--http-host +`, `--ws-host +`, and `--tcp-host 0.0.0.0` (the Docker Compose defaults) to accept remote clients.
+- **Origin allowlist (HTTP and WebSocket).** Browsers send an `Origin` header. Requests from origins other than loopback (`http(s)://localhost`, `127.0.0.1`, or `[::1]` on any port) are refused with `403` before anything else, including CORS preflight and WebSocket upgrades. This keeps a web page you visit from driving a locally running server. Add origins with `--allowed-origins https://app.example,https://other.example` or `RESTDB_MCP_ALLOWED_ORIGINS`. `*` allows any origin. Requests without an `Origin` header (Claude Code, Codex, MCP Inspector CLI, curl) are unaffected. CORS responses echo the allowed origin and never use `*`.
+- **Optional bearer token (HTTP and WebSocket).** With `--mcp-token <value>` or `RESTDB_MCP_TOKEN`, clients must send `Authorization: Bearer <value>`, on every HTTP request and on the WebSocket upgrade request alike. Missing or wrong tokens get `401` with an RFC 6750 `WWW-Authenticate: Bearer` challenge (`error="invalid_token"` when a wrong token was sent). The health check (`GET /`) and CORS preflight do not require the token. This token authenticates MCP clients to `RestDb.McpServer`; it is separate from, and never forwarded as, the RestDb API key or bearer token. `install` writes it into each client config as an `Authorization` header when it is set.
+- **JSON only on `/mcp`.** `POST /mcp` requires `Content-Type: application/json` and answers anything else with `415`. This closes the `text/plain` path that browsers can use without a CORS preflight.
+- **Sessions come only from `initialize`.** `POST /mcp` without an `Mcp-Session-Id` gets `400`, except `initialize` and `ping`. An unknown, expired, or terminated session ID gets `404`, which tells the client to initialize again. The stateless `2026-07-28` path does not use sessions.
+- **TCP framing.** TCP accepts only `Content-Length` and `Content-Type` framing header lines. Anything else, including an HTTP request a browser can send to the TCP port, closes the connection before any method runs. TCP has no Origin or token; keep it on loopback (the default) or restrict the port at the network level.
 
 ## Agent Installer
 

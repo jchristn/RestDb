@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using RestDb.McpServer.Classes;
+using Voltaic.Core;
 
 /// <summary>
 /// Deterministic tool definitions registered through <see cref="RestMcpToolRegistrar"/> so MCP transport
@@ -17,11 +18,18 @@ internal static class McpTestTools
     public const string FailureMessage = "Simulated downstream failure.";
     public const string DownstreamOkToolName = "restdb_test_downstream_ok";
     public const string DownstreamNotFoundToolName = "restdb_test_downstream_not_found";
+    public const string WhoAmIToolName = "restdb_test_whoami";
+    public const string AnonymousCaller = "(anonymous)";
 
     public static List<RestMcpToolDefinition> Build()
     {
         return new List<RestMcpToolDefinition>
         {
+            new RestMcpToolDefinition(
+                WhoAmIToolName,
+                "Returns the authenticated caller's principal.",
+                EmptySchema(),
+                (arguments, token) => Task.FromResult<object>(new { principal = RpcCallContext.Current?.Principal ?? AnonymousCaller })),
             new RestMcpToolDefinition(
                 EchoToolName,
                 "Echoes the supplied message.",

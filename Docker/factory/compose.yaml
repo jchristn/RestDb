@@ -68,6 +68,10 @@ services:
       RESTDB_MCP_TCP_PORT: 8011
       RESTDB_MCP_WS_HOST: +
       RESTDB_MCP_WS_PORT: 8012
+      # Optional: require MCP clients to send Authorization: Bearer <token> (HTTP and WebSocket).
+      # RESTDB_MCP_TOKEN: change-me
+      # Optional: extra browser origins allowed besides localhost, comma separated.
+      # RESTDB_MCP_ALLOWED_ORIGINS: https://app.example
     ports:
       - ${RESTDB_MCP_HTTP_HOST_PORT:-8010}:8010
       - ${RESTDB_MCP_TCP_HOST_PORT:-8011}:8011

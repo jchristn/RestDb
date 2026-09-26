@@ -279,7 +279,7 @@ internal static class McpTransportAssertions
     private static async Task WithTcpAsync(List<RestMcpToolDefinition> tools, Func<McpCall, Task> body)
     {
         int port = ReserveLoopbackPort();
-        using McpTcpServer server = new McpTcpServer(IPAddress.Loopback, port);
+        using McpTcpServer server = RestMcpTransportFactory.CreateTcpServer(IPAddress.Loopback, port);
         RestMcpToolRegistrar.Register(server, tools);
 
         using CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -304,7 +304,7 @@ internal static class McpTransportAssertions
     private static async Task WithWebSocketAsync(List<RestMcpToolDefinition> tools, Func<McpCall, Task> body)
     {
         int port = ReserveLoopbackPort();
-        using McpWebsocketsServer server = new McpWebsocketsServer("localhost", port, "/mcp");
+        using McpWebsocketsServer server = RestMcpTransportFactory.CreateWebSocketServer("localhost", port, null, null);
         RestMcpToolRegistrar.Register(server, tools);
 
         using CancellationTokenSource tokenSource = new CancellationTokenSource();
@@ -313,7 +313,7 @@ internal static class McpTransportAssertions
         try
         {
             using McpWebsocketsClient client = new McpWebsocketsClient();
-            await ConnectWithRetryAsync(() => client.ConnectAsync("ws://localhost:" + port + "/mcp")).ConfigureAwait(false);
+            await ConnectWithRetryAsync(() => client.ConnectAsync("ws://localhost:" + port + RestMcpTransportFactory.McpPath)).ConfigureAwait(false);
             await body((method, parameters) => client.CallAsync<JsonElement>(method, parameters)).ConfigureAwait(false);
         }
         finally

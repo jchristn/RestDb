@@ -102,7 +102,9 @@ The shared suite covers:
 
 - provider-specific query-builder generation across SQLite, PostgreSQL, SQL Server, and MySQL
 - live REST API semantics against the selected provider
-- MCP streamable-HTTP bridge behavior on `/mcp`, including `notifications/initialized -> 202`, `tools/list`, and the immediate SSE prelude expected by Codex-class clients
+- MCP Streamable HTTP behavior on `/mcp`, including `notifications/initialized -> 202`, `tools/list`, the immediate SSE prelude expected by Codex-class clients, and the stateless `2026-07-28` path used by Claude Code
+- MCP TCP and WebSocket `tools/list` and `tools/call`
+- MCP access controls: browser Origin validation, the optional MCP bearer token on HTTP and WebSocket, loopback-only clients, and TCP framing
 
 Default automated behavior uses a temporary SQLite database. To target another provider, pass connection details on the CLI or use `--docker` for MySQL, PostgreSQL, or SQL Server.
 See [TESTING.md](TESTING.md) for direct live-database and Docker-backed examples.

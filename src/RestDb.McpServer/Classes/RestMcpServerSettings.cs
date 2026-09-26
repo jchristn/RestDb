@@ -1,6 +1,7 @@
 namespace RestDb.McpServer.Classes
 {
     using System;
+    using System.Collections.Generic;
 
     internal class RestMcpServerSettings
     {
@@ -20,19 +21,30 @@ namespace RestDb.McpServer.Classes
 
         public string? BearerToken { get; set; } = null;
 
-        public string HttpHostname { get; set; } = "+";
+        public string HttpHostname { get; set; } = "localhost";
 
         public int HttpPort { get; set; } = 8010;
 
-        public string TcpHostname { get; set; } = "0.0.0.0";
+        public string TcpHostname { get; set; } = "127.0.0.1";
 
         public int TcpPort { get; set; } = 8011;
 
-        public string WebSocketHostname { get; set; } = "+";
+        public string WebSocketHostname { get; set; } = "localhost";
 
         public int WebSocketPort { get; set; } = 8012;
 
         public bool StdioOnly { get; set; } = false;
+
+        /// <summary>
+        /// Browser origins allowed to use the HTTP and WebSocket transports in addition to loopback origins.
+        /// "*" allows any origin.
+        /// </summary>
+        public List<string> AllowedOrigins { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Optional bearer token MCP clients must present on the HTTP and WebSocket transports.
+        /// </summary>
+        public string? McpToken { get; set; } = null;
 
         public static RestMcpServerSettings FromArgs(string[] args)
         {
@@ -96,6 +108,12 @@ namespace RestDb.McpServer.Classes
                     case "--ws-port":
                         settings.WebSocketPort = ReadIntValue(args, ref i, settings.WebSocketPort);
                         break;
+                    case "--allowed-origins":
+                        settings.AllowedOrigins = ParseList(ReadStringValue(args, ref i, String.Empty));
+                        break;
+                    case "--mcp-token":
+                        settings.McpToken = ReadStringValue(args, ref i, settings.McpToken);
+                        break;
                 }
             }
 
@@ -107,6 +125,11 @@ namespace RestDb.McpServer.Classes
             if (String.IsNullOrWhiteSpace(settings.ApiKeyHeader))
             {
                 settings.ApiKeyHeader = "x-api-key";
+            }
+
+            if (String.IsNullOrWhiteSpace(settings.McpToken))
+            {
+                settings.McpToken = null;
             }
 
             return settings;
@@ -124,12 +147,28 @@ namespace RestDb.McpServer.Classes
             TcpPort = GetEnvironmentInt("RESTDB_MCP_TCP_PORT", TcpPort);
             WebSocketHostname = GetEnvironmentValue("RESTDB_MCP_WS_HOST", WebSocketHostname);
             WebSocketPort = GetEnvironmentInt("RESTDB_MCP_WS_PORT", WebSocketPort);
+            AllowedOrigins = ParseList(GetEnvironmentValue("RESTDB_MCP_ALLOWED_ORIGINS", String.Empty));
+            McpToken = GetEnvironmentValue("RESTDB_MCP_TOKEN", McpToken);
+            if (String.IsNullOrWhiteSpace(McpToken)) McpToken = null;
 
             string stdioValue = Environment.GetEnvironmentVariable("RESTDB_MCP_STDIO") ?? String.Empty;
             if (!String.IsNullOrWhiteSpace(stdioValue) && Boolean.TryParse(stdioValue, out bool stdioOnly))
             {
                 StdioOnly = stdioOnly;
             }
+        }
+
+        private static List<string> ParseList(string? value)
+        {
+            List<string> items = new List<string>();
+            if (String.IsNullOrWhiteSpace(value)) return items;
+
+            foreach (string item in value.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                items.Add(item);
+            }
+
+            return items;
         }
 
         private static string ReadStringValue(string[] args, ref int index, string? defaultValue)

@@ -22,7 +22,7 @@ namespace RestDb.McpServer.Classes
         internal static async Task<int> RunInstallAsync(RestMcpServerSettings settings)
         {
             string streamableHttpUrl = BuildStreamableHttpUrl(settings);
-            List<InstallTarget> targets = BuildTargets(streamableHttpUrl);
+            List<InstallTarget> targets = BuildTargets(streamableHttpUrl, settings.McpToken);
             bool failed = false;
 
             Console.WriteLine("RestDb MCP installer");
@@ -33,6 +33,13 @@ namespace RestDb.McpServer.Classes
             {
                 Console.WriteLine("Note: install does not persist downstream RestDb credentials.");
                 Console.WriteLine("Configure RESTDB_MCP_API_KEY / RESTDB_MCP_BEARER_TOKEN on the RestDb.McpServer process itself.");
+                Console.WriteLine();
+            }
+
+            if (!String.IsNullOrWhiteSpace(settings.McpToken))
+            {
+                Console.WriteLine("Note: the MCP token is written to each client config as an Authorization: Bearer header.");
+                Console.WriteLine("Run the RestDb.McpServer process with the same --mcp-token / RESTDB_MCP_TOKEN.");
                 Console.WriteLine();
             }
 
@@ -94,12 +101,12 @@ namespace RestDb.McpServer.Classes
             return "http://" + host + ":" + settings.HttpPort + "/mcp";
         }
 
-        private static List<InstallTarget> BuildTargets(string streamableHttpUrl)
+        private static List<InstallTarget> BuildTargets(string streamableHttpUrl, string? mcpToken)
         {
-            JsonObject claudeConfig = BuildClaudeConfig(streamableHttpUrl);
-            JsonObject geminiConfig = BuildGeminiConfig(streamableHttpUrl);
-            JsonObject cursorConfig = BuildCursorConfig(streamableHttpUrl);
-            string codexToml = BuildCodexToml(streamableHttpUrl);
+            JsonObject claudeConfig = BuildClaudeConfig(streamableHttpUrl, mcpToken);
+            JsonObject geminiConfig = BuildGeminiConfig(streamableHttpUrl, mcpToken);
+            JsonObject cursorConfig = BuildCursorConfig(streamableHttpUrl, mcpToken);
+            string codexToml = BuildCodexToml(streamableHttpUrl, mcpToken);
 
             return new List<InstallTarget>
             {
@@ -181,39 +188,57 @@ namespace RestDb.McpServer.Classes
                 : "Codex MCP entry already matched the expected configuration.");
         }
 
-        private static JsonObject BuildClaudeConfig(string mcpUrl)
+        internal static JsonObject BuildClaudeConfig(string mcpUrl, string? mcpToken)
         {
-            return new JsonObject
+            return AddAuthorizationHeader(new JsonObject
             {
                 ["type"] = "http",
                 ["url"] = mcpUrl
-            };
+            }, mcpToken);
         }
 
-        private static JsonObject BuildGeminiConfig(string mcpUrl)
+        internal static JsonObject BuildGeminiConfig(string mcpUrl, string? mcpToken)
         {
-            return new JsonObject
+            return AddAuthorizationHeader(new JsonObject
             {
                 ["httpUrl"] = mcpUrl,
                 ["timeout"] = 30000
-            };
+            }, mcpToken);
         }
 
-        private static JsonObject BuildCursorConfig(string mcpUrl)
+        internal static JsonObject BuildCursorConfig(string mcpUrl, string? mcpToken)
         {
-            return new JsonObject
+            return AddAuthorizationHeader(new JsonObject
             {
                 ["url"] = mcpUrl,
                 ["transport"] = "http"
-            };
+            }, mcpToken);
         }
 
-        private static string BuildCodexToml(string mcpUrl)
+        private static JsonObject AddAuthorizationHeader(JsonObject config, string? mcpToken)
+        {
+            if (!String.IsNullOrWhiteSpace(mcpToken))
+            {
+                config["headers"] = new JsonObject
+                {
+                    ["Authorization"] = "Bearer " + mcpToken
+                };
+            }
+
+            return config;
+        }
+
+        internal static string BuildCodexToml(string mcpUrl, string? mcpToken)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(CodexManagedBlockStart);
             sb.AppendLine("[mcp_servers.restdb]");
             sb.AppendLine("url = " + ToTomlString(mcpUrl));
+
+            if (!String.IsNullOrWhiteSpace(mcpToken))
+            {
+                sb.AppendLine("http_headers = { Authorization = " + ToTomlString("Bearer " + mcpToken) + " }");
+            }
 
             sb.AppendLine(CodexManagedBlockEnd);
             return sb.ToString().TrimEnd();

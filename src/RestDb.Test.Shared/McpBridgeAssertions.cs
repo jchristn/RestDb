@@ -21,11 +21,12 @@ internal static class McpBridgeAssertions
     internal const string NewestHandshakeProtocolVersion = "2025-11-25";
     internal const int ParseErrorCode = -32700;
     internal const int InvalidParamsCode = -32602;
+    internal const int InvalidRequestCode = -32600;
     internal const int MethodNotFoundCode = -32601;
 
     public static async Task StreamableHttpAcceptsStandardJsonContentTypeAndListsToolsAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage initializeResponse = await SendJsonAsync(
@@ -79,7 +80,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StreamableHttpSendsImmediateSsePreludeAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage initializeResponse = await SendJsonAsync(
@@ -123,7 +124,7 @@ internal static class McpBridgeAssertions
 
     public static async Task SseRelaysServerNotificationsAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -144,7 +145,7 @@ internal static class McpBridgeAssertions
         {
             while (!tokenSource.IsCancellationRequested)
             {
-                session.InnerServer.SendNotificationToSession(sessionId, "notifications/message", new { level = "info", data = "bridge-sse-check" });
+                session.Server.SendNotificationToSession(sessionId, "notifications/message", new { level = "info", data = "bridge-sse-check" });
                 await Task.Delay(250, tokenSource.Token).ConfigureAwait(false);
             }
         });
@@ -173,7 +174,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StatelessToolsListCarriesResultTypeAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(client, "tools/list", null, "{}").ConfigureAwait(false);
@@ -191,7 +192,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StatelessServerDiscoverAdvertisesStatelessRevisionAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(client, "server/discover", null, "{}").ConfigureAwait(false);
@@ -213,7 +214,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StatelessToolsCallInvokesRegisteredToolAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(
@@ -233,7 +234,7 @@ internal static class McpBridgeAssertions
 
     public static async Task HandshakeToolsCallInvokesRegisteredToolAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -255,7 +256,7 @@ internal static class McpBridgeAssertions
 
     public static async Task InitializeNegotiatesNewestHandshakeRevisionForStatelessVersionAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendJsonAsync(client, HttpMethod.Post, "/mcp", BuildInitializeBody(StatelessProtocolVersion)).ConfigureAwait(false);
@@ -269,28 +270,49 @@ internal static class McpBridgeAssertions
 
     public static async Task DeleteTerminatesSessionAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
-        TestAssert.True(session.InnerServer.GetActiveSessions().Contains(sessionId), "Expected the initialized session to be active.");
+        TestAssert.True(session.Server.GetActiveSessions().Contains(sessionId), "Expected the initialized session to be active.");
 
         using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, "/mcp");
         request.Headers.TryAddWithoutValidation("Mcp-Session-Id", sessionId);
         using HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false);
 
         TestAssert.True(response.IsSuccessStatusCode, "Expected DELETE /mcp to succeed but found " + response.StatusCode + ".");
-        TestAssert.False(session.InnerServer.GetActiveSessions().Contains(sessionId), "Expected DELETE /mcp to remove the session.");
+        TestAssert.False(session.Server.GetActiveSessions().Contains(sessionId), "Expected DELETE /mcp to remove the session.");
 
         using HttpRequestMessage sseRequest = new HttpRequestMessage(HttpMethod.Get, "/mcp");
         sseRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         sseRequest.Headers.TryAddWithoutValidation("Mcp-Session-Id", sessionId);
         using HttpResponseMessage sseResponse = await client.SendAsync(sseRequest, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-        AssertStatus(sseResponse, HttpStatusCode.BadRequest);
+        AssertStatus(sseResponse, HttpStatusCode.NotFound, "A terminated session must be rejected with 404 but found " + sseResponse.StatusCode + ".");
+    }
+
+    public static async Task PostRequiresInitializedSessionAsync()
+    {
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
+        using HttpClient client = session.CreateClient();
+        const string toolsList = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\",\"params\":{}}";
+
+        // Only a successful initialize creates a session (Streamable HTTP): no session is 400, an unknown one is 404.
+        using HttpResponseMessage sessionless = await SendJsonAsync(client, HttpMethod.Post, "/mcp", toolsList).ConfigureAwait(false);
+        string sessionlessBody = await sessionless.Content.ReadAsStringAsync().ConfigureAwait(false);
+        AssertStatus(sessionless, HttpStatusCode.BadRequest, sessionlessBody);
+        AssertJsonRpcError(sessionlessBody, InvalidRequestCode, null);
+        TestAssert.False(sessionless.Headers.Contains("Mcp-Session-Id"), "A rejected request must not be issued a session.");
+
+        using HttpResponseMessage unknown = await SendJsonAsync(client, HttpMethod.Post, "/mcp", toolsList, "not-a-real-session").ConfigureAwait(false);
+        string unknownBody = await unknown.Content.ReadAsStringAsync().ConfigureAwait(false);
+        AssertStatus(unknown, HttpStatusCode.NotFound, unknownBody);
+        TestAssert.DoesNotContain("\"tools\"", unknownBody, StringComparison.Ordinal, "An unknown session must not be served. " + unknownBody);
+
+        TestAssert.Empty(session.Server.GetActiveSessions(), "Rejected requests must not create or adopt sessions.");
     }
 
     public static async Task ToolsCallRejectsUnknownToolAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(
@@ -305,7 +327,7 @@ internal static class McpBridgeAssertions
 
     public static async Task ToolsCallRejectsMissingRequiredArgumentAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -322,7 +344,7 @@ internal static class McpBridgeAssertions
 
     public static async Task ToolsCallSurfacesHandlerFailureAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -339,7 +361,7 @@ internal static class McpBridgeAssertions
 
     public static async Task ToolsCallFlagsFailedDownstreamResponseAsErrorAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(
@@ -359,7 +381,7 @@ internal static class McpBridgeAssertions
 
     public static async Task ToolsCallLeavesSuccessfulDownstreamResponseUnflaggedAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -389,7 +411,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StatelessRequestRejectsMismatchedMethodHeaderAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpRequestMessage request = CreateStatelessRequest(
@@ -407,7 +429,7 @@ internal static class McpBridgeAssertions
 
     public static async Task InitializeRejectsUnknownProtocolVersionAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendJsonAsync(client, HttpMethod.Post, "/mcp", BuildInitializeBody("1999-01-01")).ConfigureAwait(false);
@@ -417,33 +439,35 @@ internal static class McpBridgeAssertions
 
     public static async Task MalformedJsonReturnsParseErrorAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
+        string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
-        using HttpResponseMessage response = await SendJsonAsync(client, HttpMethod.Post, "/mcp", "{not json").ConfigureAwait(false);
+        using HttpResponseMessage response = await SendJsonAsync(client, HttpMethod.Post, "/mcp", "{not json", sessionId).ConfigureAwait(false);
         string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         AssertJsonRpcError(body, ParseErrorCode, null);
     }
 
     public static async Task SseRejectsMissingOrUnknownSessionAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
-        foreach (string? sessionId in new[] { null, "not-a-real-session" })
+        // A missing session is a bad request (400); an unknown one is not found (404) so clients re-initialize.
+        foreach ((string? sessionId, HttpStatusCode expected) in new[] { ((string?)null, HttpStatusCode.BadRequest), ("not-a-real-session", HttpStatusCode.NotFound) })
         {
             using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "/mcp");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
             if (sessionId != null) request.Headers.TryAddWithoutValidation("Mcp-Session-Id", sessionId);
 
             using HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-            AssertStatus(response, HttpStatusCode.BadRequest, "Expected 400 for GET /mcp with session '" + (sessionId ?? "(none)") + "' but found " + response.StatusCode + ".");
+            AssertStatus(response, expected, "Expected " + expected + " for GET /mcp with session '" + (sessionId ?? "(none)") + "' but found " + response.StatusCode + ".");
         }
     }
 
     public static async Task DeleteRejectsMissingOrUnknownSessionAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpRequestMessage missing = new HttpRequestMessage(HttpMethod.Delete, "/mcp");
@@ -458,7 +482,7 @@ internal static class McpBridgeAssertions
 
     public static async Task UnsupportedHttpMethodReturnsMethodNotAllowedAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendJsonAsync(client, HttpMethod.Put, "/mcp", "{}").ConfigureAwait(false);
@@ -467,7 +491,7 @@ internal static class McpBridgeAssertions
 
     public static async Task UnknownPathReturnsNotFoundAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await client.GetAsync("/not-mcp").ConfigureAwait(false);
@@ -476,7 +500,7 @@ internal static class McpBridgeAssertions
 
     public static async Task HandshakeToolsListPublishesOnlyRestDbToolsAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -497,7 +521,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StatelessToolsListPublishesOnlyRestDbToolsAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(client, "tools/list", null, "{}").ConfigureAwait(false);
@@ -511,7 +535,7 @@ internal static class McpBridgeAssertions
 
     public static async Task HandshakePingReturnsEmptyResultAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -531,7 +555,7 @@ internal static class McpBridgeAssertions
 
     public static async Task StatelessPingReturnsCompleteResultAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendStatelessAsync(client, "ping", null, "{}").ConfigureAwait(false);
@@ -551,7 +575,7 @@ internal static class McpBridgeAssertions
 
     public static async Task ToolsCallRejectsRemovedVoltaicDemoToolsAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -571,7 +595,7 @@ internal static class McpBridgeAssertions
 
     public static async Task BareVoltaicDemoMethodsReturnMethodNotFoundAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -594,7 +618,7 @@ internal static class McpBridgeAssertions
 
     public static async Task RestDbToolRemainsCallableAsDirectMethodAsync()
     {
-        await using McpBridgeTestSession session = await McpBridgeTestSession.StartAsync().ConfigureAwait(false);
+        await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
         string sessionId = await InitializeSessionAsync(client).ConfigureAwait(false);
 
@@ -797,62 +821,38 @@ internal static class McpBridgeAssertions
         TestAssert.Equal(expected, response.StatusCode, body ?? ("Expected " + expected + " but found " + response.StatusCode + "."));
     }
 
-    private sealed class McpBridgeTestSession : IAsyncDisposable
+    internal sealed class McpHttpTestSession : IAsyncDisposable
     {
         private readonly CancellationTokenSource _TokenSource;
-        private readonly Task _InnerServerTask;
-        private readonly Task _BridgeTask;
+        private readonly Task _ServerTask;
 
-        private McpBridgeTestSession(
-            int bridgePort,
-            McpHttpServer innerServer,
-            RestMcpHttpBridge bridge,
-            CancellationTokenSource tokenSource,
-            Task innerServerTask,
-            Task bridgeTask)
+        private McpHttpTestSession(int port, McpHttpServer server, CancellationTokenSource tokenSource, Task serverTask)
         {
-            BridgePort = bridgePort;
-            InnerServer = innerServer;
-            Bridge = bridge;
+            Port = port;
+            Server = server;
             _TokenSource = tokenSource;
-            _InnerServerTask = innerServerTask;
-            _BridgeTask = bridgeTask;
+            _ServerTask = serverTask;
         }
 
-        internal int BridgePort { get; }
+        internal int Port { get; }
 
-        internal McpHttpServer InnerServer { get; }
+        internal McpHttpServer Server { get; }
 
-        internal RestMcpHttpBridge Bridge { get; }
-
-        internal static async Task<McpBridgeTestSession> StartAsync()
+        /// <summary>
+        /// Starts an HTTP MCP server built by the production factory, bound to "localhost" like the default settings.
+        /// </summary>
+        internal static async Task<McpHttpTestSession> StartAsync(IEnumerable<string>? allowedOrigins = null, string? mcpToken = null)
         {
-            int innerPort = ReserveLoopbackPort();
-            int bridgePort = ReserveLoopbackPort();
+            int port = ReserveLoopbackPort();
             CancellationTokenSource tokenSource = new CancellationTokenSource();
 
-            McpHttpServer innerServer = new McpHttpServer("127.0.0.1", innerPort, mcpPath: RestMcpHttpBridge.McpPath)
-            {
-                ServerName = "RestDb.McpServer.Tests",
-                ServerVersion = "2.0.8"
-            };
+            McpHttpServer server = RestMcpTransportFactory.CreateHttpServer("localhost", port, allowedOrigins, mcpToken);
+            RestMcpToolRegistrar.Register(server, McpTestTools.Build());
 
-            RestMcpToolRegistrar.Register(innerServer, McpTestTools.Build());
+            Task serverTask = Task.Run(() => server.StartAsync(tokenSource.Token));
 
-            RestMcpHttpBridge bridge = new RestMcpHttpBridge("127.0.0.1", bridgePort, "http://127.0.0.1:" + innerPort, innerServer);
-
-            Task innerTask = Task.Run(() => innerServer.StartAsync(tokenSource.Token));
-            Task bridgeTask = Task.Run(() => bridge.StartAsync(tokenSource.Token));
-
-            McpBridgeTestSession session = new McpBridgeTestSession(
-                bridgePort,
-                innerServer,
-                bridge,
-                tokenSource,
-                innerTask,
-                bridgeTask);
-
-            await session.WaitForBridgeAsync().ConfigureAwait(false);
+            McpHttpTestSession session = new McpHttpTestSession(port, server, tokenSource, serverTask);
+            await session.WaitForServerAsync().ConfigureAwait(false);
             return session;
         }
 
@@ -860,31 +860,29 @@ internal static class McpBridgeAssertions
         {
             return new HttpClient
             {
-                BaseAddress = new Uri("http://127.0.0.1:" + BridgePort),
+                BaseAddress = new Uri("http://localhost:" + Port),
                 Timeout = TimeSpan.FromSeconds(15)
             };
         }
 
         public async ValueTask DisposeAsync()
         {
-            Bridge.Stop();
-            InnerServer.Stop();
+            Server.Stop();
             _TokenSource.Cancel();
 
             try
             {
-                await Task.WhenAll(_InnerServerTask, _BridgeTask).ConfigureAwait(false);
+                await _ServerTask.ConfigureAwait(false);
             }
             catch
             {
             }
 
-            Bridge.Dispose();
-            InnerServer.Dispose();
+            Server.Dispose();
             _TokenSource.Dispose();
         }
 
-        private async Task WaitForBridgeAsync()
+        private async Task WaitForServerAsync()
         {
             using HttpClient client = CreateClient();
             DateTime timeout = DateTime.UtcNow.AddSeconds(10);
@@ -906,7 +904,7 @@ internal static class McpBridgeAssertions
                 await Task.Delay(100).ConfigureAwait(false);
             }
 
-            throw new InvalidOperationException("Timed out waiting for MCP bridge test session to become ready.");
+            throw new InvalidOperationException("Timed out waiting for the MCP HTTP test server to become ready.");
         }
 
         private static int ReserveLoopbackPort()

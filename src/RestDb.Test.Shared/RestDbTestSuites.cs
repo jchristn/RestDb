@@ -101,7 +101,8 @@ public static class RestDbTestSuites
             {
                 SerializationSuite(),
                 McpBridgeSuite(),
-                McpTransportSuite()
+                McpTransportSuite(),
+                McpAccessSuite()
             };
 
             foreach (string providerName in TestData.ProviderNames)
@@ -157,7 +158,7 @@ public static class RestDbTestSuites
         const string suiteId = "McpBridge";
         return new TestSuiteDescriptor(
             suiteId: suiteId,
-            displayName: "MCP HTTP Bridge",
+            displayName: "MCP HTTP",
             cases: new List<TestCaseDescriptor>
             {
                 new(
@@ -176,7 +177,8 @@ public static class RestDbTestSuites
                 McpCase(suiteId, "StatelessToolsCall", "Stateless tools/call invokes a registered RestDb tool", McpBridgeAssertions.StatelessToolsCallInvokesRegisteredToolAsync),
                 McpCase(suiteId, "HandshakeToolsCall", "Session tools/call invokes a registered RestDb tool without stateless fields", McpBridgeAssertions.HandshakeToolsCallInvokesRegisteredToolAsync),
                 McpCase(suiteId, "InitializeStatelessVersion", "initialize requesting 2026-07-28 negotiates the newest handshake revision", McpBridgeAssertions.InitializeNegotiatesNewestHandshakeRevisionForStatelessVersionAsync),
-                McpCase(suiteId, "DeleteTerminatesSession", "DELETE /mcp terminates the session", McpBridgeAssertions.DeleteTerminatesSessionAsync),
+                McpCase(suiteId, "DeleteTerminatesSession", "DELETE /mcp terminates the session; the terminated ID then gets 404", McpBridgeAssertions.DeleteTerminatesSessionAsync),
+                McpCase(suiteId, "SessionRequired", "POST /mcp without a session gets 400 and an unknown session gets 404; neither creates or adopts a session", McpBridgeAssertions.PostRequiresInitializedSessionAsync),
                 McpCase(suiteId, "UnknownTool", "tools/call rejects an unknown tool (-32602)", McpBridgeAssertions.ToolsCallRejectsUnknownToolAsync),
                 McpCase(suiteId, "MissingRequiredArgument", "tools/call rejects a missing required argument (-32602)", McpBridgeAssertions.ToolsCallRejectsMissingRequiredArgumentAsync),
                 McpCase(suiteId, "HandlerFailure", "tools/call surfaces a failing tool handler as an error", McpBridgeAssertions.ToolsCallSurfacesHandlerFailureAsync),
@@ -184,8 +186,8 @@ public static class RestDbTestSuites
                 McpCase(suiteId, "DownstreamSuccessNotError", "tools/call leaves a successful RestDb response unflagged", McpBridgeAssertions.ToolsCallLeavesSuccessfulDownstreamResponseUnflaggedAsync),
                 McpCase(suiteId, "MismatchedMethodHeader", "Stateless request rejects an Mcp-Method header that does not match the body (400)", McpBridgeAssertions.StatelessRequestRejectsMismatchedMethodHeaderAsync),
                 McpCase(suiteId, "UnknownProtocolVersion", "initialize rejects an unknown protocol version (-32602)", McpBridgeAssertions.InitializeRejectsUnknownProtocolVersionAsync),
-                McpCase(suiteId, "MalformedJson", "Malformed JSON returns a parse error (-32700)", McpBridgeAssertions.MalformedJsonReturnsParseErrorAsync),
-                McpCase(suiteId, "SseInvalidSession", "GET /mcp rejects a missing or unknown session (400)", McpBridgeAssertions.SseRejectsMissingOrUnknownSessionAsync),
+                McpCase(suiteId, "MalformedJson", "Malformed JSON on a session returns a parse error (-32700)", McpBridgeAssertions.MalformedJsonReturnsParseErrorAsync),
+                McpCase(suiteId, "SseInvalidSession", "GET /mcp rejects a missing session (400) and an unknown session (404)", McpBridgeAssertions.SseRejectsMissingOrUnknownSessionAsync),
                 McpCase(suiteId, "DeleteInvalidSession", "DELETE /mcp rejects a missing (400) or unknown (404) session", McpBridgeAssertions.DeleteRejectsMissingOrUnknownSessionAsync),
                 McpCase(suiteId, "UnsupportedHttpMethod", "PUT /mcp returns 405", McpBridgeAssertions.UnsupportedHttpMethodReturnsMethodNotAllowedAsync),
                 McpCase(suiteId, "UnknownPath", "Unknown bridge path returns 404", McpBridgeAssertions.UnknownPathReturnsNotFoundAsync),
@@ -225,6 +227,45 @@ public static class RestDbTestSuites
                 McpCase(suiteId, "CatalogRejectsNonStringTableContext", "restdb_update_database_context rejects a non-string table context (additionalProperties schema, -32602)", McpTransportAssertions.TcpCatalogRejectsNonStringTableContextAsync),
                 McpCase(suiteId, "CatalogAcceptsStringTableContext", "restdb_update_database_context accepts string table contexts", McpTransportAssertions.TcpCatalogAcceptsStringTableContextAsync),
                 McpCase(suiteId, "CatalogAcceptsArbitraryFilters", "restdb_enumerate_table_records accepts arbitrary filters (additionalProperties: true)", McpTransportAssertions.TcpCatalogAcceptsArbitraryFiltersAsync)
+            });
+    }
+
+    private static TestSuiteDescriptor McpAccessSuite()
+    {
+        const string suiteId = "McpAccess";
+        return new TestSuiteDescriptor(
+            suiteId: suiteId,
+            displayName: "MCP Access Controls",
+            cases: new List<TestCaseDescriptor>
+            {
+                SyncCase(suiteId, "FactoryOriginPolicy", "HTTP and WebSocket servers allow no Origin, loopback, and configured origins exactly, and reject foreign and lookalike origins", McpAccessAssertions.FactoryAppliesOriginPolicy),
+                SyncCase(suiteId, "FactoryAuthentication", "Servers require the token only when one is configured and serve loopback clients only when bound to localhost", McpAccessAssertions.FactoryConfiguresAuthenticationAndLoopbackClients),
+                SyncCase(suiteId, "TokenCheck", "Token check accepts only the exact bearer token", McpAccessAssertions.TokenCheckAcceptsOnlyExactBearerToken),
+                McpCase(suiteId, "HttpLoopbackOnly", "HTTP server bound to localhost refuses non-loopback clients even with a spoofed Host header", McpAccessAssertions.HttpLoopbackServerRejectsNonLoopbackClientsAsync),
+                McpCase(suiteId, "WebSocketLoopbackOnly", "WebSocket server bound to localhost refuses non-loopback clients even with a spoofed Host header", McpAccessAssertions.WebSocketLoopbackServerRejectsNonLoopbackClientsAsync),
+                McpCase(suiteId, "HttpLoopbackOrigin", "HTTP allows a loopback origin and echoes it in CORS headers", McpAccessAssertions.HttpAllowsLoopbackOriginAndEchoesItAsync),
+                McpCase(suiteId, "HttpConfiguredOrigin", "HTTP allows a configured origin", McpAccessAssertions.HttpAllowsConfiguredOriginAsync),
+                McpCase(suiteId, "HttpPreflight", "HTTP preflight from an allowed origin lists MCP headers and does not require the token", McpAccessAssertions.HttpPreflightFromLoopbackOriginAllowsMcpHeadersAsync),
+                McpCase(suiteId, "HttpNoWildcardCors", "HTTP never grants Access-Control-Allow-Origin: * and keeps non-browser clients working", McpAccessAssertions.HttpNeverSendsWildcardCorsAsync),
+                McpCase(suiteId, "HttpValidToken", "HTTP accepts a valid bearer token from Voltaic's HTTP client and passes the caller to tools", McpAccessAssertions.HttpAcceptsValidBearerTokenAsync),
+                McpCase(suiteId, "HttpHealthNoToken", "HTTP health endpoint does not require the token", McpAccessAssertions.HttpHealthDoesNotRequireTokenAsync),
+                McpCase(suiteId, "HttpDisallowedOrigin", "HTTP rejects disallowed origins (403) before reaching the MCP handlers", McpAccessAssertions.HttpRejectsDisallowedOriginAsync),
+                McpCase(suiteId, "HttpDisallowedPreflight", "HTTP rejects preflight from a disallowed origin (403) without CORS grants", McpAccessAssertions.HttpRejectsPreflightFromDisallowedOriginAsync),
+                McpCase(suiteId, "HttpDisallowedOriginSseDelete", "HTTP rejects GET and DELETE /mcp from a disallowed origin (403)", McpAccessAssertions.HttpRejectsDisallowedOriginOnSseAndDeleteAsync),
+                McpCase(suiteId, "HttpNonJsonBody", "HTTP rejects a text/plain body on /mcp (415), closing the preflight-free browser path", McpAccessAssertions.HttpRejectsNonJsonBodyAsync),
+                McpCase(suiteId, "HttpInvalidToken", "HTTP rejects missing or invalid bearer tokens (401) with an RFC 6750 challenge on POST and GET /mcp", McpAccessAssertions.HttpRejectsMissingOrInvalidBearerTokenAsync),
+                McpCase(suiteId, "HttpTokenFromDisallowedOrigin", "HTTP rejects a valid token sent from a disallowed origin (403)", McpAccessAssertions.HttpRejectsValidTokenFromDisallowedOriginAsync),
+                McpCase(suiteId, "WebSocketAllowedOrigins", "WebSocket allows clients without an Origin and loopback origins", McpAccessAssertions.WebSocketAllowsNoOriginAndLoopbackOriginAsync),
+                McpCase(suiteId, "WebSocketConfiguredOrigin", "WebSocket allows a configured origin", McpAccessAssertions.WebSocketAllowsConfiguredOriginAsync),
+                McpCase(suiteId, "WebSocketValidToken", "WebSocket accepts a valid bearer token, including from Voltaic's WebSocket client, and passes the caller to tools", McpAccessAssertions.WebSocketAcceptsValidBearerTokenAsync),
+                McpCase(suiteId, "WebSocketAnonymousCaller", "WebSocket without a token has no authenticated caller", McpAccessAssertions.WebSocketWithoutTokenHasAnonymousCallerAsync),
+                McpCase(suiteId, "WebSocketDisallowedOrigin", "WebSocket rejects upgrades from disallowed origins (403)", McpAccessAssertions.WebSocketRejectsDisallowedOriginAsync),
+                McpCase(suiteId, "WebSocketInvalidToken", "WebSocket rejects missing or invalid bearer tokens (401 with a Bearer challenge) and origin bypass (403)", McpAccessAssertions.WebSocketRejectsMissingOrInvalidBearerTokenAsync),
+                McpCase(suiteId, "WebSocketWrongPathOrPlain", "WebSocket rejects the wrong path (404) and non-upgrade requests (400)", McpAccessAssertions.WebSocketRejectsWrongPathAndPlainRequestsAsync),
+                McpCase(suiteId, "TcpRejectsHttpRequest", "TCP drops browser-style HTTP requests and unframed input before the MCP handlers", McpAccessAssertions.TcpRejectsBrowserStyleHttpRequestAsync),
+                McpCase(suiteId, "TcpAcceptsFramed", "TCP serves Content-Length framed requests, with or without Content-Type", McpAccessAssertions.TcpAcceptsFramedRequestsAsync),
+                SyncCase(suiteId, "SettingsAccessOptions", "Settings default to loopback listeners and parse --allowed-origins and --mcp-token", McpAccessAssertions.SettingsDefaultToLoopbackAndParseAccessOptions),
+                SyncCase(suiteId, "InstallAuthorizationHeader", "install writes an Authorization header only when an MCP token is configured", McpAccessAssertions.InstallWritesAuthorizationHeaderOnlyWithToken)
             });
     }
 

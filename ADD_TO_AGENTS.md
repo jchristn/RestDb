@@ -49,7 +49,7 @@ By default, the installer targets these user-level files:
 - Gemini CLI: `~/.gemini/settings.json`
 - Cursor: `~/.cursor/mcp.json`
 
-The agent client configs written by `install` are URL-only HTTP MCP definitions. The agent does not need to send the RestDb API key to the MCP server.
+The agent client configs written by `install` are URL-only HTTP MCP definitions. The agent does not need to send the RestDb API key to the MCP server. If `RestDb.McpServer` requires an MCP token (`--mcp-token` or `RESTDB_MCP_TOKEN`), pass the same `--mcp-token` to `install` and it adds an `Authorization: Bearer <token>` header to each client config. See the Access Control section of [MCP_API.md](MCP_API.md).
 
 `install` does not persist downstream RestDb credentials. Configure those on the `RestDb.McpServer` process itself with `--api-key`, `--bearer-token`, or the `RESTDB_MCP_*` environment variables described below.
 
