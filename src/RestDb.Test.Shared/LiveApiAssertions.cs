@@ -1099,7 +1099,11 @@ internal static class LiveApiAssertions
 
     private static string CreateUniqueTableName(string prefix)
     {
-        return "restdb_live_" + prefix + "_" + Guid.NewGuid().ToString("N");
+        // PostgreSQL silently truncates identifiers longer than 63 characters, which breaks lookups by the full name.
+        const int MaxIdentifierLength = 63;
+        string name = "restdb_live_" + prefix + "_" + Guid.NewGuid().ToString("N").Substring(0, 20);
+        if (name.Length > MaxIdentifierLength) throw new ArgumentException("Table name prefix '" + prefix + "' is too long.", nameof(prefix));
+        return name;
     }
 
     private static string Encode(string value)
