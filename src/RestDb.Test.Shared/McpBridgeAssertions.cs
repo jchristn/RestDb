@@ -118,8 +118,10 @@ internal static class McpBridgeAssertions
         int bytesRead = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), tokenSource.Token).ConfigureAwait(false);
         TestAssert.True(bytesRead > 0, "Expected immediate SSE prelude bytes.");
 
+        // Before 2025-11-25 the prelude is an SSE comment line; from 2025-11-25 on it is a priming event (an id, a retry
+        // hint, and empty data). Either way the client sees bytes as soon as the stream opens.
         string prelude = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-        TestAssert.Contains(": connected", prelude, StringComparison.Ordinal, prelude);
+        TestAssert.True(prelude.StartsWith(":", StringComparison.Ordinal) || prelude.StartsWith("id:", StringComparison.Ordinal), "Expected an SSE comment or priming event. " + prelude);
     }
 
     public static async Task SseRelaysServerNotificationsAsync()
@@ -325,7 +327,7 @@ internal static class McpBridgeAssertions
         AssertJsonRpcError(body, InvalidParamsCode, "no_such_tool");
     }
 
-    public static async Task ToolsCallRejectsMissingRequiredArgumentAsync()
+    public static async Task ToolsCallFlagsMissingRequiredArgumentAsync()
     {
         await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
@@ -339,7 +341,7 @@ internal static class McpBridgeAssertions
             sessionId).ConfigureAwait(false);
 
         string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        AssertJsonRpcError(body, InvalidParamsCode, "message");
+        AssertToolInputError(body, "message");
     }
 
     public static async Task ToolsCallSurfacesHandlerFailureAsync()
@@ -427,14 +429,18 @@ internal static class McpBridgeAssertions
         TestAssert.DoesNotContain("\"result\"", body, StringComparison.Ordinal, body);
     }
 
-    public static async Task InitializeRejectsUnknownProtocolVersionAsync()
+    public static async Task InitializeNegotiatesNewestRevisionForUnknownVersionAsync()
     {
         await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
         using HttpResponseMessage response = await SendJsonAsync(client, HttpMethod.Post, "/mcp", BuildInitializeBody("1999-01-01")).ConfigureAwait(false);
         string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        AssertJsonRpcError(body, InvalidParamsCode, "1999-01-01");
+        AssertStatus(response, HttpStatusCode.OK, body);
+
+        using JsonDocument json = JsonDocument.Parse(body);
+        JsonElement result = RequireProperty(json.RootElement, "result", body);
+        TestAssert.Equal(NewestHandshakeProtocolVersion, RequireProperty(result, "protocolVersion", body).GetString(), body);
     }
 
     public static async Task MalformedJsonReturnsParseErrorAsync()
@@ -553,24 +559,16 @@ internal static class McpBridgeAssertions
         AssertEmptyObject(RequireProperty(json.RootElement, "result", body), body);
     }
 
-    public static async Task StatelessPingReturnsCompleteResultAsync()
+    public static async Task StatelessPingIsNotAMethodAsync()
     {
         await using McpHttpTestSession session = await McpHttpTestSession.StartAsync().ConfigureAwait(false);
         using HttpClient client = session.CreateClient();
 
+        // The 2026-07-28 revision removed ping; stateless clients get method not found (404, -32601).
         using HttpResponseMessage response = await SendStatelessAsync(client, "ping", null, "{}").ConfigureAwait(false);
         string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-        AssertStatus(response, HttpStatusCode.OK, body);
-
-        using JsonDocument json = JsonDocument.Parse(body);
-        JsonElement result = RequireProperty(json.RootElement, "result", body);
-        TestAssert.Equal(JsonValueKind.Object, result.ValueKind, "Expected ping to return an object, not \"pong\"." + Environment.NewLine + body);
-        TestAssert.Equal("complete", RequireProperty(result, "resultType", body).GetString(), body);
-
-        foreach (JsonProperty property in result.EnumerateObject())
-        {
-            TestAssert.Equal("resultType", property.Name, "Expected a stateless ping result to carry only resultType." + Environment.NewLine + body);
-        }
+        AssertStatus(response, HttpStatusCode.NotFound, body);
+        AssertJsonRpcError(body, MethodNotFoundCode, "ping");
     }
 
     public static async Task ToolsCallRejectsRemovedVoltaicDemoToolsAsync()
@@ -689,6 +687,25 @@ internal static class McpBridgeAssertions
             "Expected a JSON-RPC error or an isError tool result for a failing tool." + Environment.NewLine + body);
     }
 
+    /// <summary>
+    /// Asserts that invalid tool arguments came back as a tool result with isError: true (so the model can correct
+    /// the call) rather than a JSON-RPC error, and that the text names the offending property.
+    /// </summary>
+    internal static void AssertToolInputError(string body, string expectedTextFragment)
+    {
+        using JsonDocument json = JsonDocument.Parse(body);
+        TestAssert.False(json.RootElement.TryGetProperty("error", out _), "Invalid arguments must be a tool result, not a JSON-RPC error." + Environment.NewLine + body);
+        AssertToolInputErrorResult(RequireProperty(json.RootElement, "result", body), expectedTextFragment, body);
+    }
+
+    internal static void AssertToolInputErrorResult(JsonElement result, string expectedTextFragment, string body)
+    {
+        TestAssert.True(
+            result.TryGetProperty("isError", out JsonElement isError) && isError.ValueKind == JsonValueKind.True,
+            "Expected isError: true for invalid tool arguments." + Environment.NewLine + body);
+        TestAssert.Contains(expectedTextFragment, RequireProperty(result, "content", body).GetRawText(), StringComparison.Ordinal, body);
+    }
+
     private static void AssertJsonRpcError(string body, int expectedCode, string? expectedMessageFragment)
     {
         using JsonDocument json = JsonDocument.Parse(body);
@@ -755,7 +772,7 @@ internal static class McpBridgeAssertions
     private static HttpRequestMessage CreateStatelessRequest(string headerMethod, string? name, string bodyMethod, string paramsJson)
     {
         // Mirrors the request shape Claude Code 2.1.x sends under the stateless 2026-07-28 revision.
-        string meta = "\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"" + StatelessProtocolVersion + "\"}";
+        string meta = "\"_meta\":{\"io.modelcontextprotocol/protocolVersion\":\"" + StatelessProtocolVersion + "\",\"io.modelcontextprotocol/clientCapabilities\":{}}";
         string trimmed = paramsJson.Trim();
         string paramsWithMeta = trimmed == "{}"
             ? "{" + meta + "}"

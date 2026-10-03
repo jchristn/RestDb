@@ -117,6 +117,65 @@ internal static class McpTelemetryAssertions
         TestAssert.True(spans.Any(a => a.DisplayName == McpTestTools.DownstreamOkToolName), "Expected a span for the direct method call.");
     }
 
+    /// <summary>
+    /// The MCP Radiant host subscribes to the Voltaic meter and activity source (Voltaic 2.2+), and over TCP the
+    /// RestDb.McpServer tool span is a child of Voltaic's server span for the same request, so one trace covers
+    /// the transport and the tool.
+    /// </summary>
+    public static async Task VoltaicServerSpanParentsToolSpanAsync()
+    {
+        Radiant.RadiantSettings radiant = McpTelemetryHost.BuildRadiantSettings(new RestMcpServerSettings());
+        TestAssert.Contains(radiant.Sources.MeterNames, m => m == McpTelemetryNames.VoltaicSourceName, "Expected the MCP host to subscribe to the Voltaic meter.");
+        TestAssert.Contains(radiant.Sources.ActivitySourceNames, a => a == McpTelemetryNames.VoltaicSourceName, "Expected the MCP host to subscribe to the Voltaic activity source.");
+        TestAssert.Contains(radiant.Sources.MeterNames, m => m == McpTelemetryNames.SourceName, "Expected the RestDb.McpServer meter.");
+        TestAssert.Equal(Voltaic.Core.VoltaicTelemetryNames.MeterName, McpTelemetryNames.VoltaicSourceName, "The Voltaic meter name must match the library's.");
+        TestAssert.Equal(Voltaic.Core.VoltaicTelemetryNames.ActivitySourceName, McpTelemetryNames.VoltaicSourceName, "The Voltaic activity source name must match the library's.");
+
+        string[] names = { McpTelemetryNames.SourceName, McpTelemetryNames.VoltaicSourceName };
+        using TelemetryCapture capture = new TelemetryCapture(names, names);
+        int port = ReserveLoopbackPort();
+        using McpTcpServer server = RestMcpTransportFactory.CreateTcpServer(IPAddress.Loopback, port);
+        RestMcpToolRegistrar.Register(server, McpTestTools.Build());
+
+        using CancellationTokenSource tokenSource = new CancellationTokenSource();
+        Task serverTask = Task.Run(() => server.StartAsync(tokenSource.Token));
+
+        try
+        {
+            using McpTcpClient client = new McpTcpClient();
+            await ConnectWithRetryAsync(() => client.ConnectAsync("127.0.0.1", port)).ConfigureAwait(false);
+            await client.CallAsync<JsonElement>("tools/call", new { name = McpTestTools.EchoToolName, arguments = new { message = "voltaic-span" } }).ConfigureAwait(false);
+        }
+        finally
+        {
+            server.Stop();
+            tokenSource.Cancel();
+            try
+            {
+                await serverTask.ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        }
+
+        TestAssert.True(capture.Measurements(Voltaic.Core.VoltaicTelemetryNames.RpcServerDuration).Count > 0, "Expected Voltaic server request durations.");
+
+        List<Activity> spans = capture.Spans().ToList();
+        string spanName = "tools/call " + McpTestTools.EchoToolName;
+        Activity tool = spans.First(a => a.Source.Name == McpTelemetryNames.SourceName && a.DisplayName == spanName);
+        Activity? transport = spans.FirstOrDefault(a => a.Source.Name == McpTelemetryNames.VoltaicSourceName && a.Kind == ActivityKind.Server && a.TraceId == tool.TraceId);
+        TestAssert.NotNull(transport, "Expected a Voltaic server span in the tool span's trace. Spans: " + String.Join(", ", spans.Select(a => a.Source.Name + ":" + a.DisplayName)));
+
+        bool nested = false;
+        for (Activity? current = tool.Parent; current != null; current = current.Parent)
+        {
+            if (current.SpanId == transport!.SpanId) nested = true;
+        }
+
+        TestAssert.True(nested || tool.ParentSpanId == transport!.SpanId, "Expected the tool span to nest under Voltaic's server span.");
+    }
+
     public static async Task ProxyPropagatesTraceContextAndRecordsDownstreamAsync()
     {
         using TelemetryCapture capture = new TelemetryCapture(Meters, Sources);

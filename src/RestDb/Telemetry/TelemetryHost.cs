@@ -97,6 +97,7 @@ namespace RestDb.Telemetry
             radiant.Sources.AddMeter(RestDbTelemetryNames.WatsonSourceName);
             radiant.Sources.AddMeter(RestDbTelemetryNames.NpgsqlMeterName);
             radiant.Sources.AddMeter(RestDbTelemetryNames.MySqlConnectorMeterName);
+            radiant.Sources.AddMeter(RestDbTelemetryNames.SyslogLoggingMeterName);
             radiant.Sources.AddActivitySource(RestDbTelemetryNames.SourceName);
             radiant.Sources.AddActivitySource(RestDbTelemetryNames.WatsonSourceName);
 

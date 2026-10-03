@@ -2,6 +2,36 @@
 
 ## Current Version
 
+v2.1.1
+
+Dependencies
+
+- Voltaic 2.2.1 (from 2.1.0), Watson 7.2.2 (from 7.2.0), SyslogLogging 2.3.1 (from 2.2.2), Microsoft.Data.SqlClient 7.1.1 (from 7.1.0).
+- Tests: Touchstone.Core, Touchstone.Cli, Touchstone.XunitAdapter, and Touchstone.NunitAdapter 0.2.0 (from 0.1.12); NUnit 5.0.0 (from 4.6.1).
+- Packages: RestDb 2.1.1 and RestDb.McpServer 2.1.1.
+
+MCP behavior (from Voltaic 2.1.1 through 2.2.1)
+
+- stdio, TCP, and WebSocket answer requests before `initialize` with `-32600` (except `ping`), and a second `initialize` too. This applies to direct JSON-RPC tool methods as well as `tools/call`.
+- Invalid tool arguments (missing required properties, schema violations) return a tool result with `isError: true` naming the property, instead of JSON-RPC `-32602`. Unknown tools are still `-32602`.
+- `initialize` with an unsupported protocol version negotiates `2025-11-25` instead of failing.
+- Stateless `2026-07-28` requests must carry `io.modelcontextprotocol/clientCapabilities` in `params._meta`; stateless `ping` is removed (`404`, `-32601`).
+- CORS preflight echoes the headers the browser requested; SSE streams open with a comment (before `2025-11-25`) or a priming event (from `2025-11-25`).
+- HTTP sessions are capped (10,000, 100 per client), and one message is limited to 16 MiB (1 MB on WebSocket).
+
+Telemetry
+
+- RestDb.McpServer subscribes to the `Voltaic` meter and activity source: per-request transport, session, schema-validation, and tool-stage metrics, including requests rejected before a tool runs. The `RestDb.McpServer` tool span nests under Voltaic's server span, and Voltaic continues a trace context sent by the MCP client.
+- RestDb subscribes to the `SyslogLogging` meter (log entries, destination writes and latency, syslog bytes sent).
+
+Tests
+
+- MCP transport and access tests complete the handshake before calling tools (raw WebSocket and Content-Length framed TCP included) and assert that Voltaic clients initialize on connect and a second `initialize` is refused.
+- Updated cases for `isError` argument validation, version negotiation, stateless `_meta`, stateless `ping` removal, the SSE prelude, and preflight headers. Schema-acceptance tests now also fail when a validation `isError` result comes back.
+- New Telemetry cases: `DependencyMeters` (Radiant subscriptions and a log entry on the SyslogLogging meter) and `McpVoltaicSpans` (Voltaic subscriptions, server-request metrics, and the tool span nesting under Voltaic's server span). 226 cases.
+
+## Previous Versions
+
 v2.1.0
 
 Observability
@@ -26,8 +56,6 @@ Tooling and tests
 - Added `build-all.sh`, `build-server.sh`, `build-dashboard.sh`, and `build-mcp.sh`, equivalent to the `.bat` scripts.
 - Added a Telemetry test suite (17 cases) using in-memory meter and activity listeners: API operation, stage, database (SQLite, success and failure), auth, configuration, gauge, span naming, route template, host lifecycle, MCP tool, MCP proxy propagation, and network-failure paths, plus an end-to-end test that scrapes a live RestDb server's Prometheus endpoint.
 - Packages: RestDb 2.1.0 and RestDb.McpServer 2.1.0 (adds the Radiant 0.1.2 dependency).
-
-## Previous Versions
 
 v2.0.0
 

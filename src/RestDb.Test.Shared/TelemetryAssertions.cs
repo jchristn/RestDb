@@ -392,6 +392,45 @@ internal static class TelemetryAssertions
         RestDbTelemetry.TagServerSpan("GET", "/", null);
     }
 
+    /// <summary>
+    /// The Radiant host subscribes to RestDb's own sources and to the meters its dependencies emit, including
+    /// SyslogLogging (2.3+), and a RestDb log entry is recorded on the SyslogLogging meter.
+    /// </summary>
+    public static async Task RadiantSubscribesToDependencyMetersAsync()
+    {
+        Radiant.RadiantSettings radiant = TelemetryHost.BuildRadiantSettings(new TelemetrySettings());
+        foreach (string meter in new[]
+        {
+            RestDbTelemetryNames.SourceName,
+            RestDbTelemetryNames.WatsonSourceName,
+            RestDbTelemetryNames.NpgsqlMeterName,
+            RestDbTelemetryNames.MySqlConnectorMeterName,
+            RestDbTelemetryNames.SyslogLoggingMeterName
+        })
+        {
+            TestAssert.Contains(radiant.Sources.MeterNames, m => m == meter, "Expected the Radiant host to subscribe to meter '" + meter + "'.");
+        }
+
+        TestAssert.Contains(radiant.Sources.ActivitySourceNames, a => a == RestDbTelemetryNames.SourceName, "Expected the RestDb activity source.");
+        TestAssert.Contains(radiant.Sources.ActivitySourceNames, a => a == RestDbTelemetryNames.WatsonSourceName, "Expected the Watson activity source.");
+        TestAssert.Equal(SyslogLogging.SyslogLoggingTelemetry.MeterName, RestDbTelemetryNames.SyslogLoggingMeterName, "The SyslogLogging meter name must match the library's.");
+
+        using TelemetryCapture capture = new TelemetryCapture(new[] { RestDbTelemetryNames.SyslogLoggingMeterName }, Array.Empty<string>());
+        int syslogPort = ReserveLoopbackPort();
+        using (SyslogLogging.LoggingModule logging = new SyslogLogging.LoggingModule("127.0.0.1", syslogPort, false))
+        {
+            logging.Info("restdb telemetry probe");
+        }
+
+        DateTime deadline = DateTime.UtcNow.AddSeconds(5);
+        while (capture.Measurements(SyslogLogging.SyslogLoggingTelemetry.EntriesMetric).Count == 0 && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(50).ConfigureAwait(false);
+        }
+
+        TestAssert.True(capture.Measurements(SyslogLogging.SyslogLoggingTelemetry.EntriesMetric).Count > 0, "Expected a log entry on the SyslogLogging meter.");
+    }
+
     public static async Task TelemetryHostServesPrometheusAndReleasesPortAsync()
     {
         int port = RestDbLiveApiSession.GetFreeTcpPort();
@@ -571,6 +610,20 @@ internal static class TelemetryAssertions
             catch (IOException)
             {
             }
+        }
+    }
+
+    private static int ReserveLoopbackPort()
+    {
+        TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            return ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
         }
     }
 }

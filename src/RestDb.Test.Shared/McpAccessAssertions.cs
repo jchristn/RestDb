@@ -412,12 +412,10 @@ internal static class McpAccessAssertions
     public static Task TcpAcceptsFramedRequestsAsync() => WithTcpServerAsync(async (port, requestCount) =>
     {
         string json = ToolCallBody(McpTestTools.EchoToolName, "{\"message\":\"framed-hello\"}");
-        string reply = await RawTcpExchangeAsync(port, "Content-Length: " + Encoding.UTF8.GetByteCount(json) + "\r\n\r\n" + json).ConfigureAwait(false);
-
+        string reply = await RawTcpFramedCallAsync(port, json, null, requestCount, expectedRequests: 1).ConfigureAwait(false);
         TestAssert.Contains("framed-hello", reply, StringComparison.Ordinal, "Expected a framed request to be served. " + reply);
-        TestAssert.Equal(1, requestCount(), "Expected exactly one request at the MCP server.");
 
-        string typed = await RawTcpExchangeAsync(port, "Content-Length: " + Encoding.UTF8.GetByteCount(json) + "\r\nContent-Type: application/json; charset=utf-8\r\n\r\n" + json).ConfigureAwait(false);
+        string typed = await RawTcpFramedCallAsync(port, json, "application/json; charset=utf-8", requestCount, expectedRequests: 1).ConfigureAwait(false);
         TestAssert.Contains("framed-hello", typed, StringComparison.Ordinal, "Content-Type is an allowed framing header. " + typed);
     });
 
@@ -513,7 +511,7 @@ internal static class McpAccessAssertions
         using HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Options, "/mcp");
         request.Headers.TryAddWithoutValidation("Origin", origin);
         request.Headers.TryAddWithoutValidation("Access-Control-Request-Method", "POST");
-        request.Headers.TryAddWithoutValidation("Access-Control-Request-Headers", "authorization, content-type, mcp-session-id");
+        request.Headers.TryAddWithoutValidation("Access-Control-Request-Headers", "authorization, content-type, mcp-session-id, mcp-protocol-version");
         return await client.SendAsync(request).ConfigureAwait(false);
     }
 
@@ -554,17 +552,15 @@ internal static class McpAccessAssertions
 
         using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         await socket.ConnectAsync(new Uri("ws://localhost:" + port + "/mcp"), timeout.Token).ConfigureAwait(false);
-        await socket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, timeout.Token).ConfigureAwait(false);
 
-        StringBuilder reply = new StringBuilder();
-        byte[] buffer = new byte[16384];
-        WebSocketReceiveResult result;
-        do
-        {
-            result = await socket.ReceiveAsync(buffer, timeout.Token).ConfigureAwait(false);
-            reply.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
-        }
-        while (!result.EndOfMessage);
+        // The server refuses requests before the MCP handshake, so initialize first.
+        await socket.SendAsync(Encoding.UTF8.GetBytes(InitializeBody()), WebSocketMessageType.Text, true, timeout.Token).ConfigureAwait(false);
+        string initialized = await ReceiveWebSocketMessageAsync(socket, timeout.Token).ConfigureAwait(false);
+        TestAssert.Contains("\"result\"", initialized, StringComparison.Ordinal, "Expected the WebSocket initialize to succeed. " + initialized);
+        await socket.SendAsync(Encoding.UTF8.GetBytes("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}"), WebSocketMessageType.Text, true, timeout.Token).ConfigureAwait(false);
+
+        await socket.SendAsync(Encoding.UTF8.GetBytes(json), WebSocketMessageType.Text, true, timeout.Token).ConfigureAwait(false);
+        string reply = await ReceiveWebSocketMessageAsync(socket, timeout.Token).ConfigureAwait(false);
 
         try
         {
@@ -574,7 +570,22 @@ internal static class McpAccessAssertions
         {
         }
 
-        return reply.ToString();
+        return reply;
+    }
+
+    private static async Task<string> ReceiveWebSocketMessageAsync(ClientWebSocket socket, CancellationToken token)
+    {
+        StringBuilder message = new StringBuilder();
+        byte[] buffer = new byte[16384];
+        WebSocketReceiveResult result;
+        do
+        {
+            result = await socket.ReceiveAsync(buffer, token).ConfigureAwait(false);
+            message.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+        }
+        while (!result.EndOfMessage);
+
+        return message.ToString();
     }
 
     private static async Task AssertWebSocketConnectFailsAsync(int port, string? origin, string? authorization)
@@ -718,6 +729,65 @@ internal static class McpAccessAssertions
             server.Stop();
             tokenSource.Cancel();
             await SwallowAsync(serverTask).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Opens a raw TCP connection, completes the MCP handshake with Content-Length framed messages (initialize, then
+    /// notifications/initialized), sends the framed request, and returns its framed reply. Asserts that exactly
+    /// <paramref name="expectedRequests"/> requests reached the server besides the two handshake messages.
+    /// </summary>
+    private static async Task<string> RawTcpFramedCallAsync(int port, string json, string? contentType, Func<int> requestCount, int expectedRequests)
+    {
+        using TcpClient client = new TcpClient();
+        await client.ConnectAsync(IPAddress.Loopback, port).ConfigureAwait(false);
+        NetworkStream stream = client.GetStream();
+        int before = requestCount();
+
+        await WriteFramedAsync(stream, InitializeBody(), contentType).ConfigureAwait(false);
+        string initialized = await ReadFramedAsync(stream).ConfigureAwait(false);
+        TestAssert.Contains("\"result\"", initialized, StringComparison.Ordinal, "Expected the framed initialize to succeed. " + initialized);
+        await WriteFramedAsync(stream, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}", contentType).ConfigureAwait(false);
+
+        await WriteFramedAsync(stream, json, contentType).ConfigureAwait(false);
+        string reply = await ReadFramedAsync(stream).ConfigureAwait(false);
+
+        // RequestReceived counts every message (initialize and notifications/initialized too) and is raised off the
+        // reply path, so wait for the expected total to land.
+        int expected = expectedRequests + 2;
+        DateTime deadline = DateTime.UtcNow.AddSeconds(2);
+        while (requestCount() - before < expected && DateTime.UtcNow < deadline) await Task.Delay(20).ConfigureAwait(false);
+        TestAssert.Equal(expected, requestCount() - before, "Unexpected number of messages at the MCP server.");
+        return reply;
+    }
+
+    private static async Task WriteFramedAsync(NetworkStream stream, string json, string? contentType)
+    {
+        string frame = "Content-Length: " + Encoding.UTF8.GetByteCount(json) + "\r\n" +
+            (contentType != null ? "Content-Type: " + contentType + "\r\n" : string.Empty) +
+            "\r\n" + json;
+        await stream.WriteAsync(Encoding.UTF8.GetBytes(frame)).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Reads one Content-Length framed message (headers and body) within 10 seconds.
+    /// </summary>
+    private static async Task<string> ReadFramedAsync(NetworkStream stream)
+    {
+        using CancellationTokenSource timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        List<byte> received = new List<byte>();
+        byte[] one = new byte[1];
+
+        while (true)
+        {
+            int read = await stream.ReadAsync(one, timeout.Token).ConfigureAwait(false);
+            if (read <= 0) throw new InvalidOperationException("Connection closed before a framed reply arrived: " + Encoding.UTF8.GetString(received.ToArray()));
+            received.Add(one[0]);
+
+            string text = Encoding.UTF8.GetString(received.ToArray());
+            int headerEnd = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+            if (headerEnd < 0 || !TryGetContentLength(text, out int length)) continue;
+            if (received.Count - Encoding.UTF8.GetByteCount(text.Substring(0, headerEnd + 4)) >= length) return text;
         }
     }
 

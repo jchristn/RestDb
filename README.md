@@ -6,6 +6,12 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, TRUNCATE, and DROP against tables in Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite.
  
+## New in v2.1.1
+
+- Dependency update: Voltaic 2.2.1, Watson 7.2.2, SyslogLogging 2.3.1, Microsoft.Data.SqlClient 7.1.1.
+- `RestDb.McpServer` follows Voltaic's stricter MCP conformance: stream transports require `initialize` first, invalid tool arguments come back as `isError` tool results, and stateless `2026-07-28` requests need `clientCapabilities` in `_meta`. See [MCP_API.md](MCP_API.md#transport-notes).
+- Telemetry now includes Voltaic's MCP transport metrics and spans (MCP server) and SyslogLogging's log metrics (RestDb). See [TELEMETRY.md](TELEMETRY.md).
+
 ## New in v2.1.0
 
 - Built-in observability: metrics and traces for every API operation, workflow stage, database call, authentication decision, configuration change, MCP tool call, and MCP to RestDb request, on top of Watson's HTTP telemetry. Exported through [Radiant](https://www.nuget.org/packages/Radiant) over OTLP and an in-process Prometheus endpoint, configured in the `Telemetry` section of `restdb.json` (and `RESTDB_MCP_*` variables for the MCP server).

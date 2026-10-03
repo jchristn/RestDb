@@ -30,6 +30,11 @@ namespace RestDb.Telemetry
         /// </summary>
         public const string MySqlConnectorMeterName = "MySqlConnector";
 
+        /// <summary>
+        /// Name of the SyslogLogging meter (log entries, per-destination writes and latency, syslog bytes sent).
+        /// </summary>
+        public const string SyslogLoggingMeterName = "SyslogLogging";
+
         #endregion
 
         #region Instruments

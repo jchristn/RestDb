@@ -100,14 +100,13 @@ internal static class McpTransportAssertions
     private static async Task CatalogRejectsNonStringTableContextAsync(McpCall call, List<RestMcpToolDefinition> catalog)
     {
         // restdb_update_database_context declares tables as { additionalProperties: { type: string } }, which Voltaic 2.x enforces.
-        await AssertRpcErrorAsync(
-            () => call("tools/call", new
-            {
-                name = "restdb_update_database_context",
-                arguments = new { databaseName = "test", tables = new { person = 42 } }
-            }),
-            McpBridgeAssertions.InvalidParamsCode,
-            "person").ConfigureAwait(false);
+        JsonElement result = await call("tools/call", new
+        {
+            name = "restdb_update_database_context",
+            arguments = new { databaseName = "test", tables = new { person = 42 } }
+        }).ConfigureAwait(false);
+
+        McpBridgeAssertions.AssertToolInputErrorResult(result, "person", result.GetRawText());
     }
 
     private static async Task CatalogAcceptsStringTableContextAsync(McpCall call, List<RestMcpToolDefinition> catalog)
@@ -131,18 +130,24 @@ internal static class McpTransportAssertions
 
     /// <summary>
     /// The catalog proxies to an unreachable RestDb URL, so a call that passes schema validation fails
-    /// downstream. Anything other than an invalid-params error proves the arguments were accepted.
+    /// downstream. Validation failures are isError results whose text names the tool's arguments
+    /// ("Tool 'x' arguments..."); anything else, including a downstream failure, proves the arguments were accepted.
     /// </summary>
     private static async Task AssertPassesSchemaValidationAsync(Func<Task<JsonElement>> action)
     {
+        JsonElement result;
         try
         {
-            await action().ConfigureAwait(false);
+            result = await action().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             TestAssert.DoesNotContain("RPC Error " + McpBridgeAssertions.InvalidParamsCode, ex.Message, StringComparison.Ordinal, "Expected the arguments to pass schema validation." + Environment.NewLine + ex.Message);
+            return;
         }
+
+        string body = result.GetRawText();
+        TestAssert.DoesNotContain("arguments", McpBridgeAssertions.RequireProperty(result, "content", body).GetRawText(), StringComparison.Ordinal, "Expected the arguments to pass schema validation." + Environment.NewLine + body);
     }
 
     public static void ProxyKeepsOnlyApplicationHeaders()
@@ -322,16 +327,17 @@ internal static class McpTransportAssertions
 
     private static async Task ListsAndCallsRegisteredToolsAsync(McpCall call)
     {
-        JsonElement initialize = await call("initialize", new
-        {
-            protocolVersion = McpBridgeAssertions.NewestHandshakeProtocolVersion,
-            capabilities = new { },
-            clientInfo = new { name = "restdb-tests", version = "1.0.0" }
-        }).ConfigureAwait(false);
-
-        string initializeBody = initialize.GetRawText();
-        JsonElement capabilities = McpBridgeAssertions.RequireProperty(initialize, "capabilities", initializeBody);
-        TestAssert.True(capabilities.TryGetProperty("tools", out _), "Expected the tools capability to be advertised." + Environment.NewLine + initializeBody);
+        // The client completed the handshake on connect (see AssertHandshakeCompleted); the server answers a second
+        // initialize on the same connection with -32600.
+        await AssertRpcErrorAsync(
+            () => call("initialize", new
+            {
+                protocolVersion = McpBridgeAssertions.NewestHandshakeProtocolVersion,
+                capabilities = new { },
+                clientInfo = new { name = "restdb-tests", version = "1.0.0" }
+            }),
+            McpBridgeAssertions.InvalidRequestCode,
+            "initialize").ConfigureAwait(false);
 
         JsonElement list = await call("tools/list", null).ConfigureAwait(false);
         string listBody = list.GetRawText();
@@ -374,10 +380,9 @@ internal static class McpTransportAssertions
             McpBridgeAssertions.InvalidParamsCode,
             "no_such_tool").ConfigureAwait(false);
 
-        await AssertRpcErrorAsync(
-            () => call("tools/call", new { name = McpTestTools.EchoToolName, arguments = new { } }),
-            McpBridgeAssertions.InvalidParamsCode,
-            "message").ConfigureAwait(false);
+        // Invalid arguments come back as an isError tool result naming the property, so a model can correct the call.
+        JsonElement invalid = await call("tools/call", new { name = McpTestTools.EchoToolName, arguments = new { } }).ConfigureAwait(false);
+        McpBridgeAssertions.AssertToolInputErrorResult(invalid, "message", invalid.GetRawText());
 
         await AssertRpcErrorAsync(
             () => call("no/such/method", null),
@@ -436,6 +441,7 @@ internal static class McpTransportAssertions
         {
             using McpTcpClient client = new McpTcpClient();
             await ConnectWithRetryAsync(() => client.ConnectAsync("127.0.0.1", port)).ConfigureAwait(false);
+            AssertHandshakeCompleted(client.InitializeResult);
             await body((method, parameters) => client.CallAsync<JsonElement>(method, parameters)).ConfigureAwait(false);
         }
         finally
@@ -461,6 +467,7 @@ internal static class McpTransportAssertions
         {
             using McpWebsocketsClient client = new McpWebsocketsClient();
             await ConnectWithRetryAsync(() => client.ConnectAsync("ws://localhost:" + port + RestMcpTransportFactory.McpPath)).ConfigureAwait(false);
+            AssertHandshakeCompleted(client.InitializeResult);
             await body((method, parameters) => client.CallAsync<JsonElement>(method, parameters)).ConfigureAwait(false);
         }
         finally
@@ -469,6 +476,18 @@ internal static class McpTransportAssertions
             tokenSource.Cancel();
             await SwallowAsync(serverTask).ConfigureAwait(false);
         }
+    }
+
+    /// <summary>
+    /// Voltaic stream clients send initialize and notifications/initialized on connect (the servers refuse other
+    /// requests before that); asserts the server answered with RestDb's identity and the tools capability.
+    /// </summary>
+    private static void AssertHandshakeCompleted(object? initializeResult)
+    {
+        TestAssert.NotNull(initializeResult, "Expected the client to complete the initialize handshake on connect.");
+        string body = JsonSerializer.Serialize(initializeResult);
+        TestAssert.Contains(RestMcpTransportFactory.ServerName, body, StringComparison.Ordinal, "Expected RestDb's server name in the initialize result." + Environment.NewLine + body);
+        TestAssert.Contains("\"tools\"", body, StringComparison.OrdinalIgnoreCase, "Expected the tools capability to be advertised." + Environment.NewLine + body);
     }
 
     private static async Task ConnectWithRetryAsync(Func<Task<bool>> connect)

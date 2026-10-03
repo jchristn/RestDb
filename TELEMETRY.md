@@ -36,6 +36,7 @@ The goal is operational: using only the dashboards and traces, an on-call engine
 | MCP to RestDb calls | `src/RestDb.McpServer/Classes/RestMcpRestProxy.cs` | Client span per RestDb request with W3C `traceparent` propagation, counter and histogram by method, route template, and outcome. |
 | MCP connections | `src/RestDb.McpServer/RestMcpServer.cs` | Connection counter and open-connection gauge per transport. |
 | Build and runtime | both processes | Build-info gauges, .NET runtime and process metrics (Radiant), driver pool metrics (Npgsql, MySqlConnector), HttpClient pool metrics (`System.Net.Http`). |
+| Libraries | RestDb: SyslogLogging 2.3; MCP server: Voltaic 2.2 | Log entry and destination metrics (`SyslogLogging` meter); MCP transport, session, protocol, and validation metrics and a server span per request (`Voltaic` meter and activity source). |
 
 RestDb has no background workers or queues, so logs stay on the existing syslog and console logging module and are not shipped to Loki. Failed requests log their `trace_id` so a log line leads straight to the trace.
 
@@ -43,8 +44,8 @@ RestDb has no background workers or queues, so logs stay on the existing syslog 
 
 | Process | Meter names subscribed | Activity sources subscribed | Default service name |
 | --- | --- | --- | --- |
-| RestDb | `RestDb`, `Watson`, `Npgsql`, `MySqlConnector`, plus Radiant runtime and process meters | `RestDb`, `Watson` | `restdb` |
-| RestDb.McpServer | `RestDb.McpServer`, `System.Net.Http`, plus Radiant runtime and process meters | `RestDb.McpServer` | `restdb-mcp` |
+| RestDb | `RestDb`, `Watson`, `Npgsql`, `MySqlConnector`, `SyslogLogging`, plus Radiant runtime and process meters | `RestDb`, `Watson` | `restdb` |
+| RestDb.McpServer | `RestDb.McpServer`, `System.Net.Http`, `Voltaic`, plus Radiant runtime and process meters | `RestDb.McpServer`, `Voltaic` | `restdb-mcp` |
 
 All names live in one constants class per project: `RestDb.Telemetry.RestDbTelemetryNames` and `RestDb.McpServer.Telemetry.McpTelemetryNames`. Treat them as public contract.
 
@@ -166,6 +167,8 @@ All instruments are on the `RestDb.McpServer` meter.
 | Watson (`Watson` meter) | `http_server_request_duration_seconds`, `http_server_active_requests`, `http_server_request_body_size_bytes`, `http_server_response_body_size_bytes`, `watson_server_up`, `watson_server_uptime_seconds`, `watson_server_connections_active`, `watson_server_exceptions_total` | Labels `http_request_method`, `http_response_status_code`. No `http_route` label because RestDb uses Watson's default route; use `restdb_api_*` for per-endpoint views. See Watson's TELEMETRY.md. |
 | Npgsql (`Npgsql` meter) | `db_client_connection_count` (`db_client_connection_state`, `db_client_connection_pool_name`) | PostgreSQL pool usage. Present only with a PostgreSQL database configured. |
 | MySqlConnector (`MySqlConnector` meter) | `db_client_connections_usage` (`state`, `pool_name`), `db_client_connections_pending_requests` | MySQL pool usage and waiters. |
+| SyslogLogging (`SyslogLogging` meter, RestDb) | `sysloglogging_entries_total`, `sysloglogging_entry_duration_seconds`, `sysloglogging_destination_writes_total`, `sysloglogging_syslog_sent_bytes_total`, `sysloglogging_errors_total` | Log entries by severity and outcome, per-destination (console, file, syslog) writes and latency. The `SyslogLogging` activity source is not subscribed, so log entries never become spans. See SyslogLogging's TELEMETRY.md. |
+| Voltaic (`Voltaic` meter and activity source, MCP server) | `voltaic_rpc_server_duration_seconds`, `voltaic_rpc_server_active_requests`, `voltaic_build_info`, plus connection, session, tool-stage, schema-validation, and HTTP-layer series | Requests by protocol, transport, method, and outcome, including requests Voltaic rejects before a tool runs (invalid arguments, unknown tools, session errors). Its server span per request (`tools/call {tool}`) is the parent of the `RestDb.McpServer` tool span. See Voltaic's TELEMETRY.md. |
 | HttpClient (`System.Net.Http` meter, MCP server) | `http_client_request_duration_seconds`, `http_client_open_connections`, `http_client_request_time_in_queue_seconds` | MCP to RestDb connection pool. |
 | Radiant process | `process_memory_usage_bytes`, `process_thread_count`, `process_uptime_seconds` | Both processes. |
 | .NET runtime | net8.0: `process_runtime_dotnet_gc_collections_count_total`, `process_runtime_dotnet_gc_heap_size_bytes`, `process_runtime_dotnet_thread_pool_queue_length`, ... ; net9.0 and later: `dotnet_gc_collections_total`, `dotnet_gc_last_collection_heap_size_bytes`, `dotnet_thread_pool_queue_length_total`, ... | The runtime instrumentation switches to the built-in `System.Runtime` meter on .NET 9 and later. The dashboards query both families with `or`. |
@@ -335,6 +338,6 @@ groups:
 ## Known limits
 
 - Watson's HTTP metrics carry no route label because RestDb dispatches through Watson's default route. Per-endpoint views use `restdb_api_*`; traces carry the route template.
-- MCP transports carry no trace context, so each tool call starts a new trace (the RestDb side joins it through `traceparent`). Protocol-level JSON-RPC rejections (unknown tool, invalid arguments, session errors) happen inside Voltaic before a tool handler runs and are not counted by `restdb_mcp_tool_calls_total`.
+- Voltaic continues a W3C trace context the MCP client sends (the HTTP `traceparent` header, or `params._meta` on stream transports) and starts a new trace otherwise; the RestDb side joins it through `traceparent`. Protocol-level rejections (unknown tool, invalid arguments, session errors) happen inside Voltaic before a tool handler runs, so they are not counted by `restdb_mcp_tool_calls_total`; they appear in Voltaic's `voltaic_*` series.
 - Microsoft.Data.SqlClient 7.1 and Microsoft.Data.Sqlite expose no connection-pool meter; for those systems use the connection-open histogram as the pool-pressure signal.
 - Metrics are per process and reset on restart; Prometheus keeps history.

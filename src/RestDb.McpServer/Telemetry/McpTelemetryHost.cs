@@ -100,7 +100,9 @@ namespace RestDb.McpServer.Telemetry
             RadiantSettings radiant = new RadiantSettings(settings.TelemetryServiceName);
             radiant.Sources.AddMeter(McpTelemetryNames.SourceName);
             radiant.Sources.AddMeter(McpTelemetryNames.HttpClientMeterName);
+            radiant.Sources.AddMeter(McpTelemetryNames.VoltaicSourceName);
             radiant.Sources.AddActivitySource(McpTelemetryNames.SourceName);
+            radiant.Sources.AddActivitySource(McpTelemetryNames.VoltaicSourceName);
 
             radiant.Metrics.IncludeRuntime = true;
             radiant.Metrics.IncludeProcess = true;

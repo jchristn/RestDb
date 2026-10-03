@@ -20,6 +20,12 @@ namespace RestDb.McpServer.Telemetry
         /// </summary>
         public const string HttpClientMeterName = "System.Net.Http";
 
+        /// <summary>
+        /// Name of the Voltaic meter and activity source (MCP transport, session, and protocol telemetry; its server
+        /// span per request is the parent of the RestDb.McpServer tool span).
+        /// </summary>
+        public const string VoltaicSourceName = "Voltaic";
+
         #endregion
 
         #region Instruments
