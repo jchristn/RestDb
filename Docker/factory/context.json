@@ -1,0 +1,13 @@
+{
+  "Databases": {
+    "sample": {
+      "Context": "This SQLite database contains example business data used to explore RestDb and the dashboard.",
+      "Tables": {
+        "department": "Reference table for departments. Primary key is department_id.",
+        "person": "Stores people records. Primary key is person_id and department_id relates each person to a department.",
+        "project": "Stores projects owned by departments. Primary key is project_id and department_id links each project to a department.",
+        "task": "Stores task records assigned to people and projects. Primary key is task_id, with project_id and person_id describing ownership and assignment."
+      }
+    }
+  }
+}

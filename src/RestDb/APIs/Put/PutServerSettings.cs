@@ -2,6 +2,7 @@ namespace RestDb
 {
     using System.Threading.Tasks;
     using RestDb.Classes;
+    using RestDb.Telemetry;
 
     partial class RestDbServer
     {
@@ -15,7 +16,7 @@ namespace RestDb
                 return;
             }
 
-            Settings settings = SerializationHelper.DeserializeJson<Settings>(md.Http.Request.DataAsString);
+            Settings settings = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageParseRequest, () => SerializationHelper.DeserializeJson<Settings>(md.Http.Request.DataAsString));
             RuntimeConfigurationResult result = UpdateSettings(settings);
             ApplyOperationHeaders(md.Http, result);
 

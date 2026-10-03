@@ -7,10 +7,17 @@ services:
   # See https://hub.docker.com/r/jchristn77/restdb
   # and https://github.com/jchristn/RestDb
   #
+  # Telemetry (restdb.json "Telemetry"): traces export to Tempo over OTLP and metrics are served on
+  # restdb:9464/metrics inside the compose network for Prometheus. PrometheusHostname is this service's
+  # compose DNS name because the listener matches the Host header Prometheus sends. See TELEMETRY.md.
+  #
 
   restdb:
     container_name: 'restdb'
     image: 'jchristn77/restdb:v2.0.0'
+    depends_on:
+      tempo:
+        condition: service_healthy
     ports:
       - ${RESTDB_HOST_PORT:-8000}:8000
     stdin_open: true
@@ -21,7 +28,7 @@ services:
       - ./sample.db:/app/sample.db
       - ./logs/:/app/logs/
     healthcheck:
-      test: curl --fail http://localhost:8000
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8000/']
       interval: 5s
       timeout: 2s
       retries: 2
@@ -41,7 +48,7 @@ services:
     ports:
       - ${RESTDB_DASHBOARD_HOST_PORT:-8080}:80
     healthcheck:
-      test: curl --fail http://localhost
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1/']
       interval: 5s
       timeout: 2s
       retries: 2
@@ -58,6 +65,8 @@ services:
     depends_on:
       restdb:
         condition: service_healthy
+      tempo:
+        condition: service_healthy
     environment:
       RESTDB_MCP_SERVER_URL: http://restdb:8000
       RESTDB_MCP_API_KEY: default
@@ -72,12 +81,94 @@ services:
       # RESTDB_MCP_TOKEN: change-me
       # Optional: extra browser origins allowed besides localhost, comma separated.
       # RESTDB_MCP_ALLOWED_ORIGINS: https://app.example
+      # Telemetry: traces to Tempo, metrics on mcp:9465/metrics inside the compose network. See TELEMETRY.md.
+      RESTDB_MCP_OTLP_ENDPOINT: http://tempo:4317
+      # Bind the scrape endpoint to this service's compose DNS name: the listener matches the Host header Prometheus sends.
+      RESTDB_MCP_PROMETHEUS_HOST: mcp
+      RESTDB_MCP_PROMETHEUS_PORT: 9465
     ports:
       - ${RESTDB_MCP_HTTP_HOST_PORT:-8010}:8010
       - ${RESTDB_MCP_TCP_HOST_PORT:-8011}:8011
       - ${RESTDB_MCP_WS_HOST_PORT:-8012}:8012
     healthcheck:
-      test: curl --fail http://localhost:8010/
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:8010/']
       interval: 5s
       timeout: 2s
       retries: 2
+
+  #
+  # Observability: Prometheus (metrics), Tempo (traces), Grafana (dashboards).
+  # Grafana provisions the Prometheus and Tempo datasources and the RestDb dashboard folder from
+  # ./grafana/provisioning and ./assets/grafana (a mirror of the repository assets/grafana). Change the Grafana admin credentials outside local
+  # development by setting GRAFANA_ADMIN_USER and GRAFANA_ADMIN_PASSWORD.
+  #
+
+  prometheus:
+    container_name: 'restdb-prometheus'
+    image: 'prom/prometheus:v3.5.4'
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - ${RESTDB_PROMETHEUS_HOST_PORT:-9090}:9090
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - restdb-prometheus-data:/prometheus
+    healthcheck:
+      # The prometheus image ships wget, not curl.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:9090/-/healthy || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 20s
+
+  tempo:
+    container_name: 'restdb-tempo'
+    # Pinned: later builds reject the standard ingester/compactor configuration sections.
+    image: 'grafana/tempo:2.6.1'
+    command: ['-config.file=/etc/tempo.yaml']
+    ports:
+      - ${RESTDB_TEMPO_HOST_PORT:-3200}:3200
+      - ${RESTDB_OTLP_GRPC_HOST_PORT:-4317}:4317
+      - ${RESTDB_OTLP_HTTP_HOST_PORT:-4318}:4318
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml:ro
+      - restdb-tempo-data:/var/tempo
+    healthcheck:
+      # The tempo image ships wget, not curl. /ready returns 503 until ready, then 200.
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:3200/ready || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 40s
+
+  grafana:
+    container_name: 'restdb-grafana'
+    image: 'grafana/grafana-oss:13.0.2'
+    ports:
+      - ${RESTDB_GRAFANA_HOST_PORT:-3000}:3000
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - restdb-grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./assets/grafana:/var/lib/grafana/dashboards/restdb:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://127.0.0.1:3000/api/health']
+      interval: 5s
+      timeout: 2s
+      retries: 2
+      start_period: 30s
+
+volumes:
+  restdb-prometheus-data:
+  restdb-tempo-data:
+  restdb-grafana-data:

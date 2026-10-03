@@ -1,3 +1,4 @@
+import { externalServicesResources } from './externalServicesResources.js';
 import { resources as legacyResources } from './resources.js';
 
 function deepMerge(base, overrides) {
@@ -1738,7 +1739,7 @@ const zhHK = deepMerge(zhTW, {
   }
 });
 
-export const resources = {
+const baseResources = {
   'en-US': { translation: enUS },
   'de-DE': { translation: deepMerge(enUS, repairMojibake(legacyResources['de-DE']?.translation || {})) },
   'es-ES': { translation: repairMojibake(esES) },
@@ -1750,3 +1751,21 @@ export const resources = {
   'zh-TW': { translation: zhTW },
   'ar-SA': { translation: deepMerge(enUS, repairMojibake(legacyResources['ar-SA']?.translation || {})) }
 };
+
+const externalServicesFallback = {
+  'zh-HK': 'zh-TW'
+};
+
+export const resources = Object.fromEntries(
+  Object.entries(baseResources).map(([localeCode, resource]) => [
+    localeCode,
+    {
+      translation: deepMerge(resource.translation, {
+        externalServices:
+          externalServicesResources[localeCode] ||
+          externalServicesResources[externalServicesFallback[localeCode]] ||
+          externalServicesResources['en-US']
+      })
+    }
+  ])
+);

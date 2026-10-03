@@ -46,6 +46,59 @@ namespace RestDb.McpServer.Classes
         /// </summary>
         public string? McpToken { get; set; } = null;
 
+        /// <summary>
+        /// Whether the telemetry host (OTLP export and Prometheus scrape endpoint) starts. Default true.
+        /// </summary>
+        public bool TelemetryEnable { get; set; } = true;
+
+        /// <summary>
+        /// Service name stamped as service.name on metrics and spans. Default restdb-mcp.
+        /// </summary>
+        public string TelemetryServiceName { get; set; } = "restdb-mcp";
+
+        /// <summary>
+        /// Whether traces and metrics are pushed to an OTLP collector. Default true.
+        /// </summary>
+        public bool OtlpEnable { get; set; } = true;
+
+        /// <summary>
+        /// OTLP collector endpoint. Default http://127.0.0.1:4317 (gRPC).
+        /// </summary>
+        public string OtlpEndpoint { get; set; } = "http://127.0.0.1:4317";
+
+        /// <summary>
+        /// OTLP protocol: grpc (default) or httpprotobuf.
+        /// </summary>
+        public string OtlpProtocol { get; set; } = "grpc";
+
+        /// <summary>
+        /// Explicit Prometheus scrape endpoint switch, or null for the default: on in network mode, off in stdio mode
+        /// (agent clients may launch several stdio instances that would contend for one port).
+        /// </summary>
+        public bool? PrometheusEnable { get; set; } = null;
+
+        /// <summary>
+        /// Hostname the Prometheus endpoint binds. Default 127.0.0.1. The listener only answers requests whose Host header
+        /// matches, so inside a container use the DNS name the scraper targets (for example "mcp"). Wildcards are rejected.
+        /// </summary>
+        public string PrometheusHostname { get; set; } = "127.0.0.1";
+
+        /// <summary>
+        /// Port of the Prometheus endpoint. Default 9465.
+        /// </summary>
+        public int PrometheusPort { get; set; } = 9465;
+
+        /// <summary>
+        /// The effective Prometheus switch after applying the mode default.
+        /// </summary>
+        public bool EffectivePrometheusEnable
+        {
+            get
+            {
+                return PrometheusEnable ?? !StdioOnly;
+            }
+        }
+
         public static RestMcpServerSettings FromArgs(string[] args)
         {
             RestMcpServerSettings settings = new RestMcpServerSettings();
@@ -114,6 +167,26 @@ namespace RestDb.McpServer.Classes
                     case "--mcp-token":
                         settings.McpToken = ReadStringValue(args, ref i, settings.McpToken);
                         break;
+                    case "--no-telemetry":
+                        settings.TelemetryEnable = false;
+                        break;
+                    case "--otlp-endpoint":
+                        settings.OtlpEndpoint = ReadStringValue(args, ref i, settings.OtlpEndpoint);
+                        break;
+                    case "--no-otlp":
+                        settings.OtlpEnable = false;
+                        break;
+                    case "--prometheus-host":
+                        settings.PrometheusHostname = ReadStringValue(args, ref i, settings.PrometheusHostname);
+                        settings.PrometheusEnable = true;
+                        break;
+                    case "--prometheus-port":
+                        settings.PrometheusPort = ReadIntValue(args, ref i, settings.PrometheusPort);
+                        settings.PrometheusEnable = true;
+                        break;
+                    case "--no-prometheus":
+                        settings.PrometheusEnable = false;
+                        break;
                 }
             }
 
@@ -150,6 +223,15 @@ namespace RestDb.McpServer.Classes
             AllowedOrigins = ParseList(GetEnvironmentValue("RESTDB_MCP_ALLOWED_ORIGINS", String.Empty));
             McpToken = GetEnvironmentValue("RESTDB_MCP_TOKEN", McpToken);
             if (String.IsNullOrWhiteSpace(McpToken)) McpToken = null;
+
+            TelemetryEnable = GetEnvironmentBool("RESTDB_MCP_TELEMETRY_ENABLE") ?? TelemetryEnable;
+            TelemetryServiceName = GetEnvironmentValue("RESTDB_MCP_TELEMETRY_SERVICE_NAME", TelemetryServiceName);
+            OtlpEnable = GetEnvironmentBool("RESTDB_MCP_OTLP_ENABLE") ?? OtlpEnable;
+            OtlpEndpoint = GetEnvironmentValue("RESTDB_MCP_OTLP_ENDPOINT", OtlpEndpoint);
+            OtlpProtocol = GetEnvironmentValue("RESTDB_MCP_OTLP_PROTOCOL", OtlpProtocol);
+            PrometheusEnable = GetEnvironmentBool("RESTDB_MCP_PROMETHEUS_ENABLE") ?? PrometheusEnable;
+            PrometheusHostname = GetEnvironmentValue("RESTDB_MCP_PROMETHEUS_HOST", PrometheusHostname);
+            PrometheusPort = GetEnvironmentInt("RESTDB_MCP_PROMETHEUS_PORT", PrometheusPort);
 
             string stdioValue = Environment.GetEnvironmentVariable("RESTDB_MCP_STDIO") ?? String.Empty;
             if (!String.IsNullOrWhiteSpace(stdioValue) && Boolean.TryParse(stdioValue, out bool stdioOnly))
@@ -190,6 +272,13 @@ namespace RestDb.McpServer.Classes
         {
             string? value = Environment.GetEnvironmentVariable(name);
             return String.IsNullOrWhiteSpace(value) ? (defaultValue ?? String.Empty) : value;
+        }
+
+        private static bool? GetEnvironmentBool(string name)
+        {
+            string? value = Environment.GetEnvironmentVariable(name);
+            if (!String.IsNullOrWhiteSpace(value) && Boolean.TryParse(value, out bool result)) return result;
+            return null;
         }
 
         private static int GetEnvironmentInt(string name, int defaultValue)

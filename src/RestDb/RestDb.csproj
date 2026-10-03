@@ -7,7 +7,7 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<IncludeSymbols>true</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<Version>2.0.0</Version>
+		<Version>2.1.0</Version>
 		<Authors>Joel Christner</Authors>
 		<Description>RestDb is a platform that enables a RESTful API interface in front of Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite databases.</Description>
 		<Copyright>(c)2024 Joel Christner</Copyright>
@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/jchristn/restdb</RepositoryUrl>
 		<RepositoryType>Github</RepositoryType>
 		<PackageTags>rest,database,api,db</PackageTags>
-		<PackageReleaseNotes>v2.0.0: targets net8.0 and net10.0 with native SQL Server, MySQL, PostgreSQL, and SQLite implementations; bearer-token authentication; runtime-editable settings and context APIs with _context enrichment. Pins SQLitePCLRaw.bundle_e_sqlite3 3.0.5 (SQLite &gt;= 3.50.2) for CVE-2025-6965. See CHANGELOG.md for details.</PackageReleaseNotes>
+		<PackageReleaseNotes>v2.1.0: built-in observability. Metrics and traces for every API operation, workflow stage, database call, authentication decision, and configuration change, on the RestDb meter and activity source alongside Watson's HTTP telemetry, exported through Radiant over OTLP and an in-process Prometheus endpoint (Telemetry section of restdb.json). See TELEMETRY.md and CHANGELOG.md.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<PackageIconUrl></PackageIconUrl>
 		<PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
@@ -61,6 +61,7 @@
 		<PackageReference Include="Inputty" Version="1.0.13" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.0" />
 		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+		<PackageReference Include="Radiant" Version="0.1.2" />
 		<!-- Pin the native SQLite bundle to a build that ships SQLite >= 3.50.2 to resolve CVE-2025-6965 (GHSA-2m69-gcr7-jv3q). -->
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
 		<PackageReference Include="MySqlConnector" Version="2.6.2" />

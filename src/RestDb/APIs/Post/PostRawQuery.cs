@@ -3,6 +3,7 @@ namespace RestDb
     using System.Data;
     using System.Threading.Tasks;
     using RestDb.Classes;
+    using RestDb.Telemetry;
 
     partial class RestDbServer
     {
@@ -33,7 +34,7 @@ namespace RestDb
             {
                 md.Http.Response.StatusCode = 200;
                 md.Http.Response.ContentType = Constants.JsonContentType;
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
+                await md.Http.Response.Send(RestDbTelemetry.RunStage(RestDbTelemetryNames.StageSerialize, () => SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true)));
                 return;
             }
 

@@ -7,6 +7,7 @@ namespace RestDb.McpServer
     using System.Threading.Tasks;
     using RestDb.McpServer.Classes;
     using RestDb.McpServer.Registrations;
+    using RestDb.McpServer.Telemetry;
     using Voltaic.Mcp;
 
     internal static class RestMcpServer
@@ -26,6 +27,9 @@ namespace RestDb.McpServer
             {
                 return await RestMcpInstallHelper.RunInstallAsync(settings).ConfigureAwait(false);
             }
+
+            using McpTelemetryHost telemetry = McpTelemetryHost.Start(settings);
+            if (!settings.StdioOnly) ReportTelemetry(telemetry);
 
             using RestMcpRestProxy proxy = new RestMcpRestProxy(settings);
             List<RestMcpToolDefinition> tools = RestMcpToolCatalog.Build(proxy);
@@ -70,6 +74,13 @@ namespace RestDb.McpServer
             httpServer.Log += (sender, message) => Console.WriteLine("[MCP HTTP] " + message);
             tcpServer.Log += (sender, message) => Console.WriteLine("[MCP TCP] " + message);
             wsServer.Log += (sender, message) => Console.WriteLine("[MCP WS] " + message);
+
+            httpServer.ClientConnected += (sender, e) => McpTelemetry.RecordConnection(McpTelemetryNames.TransportHttp, true);
+            httpServer.ClientDisconnected += (sender, e) => McpTelemetry.RecordConnection(McpTelemetryNames.TransportHttp, false);
+            tcpServer.ClientConnected += (sender, e) => McpTelemetry.RecordConnection(McpTelemetryNames.TransportTcp, true);
+            tcpServer.ClientDisconnected += (sender, e) => McpTelemetry.RecordConnection(McpTelemetryNames.TransportTcp, false);
+            wsServer.ClientConnected += (sender, e) => McpTelemetry.RecordConnection(McpTelemetryNames.TransportWebSocket, true);
+            wsServer.ClientDisconnected += (sender, e) => McpTelemetry.RecordConnection(McpTelemetryNames.TransportWebSocket, false);
 
             RestMcpToolRegistrar.Register(httpServer, tools);
             RestMcpToolRegistrar.Register(tcpServer, tools);
@@ -124,6 +135,18 @@ namespace RestDb.McpServer
             }
         }
 
+        private static void ReportTelemetry(McpTelemetryHost telemetry)
+        {
+            if (!String.IsNullOrEmpty(telemetry.StartupError))
+            {
+                Console.WriteLine("Telemetry:  export disabled (" + telemetry.StartupError + ")");
+            }
+            else if (telemetry.IsRunning)
+            {
+                Console.WriteLine("Telemetry:  " + (telemetry.ScrapeUrl ?? "OTLP export only"));
+            }
+        }
+
         private static void ShowHelp()
         {
             Console.WriteLine("RestDb.McpServer");
@@ -148,6 +171,14 @@ namespace RestDb.McpServer
             Console.WriteLine("  --mcp-token <value>      Bearer token MCP clients must send on HTTP/WebSocket");
             Console.WriteLine("  --stdio                  Run stdio MCP transport only");
             Console.WriteLine();
+            Console.WriteLine("Telemetry options:");
+            Console.WriteLine("  --no-telemetry           Do not start the telemetry host");
+            Console.WriteLine("  --otlp-endpoint <url>    OTLP collector endpoint (default: http://127.0.0.1:4317)");
+            Console.WriteLine("  --no-otlp                Disable OTLP export");
+            Console.WriteLine("  --prometheus-host <host> Prometheus scrape endpoint host name (default: 127.0.0.1)");
+            Console.WriteLine("  --prometheus-port <port> Prometheus scrape endpoint port (default: 9465)");
+            Console.WriteLine("  --no-prometheus          Disable the Prometheus scrape endpoint (off by default with --stdio)");
+            Console.WriteLine();
             Console.WriteLine("Install options:");
             Console.WriteLine("  install                  Configure Claude Code, Codex, Gemini CLI, and Cursor");
             Console.WriteLine("  --dry-run                Preview generated config without writing files");
@@ -164,6 +195,8 @@ namespace RestDb.McpServer
             Console.WriteLine("    using --api-key / --bearer-token or RESTDB_MCP_* environment variables.");
             Console.WriteLine("  - --mcp-token authenticates MCP clients to this server and is never sent to RestDb.");
             Console.WriteLine("    Environment: RESTDB_MCP_TOKEN, RESTDB_MCP_ALLOWED_ORIGINS.");
+            Console.WriteLine("  - Telemetry environment: RESTDB_MCP_TELEMETRY_ENABLE, RESTDB_MCP_OTLP_ENABLE, RESTDB_MCP_OTLP_ENDPOINT,");
+            Console.WriteLine("    RESTDB_MCP_OTLP_PROTOCOL, RESTDB_MCP_PROMETHEUS_ENABLE, RESTDB_MCP_PROMETHEUS_HOST, RESTDB_MCP_PROMETHEUS_PORT.");
         }
     }
 }

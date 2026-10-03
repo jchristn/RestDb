@@ -2,6 +2,33 @@
 
 ## Current Version
 
+v2.1.0
+
+Observability
+
+- RestDb emits metrics and traces on a `RestDb` meter and activity source: every API operation (counter by operation, outcome, and status code; duration; in-flight; errors by `error.type`), every workflow stage (`resolve_table`, `describe`, `parse_request`, `query`, `enrich_context`, `serialize`, `apply_config`), every database call (client spans and metrics by system, database, and operation; connection-open time including pool wait; rows; transaction commits and rollbacks; SQLSTATE on failures), authentication decisions, configuration start-up, reloads, and updates, records written, and build and configuration gauges. SQL text, parameters, row data, and secrets are never recorded.
+- Watson's built-in HTTP telemetry is enabled explicitly, and RestDb names Watson's per-request span with the route template (`GET /{database}/{table}`), including requests rejected by authentication.
+- RestDb.McpServer emits a `RestDb.McpServer` meter and activity source: tool calls by tool, transport, invocation style, and outcome; RestDb API calls by method, route template, and outcome; connection counts; build and configuration gauges. It propagates W3C `traceparent` to RestDb so a tool call and its RestDb request are one trace.
+- Each process hosts one Radiant 0.1.2 host that exports over OTLP and serves Prometheus (RestDb `9464`, MCP server `9465`), with .NET runtime and process metrics and the Npgsql, MySqlConnector, and HttpClient pool meters. Configure RestDb with the new `Telemetry` section of `restdb.json`, and the MCP server with `RESTDB_MCP_TELEMETRY_*`, `RESTDB_MCP_OTLP_*`, and `RESTDB_MCP_PROMETHEUS_*` variables or `--no-telemetry`, `--otlp-endpoint`, `--no-otlp`, `--prometheus-host`, `--prometheus-port`, and `--no-prometheus`. The Prometheus endpoint is off by default in stdio mode.
+- Docker Compose (both `Docker/` and `Docker/factory/`) adds Prometheus 3.5.4, Tempo 2.6.1, and Grafana 13.0.2 with provisioned datasources and five dashboards in a `RestDb` folder (`assets/grafana`). Healthchecks probe `127.0.0.1` and all host ports are configurable. Grafana credentials come from `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`.
+- The dashboard workspace ends with an External services card (Grafana, Prometheus, Tempo, MCP) showing URLs, default credentials, and live reachability, translated into all ten locales.
+- Failed requests log their trace id. The unknown-API-key log line no longer prints the presented key.
+- See [TELEMETRY.md](TELEMETRY.md).
+
+Fixes
+
+- The root page now declares `charset=utf-8`. The previous `utf8` label made `HttpClient` refuse the body, so the MCP `restdb_check_system_health` tool always failed.
+- Start-up no longer initializes every configured database twice.
+- `Docker/factory/` now includes the `restdb.json` and `context.json` its compose file mounts.
+
+Tooling and tests
+
+- Added `build-all.sh`, `build-server.sh`, `build-dashboard.sh`, and `build-mcp.sh`, equivalent to the `.bat` scripts.
+- Added a Telemetry test suite (17 cases) using in-memory meter and activity listeners: API operation, stage, database (SQLite, success and failure), auth, configuration, gauge, span naming, route template, host lifecycle, MCP tool, MCP proxy propagation, and network-failure paths, plus an end-to-end test that scrapes a live RestDb server's Prometheus endpoint.
+- Packages: RestDb 2.1.0 and RestDb.McpServer 2.1.0 (adds the Radiant 0.1.2 dependency).
+
+## Previous Versions
+
 v2.0.0
 
 Platform and providers

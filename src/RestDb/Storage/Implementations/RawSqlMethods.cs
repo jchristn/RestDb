@@ -5,6 +5,7 @@ namespace RestDb.Storage.Implementations
     using System.Threading;
     using System.Threading.Tasks;
     using RestDb.Storage.Interfaces;
+    using RestDb.Telemetry;
 
     /// <summary>
     /// Shared raw SQL implementation.
@@ -26,7 +27,9 @@ namespace RestDb.Storage.Implementations
         public Task<DataTable> QueryAsync(string query, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(query)) throw new ArgumentNullException(nameof(query));
-            return _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildRawSql(query), token);
+            SqlQueryDefinition definition = _Driver.QueryBuilder.BuildRawSql(query);
+            definition.OperationName = RestDbTelemetryNames.DbOperationRaw;
+            return RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteQueryAsync(definition, token));
         }
     }
 }

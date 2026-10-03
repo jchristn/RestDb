@@ -18,6 +18,11 @@ namespace RestDb.Storage
         public bool UseTransaction { get; set; } = true;
 
         /// <summary>
+        /// Bounded operation name recorded as db.operation.name on telemetry (for example select or insert). Default query.
+        /// </summary>
+        public string OperationName { get; set; } = "query";
+
+        /// <summary>
         /// Instantiate.
         /// </summary>
         public SqlBatchDefinition()

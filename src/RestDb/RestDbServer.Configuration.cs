@@ -2,9 +2,11 @@ namespace RestDb
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Threading.Tasks;
     using RestDb.Classes;
+    using RestDb.Telemetry;
     using SyslogLogging;
     using WatsonWebserver;
 
@@ -26,13 +28,24 @@ namespace RestDb
             Settings settings = Settings.FromFile(SettingsFilename) ?? new Settings();
             ContextDocument contextDocument = ContextDocument.FromFile(ContextFilename) ?? new ContextDocument();
 
-            lock (RuntimeStateLock)
+            // Start telemetry before the databases initialize so their connection checks are captured.
+            _Telemetry = TelemetryHost.Start(settings.Telemetry);
+            RestDbTelemetry.CurrentOperation = RestDbTelemetryNames.OperationStartup;
+
+            RunConfigChange(RestDbTelemetryNames.ConfigKindSettings, RestDbTelemetryNames.ConfigActionStartup, () =>
             {
-                ApplySettingsInternal(settings);
-                ApplyContextDocumentInternal(contextDocument);
-                _SettingsLastLoadedUtc = DateTime.UtcNow;
-                _ContextLastLoadedUtc = DateTime.UtcNow;
-            }
+                lock (RuntimeStateLock)
+                {
+                    ApplySettingsInternal(settings);
+                    ApplyContextDocumentInternal(contextDocument);
+                    _SettingsLastLoadedUtc = DateTime.UtcNow;
+                    _ContextLastLoadedUtc = DateTime.UtcNow;
+                }
+
+                return new RuntimeConfigurationResult { Success = true };
+            });
+
+            RestDbTelemetry.CurrentOperation = null;
         }
 
         private static Settings GetSettingsSnapshot()
@@ -56,61 +69,73 @@ namespace RestDb
 
         private static RuntimeConfigurationResult ReloadSettingsFromDisk()
         {
-            Settings settings = Settings.FromFile(SettingsFilename) ?? new Settings();
-            RuntimeConfigurationResult result = ApplySettings(settings, false);
-            result.Message = result.RestartRequired
-                ? "Settings reloaded. Listener binding changes require a process restart."
-                : "Settings reloaded.";
-            return result;
+            return RunConfigChange(RestDbTelemetryNames.ConfigKindSettings, RestDbTelemetryNames.ConfigActionReload, () =>
+            {
+                Settings settings = Settings.FromFile(SettingsFilename) ?? new Settings();
+                RuntimeConfigurationResult result = ApplySettings(settings, false);
+                result.Message = result.RestartRequired
+                    ? "Settings reloaded. Listener binding changes require a process restart."
+                    : "Settings reloaded.";
+                return result;
+            });
         }
 
         private static RuntimeConfigurationResult UpdateSettings(Settings settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
-            RuntimeConfigurationResult result = ApplySettings(settings, true);
-            result.Message = result.RestartRequired
-                ? "Settings updated. Listener binding changes require a process restart."
-                : "Settings updated.";
-            return result;
+            return RunConfigChange(RestDbTelemetryNames.ConfigKindSettings, RestDbTelemetryNames.ConfigActionUpdate, () =>
+            {
+                RuntimeConfigurationResult result = ApplySettings(settings, true);
+                result.Message = result.RestartRequired
+                    ? "Settings updated. Listener binding changes require a process restart."
+                    : "Settings updated.";
+                return result;
+            });
         }
 
         private static RuntimeConfigurationResult ReloadContextFromDisk()
         {
-            ContextDocument contextDocument = ContextDocument.FromFile(ContextFilename) ?? new ContextDocument();
-
-            lock (RuntimeStateLock)
+            return RunConfigChange(RestDbTelemetryNames.ConfigKindContext, RestDbTelemetryNames.ConfigActionReload, () =>
             {
-                ApplyContextDocumentInternal(contextDocument);
-                _ContextLastLoadedUtc = DateTime.UtcNow;
-            }
+                ContextDocument contextDocument = ContextDocument.FromFile(ContextFilename) ?? new ContextDocument();
 
-            return new RuntimeConfigurationResult
-            {
-                Success = true,
-                Message = "Context reloaded."
-            };
+                lock (RuntimeStateLock)
+                {
+                    ApplyContextDocumentInternal(contextDocument);
+                    _ContextLastLoadedUtc = DateTime.UtcNow;
+                }
+
+                return new RuntimeConfigurationResult
+                {
+                    Success = true,
+                    Message = "Context reloaded."
+                };
+            });
         }
 
         private static RuntimeConfigurationResult UpdateContextDocument(ContextDocument contextDocument)
         {
             if (contextDocument == null) throw new ArgumentNullException(nameof(contextDocument));
 
-            lock (RuntimeStateLock)
+            return RunConfigChange(RestDbTelemetryNames.ConfigKindContext, RestDbTelemetryNames.ConfigActionUpdate, () =>
             {
-                ContextDocument clone = SerializationHelper.CopyObject<ContextDocument>(contextDocument) ?? new ContextDocument();
-                clone.Normalize();
-                EnsureContextCoverage(clone);
-                clone.ToFile(ContextFilename);
-                ApplyContextDocumentInternal(clone);
-                _ContextLastLoadedUtc = DateTime.UtcNow;
-            }
+                lock (RuntimeStateLock)
+                {
+                    ContextDocument clone = SerializationHelper.CopyObject<ContextDocument>(contextDocument) ?? new ContextDocument();
+                    clone.Normalize();
+                    EnsureContextCoverage(clone);
+                    clone.ToFile(ContextFilename);
+                    ApplyContextDocumentInternal(clone);
+                    _ContextLastLoadedUtc = DateTime.UtcNow;
+                }
 
-            return new RuntimeConfigurationResult
-            {
-                Success = true,
-                Message = "Context updated."
-            };
+                return new RuntimeConfigurationResult
+                {
+                    Success = true,
+                    Message = "Context updated."
+                };
+            });
         }
 
         private static RuntimeConfigurationResult UpdateDatabaseContext(string databaseName, DatabaseContextPayload payload)
@@ -118,29 +143,32 @@ namespace RestDb
             if (String.IsNullOrWhiteSpace(databaseName)) throw new ArgumentNullException(nameof(databaseName));
             if (payload == null) throw new ArgumentNullException(nameof(payload));
 
-            lock (RuntimeStateLock)
+            return RunConfigChange(RestDbTelemetryNames.ConfigKindContext, RestDbTelemetryNames.ConfigActionUpdate, () =>
             {
-                ContextDocument clone = SerializationHelper.CopyObject<ContextDocument>(_ContextDocument) ?? new ContextDocument();
-                clone.Normalize();
+                lock (RuntimeStateLock)
+                {
+                    ContextDocument clone = SerializationHelper.CopyObject<ContextDocument>(_ContextDocument) ?? new ContextDocument();
+                    clone.Normalize();
 
-                DatabaseContextEntry entry = clone.GetDatabaseContext(databaseName, true);
-                entry.Context = payload.Context;
-                entry.Tables = payload.Tables != null
-                    ? new Dictionary<string, string>(payload.Tables, StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                entry.Normalize();
+                    DatabaseContextEntry entry = clone.GetDatabaseContext(databaseName, true);
+                    entry.Context = payload.Context;
+                    entry.Tables = payload.Tables != null
+                        ? new Dictionary<string, string>(payload.Tables, StringComparer.OrdinalIgnoreCase)
+                        : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    entry.Normalize();
 
-                EnsureContextCoverage(clone);
-                clone.ToFile(ContextFilename);
-                ApplyContextDocumentInternal(clone);
-                _ContextLastLoadedUtc = DateTime.UtcNow;
-            }
+                    EnsureContextCoverage(clone);
+                    clone.ToFile(ContextFilename);
+                    ApplyContextDocumentInternal(clone);
+                    _ContextLastLoadedUtc = DateTime.UtcNow;
+                }
 
-            return new RuntimeConfigurationResult
-            {
-                Success = true,
-                Message = "Database context updated."
-            };
+                return new RuntimeConfigurationResult
+                {
+                    Success = true,
+                    Message = "Database context updated."
+                };
+            });
         }
 
         private static RuntimeConfigurationResult UpdateTableContext(string databaseName, string tableName, string contextValue)
@@ -148,32 +176,39 @@ namespace RestDb
             if (String.IsNullOrWhiteSpace(databaseName)) throw new ArgumentNullException(nameof(databaseName));
             if (String.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
 
-            lock (RuntimeStateLock)
+            return RunConfigChange(RestDbTelemetryNames.ConfigKindContext, RestDbTelemetryNames.ConfigActionUpdate, () =>
             {
-                ContextDocument clone = SerializationHelper.CopyObject<ContextDocument>(_ContextDocument) ?? new ContextDocument();
-                clone.Normalize();
+                lock (RuntimeStateLock)
+                {
+                    ContextDocument clone = SerializationHelper.CopyObject<ContextDocument>(_ContextDocument) ?? new ContextDocument();
+                    clone.Normalize();
 
-                DatabaseContextEntry entry = clone.GetDatabaseContext(databaseName, true);
-                entry.Normalize();
-                entry.Tables[tableName] = contextValue;
+                    DatabaseContextEntry entry = clone.GetDatabaseContext(databaseName, true);
+                    entry.Normalize();
+                    entry.Tables[tableName] = contextValue;
 
-                EnsureContextCoverage(clone);
-                clone.ToFile(ContextFilename);
-                ApplyContextDocumentInternal(clone);
-                _ContextLastLoadedUtc = DateTime.UtcNow;
-            }
+                    EnsureContextCoverage(clone);
+                    clone.ToFile(ContextFilename);
+                    ApplyContextDocumentInternal(clone);
+                    _ContextLastLoadedUtc = DateTime.UtcNow;
+                }
 
-            return new RuntimeConfigurationResult
-            {
-                Success = true,
-                Message = "Table context updated."
-            };
+                return new RuntimeConfigurationResult
+                {
+                    Success = true,
+                    Message = "Table context updated."
+                };
+            });
         }
 
-        private static async Task<DatabaseContextPayload> BuildDatabaseContextPayloadAsync(string databaseName)
+        private static Task<DatabaseContextPayload> BuildDatabaseContextPayloadAsync(string databaseName)
         {
             if (String.IsNullOrWhiteSpace(databaseName)) throw new ArgumentNullException(nameof(databaseName));
+            return RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageEnrichContext, () => BuildDatabaseContextPayloadInternalAsync(databaseName));
+        }
 
+        private static async Task<DatabaseContextPayload> BuildDatabaseContextPayloadInternalAsync(string databaseName)
+        {
             ContextDocument contextSnapshot;
             lock (RuntimeStateLock)
             {
@@ -203,11 +238,15 @@ namespace RestDb
             };
         }
 
-        private static async Task<TableContextPayload> BuildTableContextPayloadAsync(string databaseName, string tableName)
+        private static Task<TableContextPayload> BuildTableContextPayloadAsync(string databaseName, string tableName)
         {
             if (String.IsNullOrWhiteSpace(databaseName)) throw new ArgumentNullException(nameof(databaseName));
             if (String.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
+            return RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageEnrichContext, () => BuildTableContextPayloadInternalAsync(databaseName, tableName));
+        }
 
+        private static async Task<TableContextPayload> BuildTableContextPayloadInternalAsync(string databaseName, string tableName)
+        {
             Table table = await _Databases.GetTableByNameAsync(databaseName, tableName).ConfigureAwait(false);
             if (table == null) return null;
 
@@ -283,6 +322,34 @@ namespace RestDb
             }
 
             database.TableContexts = tableContexts;
+        }
+
+        private static RuntimeConfigurationResult RunConfigChange(string kind, string action, Func<RuntimeConfigurationResult> work)
+        {
+            long startTimestamp = Stopwatch.GetTimestamp();
+            bool success = false;
+            bool restartRequired = false;
+
+            try
+            {
+                RuntimeConfigurationResult result = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageApplyConfig, work);
+                success = result == null || result.Success;
+                restartRequired = result != null && result.RestartRequired;
+                return result;
+            }
+            finally
+            {
+                RestDbTelemetry.RecordConfigChange(kind, action, success, Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds);
+                PublishConfigurationState(restartRequired);
+            }
+        }
+
+        private static void PublishConfigurationState(bool restartRequired)
+        {
+            lock (RuntimeStateLock)
+            {
+                RestDbTelemetry.UpdateConfigurationState(_Settings, _SettingsLastLoadedUtc, _ContextLastLoadedUtc, restartRequired);
+            }
         }
 
         private static void ApplyOperationHeaders(HttpContext http, RuntimeConfigurationResult result)

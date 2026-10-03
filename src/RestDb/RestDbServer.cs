@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -7,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RestDb.Classes;
+using RestDb.Telemetry;
 using SyslogLogging;
 using WatsonWebserver;
 using WatsonWebserver.Core;
@@ -23,6 +25,8 @@ namespace RestDb
         static Webserver _Server;
         static DatabaseManager _Databases;
         static AuthManager _Auth;
+        static TelemetryHost _Telemetry;
+        static int _ShutdownStarted = 0;
 
         static void Main(string[] args)
         {
@@ -50,21 +54,33 @@ namespace RestDb
 
             Welcome();
 
-            _Logging = new LoggingModule(
-                _Settings.Logging.ServerIp,
-                _Settings.Logging.ServerPort,
-                _Settings.Logging.ConsoleLogging);
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) => Shutdown();
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                e.Cancel = true;
+                Shutdown();
+            };
 
-            _Logging.Settings.MinimumSeverity = (Severity)_Settings.Logging.MinimumLevel;
-
-            _Databases = new DatabaseManager(_Settings, _Logging);
-
-            _Auth = new AuthManager(_Settings, _Logging);
+            if (_Telemetry != null && !String.IsNullOrEmpty(_Telemetry.StartupError))
+            {
+                _Logging.Warn("Telemetry export disabled, host failed to start: " + _Telemetry.StartupError);
+            }
+            else if (_Telemetry != null && _Telemetry.ScrapeUrl != null)
+            {
+                _Logging.Info("Telemetry Prometheus endpoint: " + _Telemetry.ScrapeUrl);
+            }
 
             _WebserverSettings = new WebserverSettings();
             _WebserverSettings.Hostname = _Settings.Server.ListenerHostname;
             _WebserverSettings.Port = _Settings.Server.ListenerPort;
             _WebserverSettings.Ssl.Enable = _Settings.Server.Ssl;
+
+            // Watson emits the HTTP layer (request metrics and one server span per request) on the "Watson" meter and
+            // activity source, which the telemetry host subscribes to. Confirm the defaults explicitly.
+            _WebserverSettings.Telemetry.Enable = true;
+            _WebserverSettings.Telemetry.EnableMetrics = true;
+            _WebserverSettings.Telemetry.EnableTraces = true;
+            _WebserverSettings.Telemetry.PropagateContext = true;
 
             _Server = new Webserver(
                 _WebserverSettings,
@@ -83,6 +99,22 @@ namespace RestDb
             #endregion
 
             Terminator.WaitOne();
+        }
+
+        private static void Shutdown()
+        {
+            if (Interlocked.Exchange(ref _ShutdownStarted, 1) == 1) return;
+
+            try
+            {
+                _Server?.Stop();
+            }
+            catch (Exception)
+            {
+            }
+
+            _Telemetry?.Dispose();
+            Terminator.Set();
         }
 
         private static void Welcome()
@@ -144,17 +176,23 @@ namespace RestDb
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/"))
                         {
-                            ctx.Response.StatusCode = 200;
-                            ctx.Response.ContentType = "text/html; charset=utf8";
-                            await ctx.Response.Send(RootHtml());
+                            await RunOperationAsync(ctx, RestDbTelemetryNames.OperationRoot, async () =>
+                            {
+                                ctx.Response.StatusCode = 200;
+                                ctx.Response.ContentType = "text/html; charset=utf-8";
+                                await ctx.Response.Send(RootHtml());
+                            });
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/favicon.ico")
                             || ctx.Request.Url.RawWithoutQuery.Equals("/robots.txt"))
                         {
-                            ctx.Response.StatusCode = 200;
-                            await ctx.Response.Send();
+                            await RunOperationAsync(ctx, RestDbTelemetryNames.OperationStatic, async () =>
+                            {
+                                ctx.Response.StatusCode = 200;
+                                await ctx.Response.Send();
+                            });
                             return;
                         }
                         break;
@@ -189,9 +227,12 @@ namespace RestDb
                     #endregion
 
                     default:
-                        ctx.Response.StatusCode = 400;
-                        ctx.Response.ContentType = Constants.JsonContentType;
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method."), true));
+                        await RunOperationAsync(ctx, RestDbTelemetryNames.OperationUnknown, async () =>
+                        {
+                            ctx.Response.StatusCode = 400;
+                            ctx.Response.ContentType = Constants.JsonContentType;
+                            await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method."), true));
+                        });
                         return;
                 }
 
@@ -210,6 +251,7 @@ namespace RestDb
                     if (!_Auth.Authenticate(ctx, out string apiKey, out ApiKey key))
                     {
                         _Logging.Warn(header + "authentication failed");
+                        RestDbTelemetry.TagServerSpan(ctx.Request.Method.ToString(), RouteTemplate(ctx), null);
                         ctx.Response.StatusCode = 401;
                         ctx.Response.ContentType = Constants.JsonContentType;
                         await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.LoginFailed), true));
@@ -231,51 +273,51 @@ namespace RestDb
                          
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_databaseclients"))
                         {
-                            await GetDatabaseClients(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationDatabaseClients, GetDatabaseClients);
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_settings"))
                         {
-                            await GetServerSettings(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationSettingsRead, GetServerSettings);
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_context"))
                         {
-                            await GetContextFile(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationContextRead, GetContextFile);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2
                             && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
                         {
-                            await GetDatabaseContext(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationDatabaseContextRead, GetDatabaseContext);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 3
                             && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
                         {
-                            await GetTableContext(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationTableContextRead, GetTableContext);
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_databases"))
                         {
-                            await GetDatabases(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationDatabasesList, GetDatabases);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 1)
                         {
-                            await GetDatabase(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationDatabaseRead, GetDatabase);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
-                            await GetTableSelect(md);
+                            await RunOperationAsync(md, TableSelectOperation(md), GetTableSelect);
                             return;
                         }
 
@@ -288,33 +330,33 @@ namespace RestDb
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_settings"))
                         {
-                            await PutServerSettings(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationSettingsUpdate, PutServerSettings);
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_context"))
                         {
-                            await PutContextFile(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationContextUpdate, PutContextFile);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2
                             && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
                         {
-                            await PutDatabaseContext(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationDatabaseContextUpdate, PutDatabaseContext);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 3
                             && ctx.Request.Url.Elements[0].Equals("_context", StringComparison.OrdinalIgnoreCase))
                         {
-                            await PutTableContext(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationTableContextUpdate, PutTableContext);
                             return;
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
-                            await PutTable(md);
+                            await RunOperationAsync(md, PutTableOperation(ctx), PutTable);
                             return;
                         }
                         break;
@@ -326,13 +368,13 @@ namespace RestDb
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_settings/reload"))
                         {
-                            await PostServerSettingsReload(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationSettingsReload, PostServerSettingsReload);
                             return;
                         }
 
                         if (ctx.Request.Url.RawWithoutQuery.Equals("/_context/reload"))
                         {
-                            await PostContextReload(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationContextReload, PostContextReload);
                             return;
                         }
 
@@ -340,19 +382,19 @@ namespace RestDb
                         {
                             if (ctx.Request.Query.Elements.AllKeys.Contains("raw"))
                             {
-                                await PostRawQuery(md);
+                                await RunOperationAsync(md, RestDbTelemetryNames.OperationRawQuery, PostRawQuery);
                                 return;
                             }
                             else
                             {
-                                await PostTableCreate(md);
+                                await RunOperationAsync(md, RestDbTelemetryNames.OperationTableCreate, PostTableCreate);
                                 return;
                             }
                         }
 
                         if (ctx.Request.Url.Elements.Length == 2)
                         {
-                            await PostTableInsert(md);
+                            await RunOperationAsync(md, RestDbTelemetryNames.OperationTableInsert, PostTableInsert);
                             return;
                         }
                         break;
@@ -364,7 +406,7 @@ namespace RestDb
 
                         if (ctx.Request.Url.Elements.Length == 2 || ctx.Request.Url.Elements.Length == 3)
                         {
-                            await DeleteTable(md);
+                            await RunOperationAsync(md, DeleteTableOperation(md), DeleteTable);
                             return;
                         }
                         break;
@@ -377,21 +419,28 @@ namespace RestDb
                         break;
 
                     default:
-                        ctx.Response.StatusCode = 400;
-                        ctx.Response.ContentType = Constants.JsonContentType;
-                        await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method."), true));
+                        await RunOperationAsync(ctx, RestDbTelemetryNames.OperationUnknown, async () =>
+                        {
+                            ctx.Response.StatusCode = 400;
+                            ctx.Response.ContentType = Constants.JsonContentType;
+                            await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown method."), true));
+                        });
                         return;
                 }
 
                 #endregion
 
-                ctx.Response.StatusCode = 400;
-                ctx.Response.ContentType = Constants.JsonContentType;
-                await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown endpoint."), true)); 
+                await RunOperationAsync(ctx, RestDbTelemetryNames.OperationUnknown, async () =>
+                {
+                    ctx.Response.StatusCode = 400;
+                    ctx.Response.ContentType = Constants.JsonContentType;
+                    await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InvalidRequest, "Unknown endpoint."), true));
+                });
             }
             catch (Exception e)
             {
                 _Logging.Exception(e);
+                if (Activity.Current != null) _Logging.Warn(header + "request failed, trace_id " + Activity.Current.TraceId.ToHexString());
                 ctx.Response.StatusCode = 500;
                 ctx.Response.ContentType = Constants.JsonContentType;
                 await ctx.Response.Send(SerializationHelper.SerializeJson(new ErrorResponse(ErrorCodeEnum.InternalError, e.Message), true));

@@ -5,6 +5,7 @@ namespace RestDb.McpServer.Classes
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using RestDb.McpServer.Telemetry;
     using Voltaic.Core;
     using Voltaic.Mcp;
 
@@ -21,6 +22,7 @@ namespace RestDb.McpServer.Classes
 
             Register(
                 tools,
+                McpTelemetryNames.TransportStdio,
                 (name, description, schema, handler) => server.RegisterTool(name, description, schema, handler),
                 (name, handler) => server.RegisterMethod(name, handler));
         }
@@ -31,6 +33,7 @@ namespace RestDb.McpServer.Classes
 
             Register(
                 tools,
+                McpTelemetryNames.TransportHttp,
                 (name, description, schema, handler) => server.RegisterTool(name, description, schema, handler),
                 (name, handler) => server.RegisterMethod(name, handler));
         }
@@ -41,6 +44,7 @@ namespace RestDb.McpServer.Classes
 
             Register(
                 tools,
+                McpTelemetryNames.TransportTcp,
                 (name, description, schema, handler) => server.RegisterTool(name, description, schema, handler),
                 (name, handler) => server.RegisterMethod(name, handler));
         }
@@ -51,6 +55,7 @@ namespace RestDb.McpServer.Classes
 
             Register(
                 tools,
+                McpTelemetryNames.TransportWebSocket,
                 (name, description, schema, handler) => server.RegisterTool(name, description, schema, handler),
                 (name, handler) => server.RegisterMethod(name, handler));
         }
@@ -68,6 +73,7 @@ namespace RestDb.McpServer.Classes
 
         private static void Register(
             IEnumerable<RestMcpToolDefinition> tools,
+            string transport,
             Action<string, string, object, Func<RpcParameters?, CancellationToken, Task<object>>> registerTool,
             Action<string, Func<RpcParameters?, CancellationToken, Task<object>>> registerMethod)
         {
@@ -77,10 +83,15 @@ namespace RestDb.McpServer.Classes
             {
                 RestMcpToolDefinition current = tool;
                 Func<RpcParameters?, CancellationToken, Task<object>> methodHandler =
-                    (RpcParameters? parameters, CancellationToken token) => current.Handler(ToArguments(parameters), token);
+                    (RpcParameters? parameters, CancellationToken token) =>
+                        McpTelemetry.InvokeToolAsync(current.Name, transport, McpTelemetryNames.InvocationMethod, () => current.Handler(ToArguments(parameters), token));
                 Func<RpcParameters?, CancellationToken, Task<object>> toolHandler =
                     async (RpcParameters? parameters, CancellationToken token) =>
-                        ToToolResult(await current.Handler(ToArguments(parameters), token).ConfigureAwait(false));
+                        ToToolResult(await McpTelemetry.InvokeToolAsync(
+                            current.Name,
+                            transport,
+                            McpTelemetryNames.InvocationTool,
+                            () => current.Handler(ToArguments(parameters), token)).ConfigureAwait(false));
 
                 registerTool(current.Name, current.Description, current.InputSchema, toolHandler);
                 registerMethod(current.Name, methodHandler);

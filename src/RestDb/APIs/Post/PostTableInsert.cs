@@ -4,6 +4,7 @@ namespace RestDb
     using System.Data;
     using System.Threading.Tasks;
     using RestDb.Classes;
+    using RestDb.Telemetry;
 
     partial class RestDbServer
     {
@@ -43,12 +44,12 @@ namespace RestDb
 
             if (!md.Params.Multiple)
             {
-                Dictionary<string, object> dict = SerializationHelper.DeserializeJson<Dictionary<string, object>>(md.Http.Request.DataAsBytes);
+                Dictionary<string, object> dict = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageParseRequest, () => SerializationHelper.DeserializeJson<Dictionary<string, object>>(md.Http.Request.DataAsBytes));
                 result = await db.Records.InsertAsync(currTable.Name, currTable.Columns, dict);
             }
             else
             {
-                List<Dictionary<string, object>> dicts = SerializationHelper.DeserializeJson<List<Dictionary<string, object>>>(md.Http.Request.DataAsBytes);
+                List<Dictionary<string, object>> dicts = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageParseRequest, () => SerializationHelper.DeserializeJson<List<Dictionary<string, object>>>(md.Http.Request.DataAsBytes));
                 await db.Records.InsertMultipleAsync(currTable.Name, currTable.Columns, dicts);
             }
 
@@ -57,7 +58,7 @@ namespace RestDb
 
             if (result != null)
             {
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true));
+                await md.Http.Response.Send(RestDbTelemetry.RunStage(RestDbTelemetryNames.StageSerialize, () => SerializationHelper.SerializeJson(Common.DataTableToDynamic(result), true)));
             }
             else
             {

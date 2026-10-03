@@ -45,6 +45,11 @@ internal static class LiveApiAssertions
 
         AssertStatus(response, HttpStatusCode.OK, body);
         TestAssert.Contains("RestDb is running.", body, StringComparison.Ordinal, body);
+
+        // HttpClient (and so the MCP restdb_check_system_health tool) must be able to decode the body with the declared charset.
+        TestAssert.Equal("utf-8", response.Content.Headers.ContentType?.CharSet, "The root page must declare a valid charset label.");
+        string decoded = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        TestAssert.Contains("RestDb is running.", decoded, StringComparison.Ordinal);
     }
 
     public static async Task OptionsPathAdvertisesAllowedMethodsAsync()

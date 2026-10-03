@@ -19,6 +19,11 @@ namespace RestDb.Storage
         public List<QueryParameterDefinition> Parameters { get; } = new List<QueryParameterDefinition>();
 
         /// <summary>
+        /// Bounded operation name recorded as db.operation.name on telemetry (for example select or insert). Default query.
+        /// </summary>
+        public string OperationName { get; set; } = "query";
+
+        /// <summary>
         /// Instantiate.
         /// </summary>
         public SqlQueryDefinition()

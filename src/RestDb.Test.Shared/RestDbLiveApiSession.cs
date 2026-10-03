@@ -85,6 +85,7 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
     private readonly string _ApiKeyHeader;
 
     private RestDbLiveApiSession(
+        Uri? prometheusUrl,
         TestRuntimeConfiguration runtime,
         string databaseName,
         Uri baseAddress,
@@ -98,6 +99,7 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
         string? sqliteFile,
         bool deleteSqliteArtifacts)
     {
+        PrometheusUrl = prometheusUrl;
         Runtime = runtime;
         DatabaseName = databaseName;
         BaseAddress = baseAddress;
@@ -114,6 +116,11 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
 
     public TestRuntimeConfiguration Runtime { get; }
 
+    /// <summary>
+    /// The server's Prometheus scrape URL when the session was started with a Prometheus port, otherwise null.
+    /// </summary>
+    public Uri? PrometheusUrl { get; }
+
     public string DatabaseName { get; }
 
     public Uri BaseAddress { get; }
@@ -128,7 +135,8 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
         TestRuntimeConfiguration runtime,
         bool requireAuthentication = false,
         string? apiKey = null,
-        string apiKeyHeader = "x-api-key")
+        string apiKeyHeader = "x-api-key",
+        int? prometheusPort = null)
     {
         if (runtime == null) throw new ArgumentNullException(nameof(runtime));
 
@@ -181,6 +189,16 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
                 LogHttpRequests = false,
                 LogHttpResponses = false,
                 MinimumLevel = effectiveRuntime.Debug ? 0 : 1
+            },
+            Telemetry = new TelemetrySettings
+            {
+                // Export is off unless a test asks for a scrape endpoint, so concurrent test processes never contend
+                // for the default Prometheus port or dial a collector.
+                Enable = prometheusPort.HasValue,
+                OtlpEnable = false,
+                PrometheusEnable = prometheusPort.HasValue,
+                PrometheusHostname = "127.0.0.1",
+                PrometheusPort = prometheusPort ?? 9464
             }
         };
 
@@ -267,6 +285,7 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
         }
 
         RestDbLiveApiSession session = new RestDbLiveApiSession(
+            prometheusPort.HasValue ? new Uri("http://127.0.0.1:" + prometheusPort.Value + "/metrics") : null,
             effectiveRuntime,
             database.Name,
             baseAddress,
@@ -404,7 +423,7 @@ internal sealed class RestDbLiveApiSession : IAsyncDisposable
         return Directory.GetCurrentDirectory();
     }
 
-    private static int GetFreeTcpPort()
+    internal static int GetFreeTcpPort()
     {
         TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();

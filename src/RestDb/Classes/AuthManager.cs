@@ -3,9 +3,10 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using RestDb.Telemetry;
+    using SyslogLogging;
     using WatsonWebserver;
     using WatsonWebserver.Core;
-    using SyslogLogging;
 
     internal class AuthManager
     {
@@ -45,10 +46,11 @@
 
             #region Extract-API-Key
 
-            apiKey = ExtractApiKey(ctx);
+            apiKey = ExtractApiKey(ctx, out string credentialType);
             if (String.IsNullOrEmpty(apiKey))
             {
                 _Logging.Warn("Authenticate unable to retrieve API key from the configured header or Authorization bearer token");
+                RestDbTelemetry.RecordAuthDecision(RestDbTelemetryNames.AuthMissingCredentials, RestDbTelemetryNames.CredentialNone);
                 return false;
             }
 
@@ -67,34 +69,47 @@
                         ApiKey curr = _Keys.Where(k => k.Key.Equals(tempKey)).First();
                         key = curr;
 
+                        bool permitted;
                         switch (ctx.Request.Method)
                         {
                             case HttpMethod.GET:
                             case HttpMethod.HEAD:
-                                return curr.AllowGet;
+                                permitted = curr.AllowGet;
+                                break;
 
                             case HttpMethod.PUT:
-                                return curr.AllowPut;
+                                permitted = curr.AllowPut;
+                                break;
 
                             case HttpMethod.POST:
-                                return curr.AllowPost;
+                                permitted = curr.AllowPost;
+                                break;
 
                             case HttpMethod.DELETE:
-                                return curr.AllowDelete;
+                                permitted = curr.AllowDelete;
+                                break;
 
                             default:
                                 _Logging.Warn("Authenticate unknown HTTP method " + ctx.Request.Method);
-                                return false;
+                                permitted = false;
+                                break;
                         }
+
+                        RestDbTelemetry.RecordAuthDecision(
+                            permitted ? RestDbTelemetryNames.AuthAllowed : RestDbTelemetryNames.AuthMethodNotPermitted,
+                            credentialType);
+                        return permitted;
                     }
                 }
 
-                _Logging.Warn("Authenticate unknown API key " + apiKey);
+                _Logging.Warn("Authenticate unknown API key presented via " + credentialType);
+                RestDbTelemetry.RecordAuthDecision(RestDbTelemetryNames.AuthUnknownKey, credentialType);
                 return false;
             }
             else
             {
                 _Logging.Warn("Authenticate no API keys defined in configuration");
+                RestDbTelemetry.RecordAuthDecision(RestDbTelemetryNames.AuthNoKeysConfigured, credentialType);
                 return false;
             }
 
@@ -105,13 +120,15 @@
 
         #region Private-Methods
 
-        private string ExtractApiKey(HttpContext ctx)
+        private string ExtractApiKey(HttpContext ctx, out string credentialType)
         {
+            credentialType = RestDbTelemetryNames.CredentialNone;
             if (ctx == null || ctx.Request == null) return null;
 
             string apiKey = ctx.Request.RetrieveHeaderValue(_Settings.Server.ApiKeyHeader);
             if (!String.IsNullOrWhiteSpace(apiKey))
             {
+                credentialType = RestDbTelemetryNames.CredentialHeader;
                 return apiKey.Trim();
             }
 
@@ -122,6 +139,7 @@
                 string token = authorization.Substring("Bearer ".Length).Trim();
                 if (!String.IsNullOrWhiteSpace(token))
                 {
+                    credentialType = RestDbTelemetryNames.CredentialBearer;
                     return token;
                 }
             }

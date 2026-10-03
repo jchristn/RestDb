@@ -2,6 +2,7 @@ namespace RestDb
 {
     using System.Threading.Tasks;
     using RestDb.Classes;
+    using RestDb.Telemetry;
 
     partial class RestDbServer
     {
@@ -15,7 +16,7 @@ namespace RestDb
                 return;
             }
 
-            ContextDocument contextDocument = SerializationHelper.DeserializeJson<ContextDocument>(md.Http.Request.DataAsString);
+            ContextDocument contextDocument = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageParseRequest, () => SerializationHelper.DeserializeJson<ContextDocument>(md.Http.Request.DataAsString));
             RuntimeConfigurationResult result = UpdateContextDocument(contextDocument);
             ApplyOperationHeaders(md.Http, result);
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import CollapsibleSection from '../components/CollapsibleSection';
 import ConfirmModal from '../components/ConfirmModal';
 import DataGrid from '../components/DataGrid';
+import ExternalServicesCard from '../components/ExternalServicesCard';
 import JsonEditorModal from '../components/JsonEditorModal';
 import PaginationBar from '../components/PaginationBar';
 import PlusIcon from '../components/PlusIcon';
@@ -1329,6 +1330,8 @@ function WorkspaceView() {
             />
           )}
         </CollapsibleSection>
+
+        <ExternalServicesCard />
       </div>
 
       <RowEditorModal

@@ -1,0 +1,27 @@
+# Prometheus scrape configuration for the RestDb stack.
+# RestDb and RestDb.McpServer serve their metrics (RestDb, Watson, database driver, MCP, and .NET runtime series)
+# through Radiant's in-process Prometheus endpoint on the compose network only; neither port is published to the host.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  # Keep classic underscore metric names (restdb_api_requests_total). Under OpenMetrics negotiation the OpenTelemetry
+  # Prometheus exporter offers UTF-8 dotted names (restdb.api.requests), which the dashboards and alerts do not use.
+  metric_name_validation_scheme: legacy
+
+scrape_configs:
+  - job_name: 'restdb'
+    metrics_path: '/metrics'
+    scrape_protocols: ['PrometheusText0.0.4']
+    static_configs:
+      - targets: ['restdb:9464']
+
+  - job_name: 'restdb-mcp'
+    metrics_path: '/metrics'
+    scrape_protocols: ['PrometheusText0.0.4']
+    static_configs:
+      - targets: ['mcp:9465']
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

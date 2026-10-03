@@ -24,6 +24,21 @@
         public LoggingSettings Logging { get; set; } = new LoggingSettings();
 
         /// <summary>
+        /// Telemetry settings (metrics and traces export). Changes take effect after a process restart.
+        /// </summary>
+        public TelemetrySettings Telemetry
+        {
+            get
+            {
+                return _Telemetry;
+            }
+            set
+            {
+                _Telemetry = value ?? new TelemetrySettings();
+            }
+        }
+
+        /// <summary>
         /// Databases.
         /// </summary>
         public List<Database> Databases { get; set; } = new List<Database>();
@@ -36,6 +51,8 @@
         #endregion
 
         #region Private-Members
+
+        private TelemetrySettings _Telemetry = new TelemetrySettings();
 
         #endregion
 

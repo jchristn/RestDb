@@ -6,6 +6,13 @@ RESTful HTTP/HTTPS server for Microsoft SQL Server, MySQL, and PostgreSQL databa
 
 RestDb spawns a RESTful HTTP/HTTPS server that exposes a series of APIs allowing you to perform SELECT, INSERT, UPDATE, DELETE, TRUNCATE, and DROP against tables in Microsoft SQL Server, MySQL, PostgreSQL, and Sqlite.
  
+## New in v2.1.0
+
+- Built-in observability: metrics and traces for every API operation, workflow stage, database call, authentication decision, configuration change, MCP tool call, and MCP to RestDb request, on top of Watson's HTTP telemetry. Exported through [Radiant](https://www.nuget.org/packages/Radiant) over OTLP and an in-process Prometheus endpoint, configured in the `Telemetry` section of `restdb.json` (and `RESTDB_MCP_*` variables for the MCP server).
+- MCP tool calls and the RestDb requests behind them share one trace (W3C `traceparent` propagation).
+- Docker Compose adds Prometheus, Tempo, and Grafana with five provisioned dashboards (Overview, API, Database, MCP, Runtime and Configuration), and the dashboard gains an External services card. See [TELEMETRY.md](TELEMETRY.md).
+- Fixed: the root page declared an invalid charset (`utf8`), which made the MCP `restdb_check_system_health` tool fail.
+
 ## New in v2.0.0
 
 - Targets `net8.0` and `net10.0`, with native SQL Server, MySQL, PostgreSQL, and SQLite implementations (no `DatabaseWrapper`).
@@ -34,15 +41,16 @@ cd restdb/Docker
 docker compose up -d
 ```
 
-Compose pulls the pinned image versions automatically. To move to a newer release, update the `image:` tags in `Docker/compose.yaml` (and `Docker/factory/compose.yaml`) and rerun `docker compose pull` followed by `docker compose up -d`.
+Compose pulls the pinned image versions automatically and also starts Prometheus, Tempo, and Grafana (see [Observability](#observability)). To move to a newer release, update the `image:` tags in `Docker/compose.yaml` (and `Docker/factory/compose.yaml`) and rerun `docker compose pull` followed by `docker compose up -d`.
 
-To build and publish the images from source instead of pulling them, use the `build-*.bat` scripts in the repository root (each takes a version tag and pushes multi-architecture images to Docker Hub):
+To build and publish the images from source instead of pulling them, use the `build-*.bat` (Windows) or `build-*.sh` (macOS and Linux) scripts in the repository root (each takes a version tag and pushes multi-architecture images to Docker Hub):
 
 ```
 build-all.bat v2.0.0
+./build-all.sh v2.0.0
 ```
 
-`build-all.bat` builds and pushes the server, dashboard, and MCP images; `build-server.bat`, `build-dashboard.bat`, and `build-mcp.bat` build them individually.
+`build-all` builds and pushes the server, dashboard, and MCP images; `build-server`, `build-dashboard`, and `build-mcp` build them individually.
 
 The Docker Compose stack exposes:
 
@@ -51,8 +59,13 @@ The Docker Compose stack exposes:
 - RestDb MCP HTTP at `http://localhost:8010/mcp`
 - RestDb MCP TCP at `tcp://localhost:8011`
 - RestDb MCP WebSocket at `ws://localhost:8012/mcp`
+- Grafana at `http://localhost:3000` (`admin` / `admin`; set `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD` outside local development)
+- Prometheus at `http://localhost:9090`
+- Tempo at `http://localhost:3200` (OTLP on `4317` and `4318`)
 - Sample SQLite database named `sample`
 - Persistent `restdb.json` and `context.json` files mounted from the `Docker` directory
+
+Every host port can be moved with an environment variable (for example `RESTDB_GRAFANA_HOST_PORT=3001 docker compose up -d`); see the variables in `Docker/compose.yaml`.
 
 The bundled Docker configuration enables authentication with the API key `default`.
 
@@ -75,6 +88,24 @@ For route references and MCP tool mappings, see:
 
 - [REST_API.md](REST_API.md)
 - [MCP_API.md](MCP_API.md)
+
+## Observability
+
+RestDb and RestDb.McpServer emit metrics and traces through the .NET `Meter` and `ActivitySource` APIs (names `RestDb` and `RestDb.McpServer`), alongside Watson's built-in HTTP telemetry. One Radiant host per process exports traces over OTLP (default `http://127.0.0.1:4317`) and serves Prometheus metrics on its own port (RestDb `9464`, MCP server `9465`, loopback by default). Both are on by default and best-effort: if export cannot start, the service keeps running and logs why.
+
+```json
+"Telemetry": {
+  "Enable": true,
+  "OtlpEndpoint": "http://127.0.0.1:4317",
+  "PrometheusEnable": true,
+  "PrometheusHostname": "127.0.0.1",
+  "PrometheusPort": 9464
+}
+```
+
+With the Docker Compose stack, open Grafana at `http://localhost:3000` and the `RestDb` folder: start at **RestDb / Overview**, then drill into **API**, **Database**, **MCP**, or **Runtime and Configuration**, and follow a failing or slow request into its Tempo trace. An MCP tool call and the RestDb request it makes appear as one trace.
+
+[TELEMETRY.md](TELEMETRY.md) documents every metric, span, label value, setting, the dashboard map, and recommended Prometheus alerts.
 
 ## Execution
   

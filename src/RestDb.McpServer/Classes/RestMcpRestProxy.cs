@@ -2,6 +2,7 @@ namespace RestDb.McpServer.Classes
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net.Http;
     using System.Net.Http.Headers;
@@ -10,6 +11,7 @@ namespace RestDb.McpServer.Classes
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using RestDb.McpServer.Telemetry;
 
     internal sealed class RestMcpRestProxy : IDisposable
     {
@@ -40,9 +42,30 @@ namespace RestDb.McpServer.Classes
             if (String.IsNullOrWhiteSpace(pathAndQuery)) throw new ArgumentNullException(nameof(pathAndQuery));
 
             string url = _BaseUrl + "/" + pathAndQuery.TrimStart('/');
+            string urlTemplate = RestDbRouteTemplate.FromPath(pathAndQuery);
 
             using HttpRequestMessage request = new HttpRequestMessage(method, url);
+            long startTimestamp = Stopwatch.GetTimestamp();
+            Activity? activity = McpTelemetry.StartDownstreamActivity(method, urlTemplate, request.RequestUri);
+            McpTelemetry.InjectTraceContext(request);
+            int statusCode = 0;
 
+            try
+            {
+                RestMcpResponse result = await SendInternalAsync(request, jsonBody, token).ConfigureAwait(false);
+                statusCode = result.StatusCode;
+                McpTelemetry.CompleteDownstream(activity, method, urlTemplate, statusCode, null, Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds);
+                return result;
+            }
+            catch (Exception e)
+            {
+                McpTelemetry.CompleteDownstream(activity, method, urlTemplate, statusCode, e, Stopwatch.GetElapsedTime(startTimestamp).TotalSeconds);
+                throw;
+            }
+        }
+
+        private async Task<RestMcpResponse> SendInternalAsync(HttpRequestMessage request, string? jsonBody, CancellationToken token)
+        {
             if (!String.IsNullOrWhiteSpace(_BearerToken))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _BearerToken);

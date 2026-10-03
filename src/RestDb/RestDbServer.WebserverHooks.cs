@@ -3,6 +3,7 @@ namespace RestDb
     using System;
     using System.Linq;
     using System.Threading.Tasks;
+    using RestDb.Telemetry;
     using WatsonWebserver;
     using WatsonWebserver.Core;
 
@@ -26,6 +27,7 @@ namespace RestDb
         private static async Task PreflightRoute(HttpContextBase ctxBase)
         {
             HttpContext ctx = (HttpContext)ctxBase;
+            RestDbTelemetry.TagServerSpan("OPTIONS", RouteTemplate(ctx), null);
             ApplyCorsHeaders(ctx);
             ctx.Response.StatusCode = 200;
 

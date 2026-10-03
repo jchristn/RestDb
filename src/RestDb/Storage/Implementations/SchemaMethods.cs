@@ -5,6 +5,7 @@ namespace RestDb.Storage.Implementations
     using System.Threading;
     using System.Threading.Tasks;
     using RestDb.Storage.Interfaces;
+    using RestDb.Telemetry;
 
     /// <summary>
     /// Shared schema methods implementation.
@@ -25,8 +26,9 @@ namespace RestDb.Storage.Implementations
         /// <inheritdoc />
         public async Task<List<string>> ListTablesAsync(CancellationToken token = default)
         {
-            return _Driver.QueryBuilder.ReadTableNames(
-                await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildListTables(), token).ConfigureAwait(false));
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildListTables();
+            query.OperationName = RestDbTelemetryNames.DbOperationListTables;
+            return _Driver.QueryBuilder.ReadTableNames(await _Driver.ExecuteQueryAsync(query, token).ConfigureAwait(false));
         }
 
         /// <inheritdoc />
@@ -34,8 +36,9 @@ namespace RestDb.Storage.Implementations
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
 
-            return _Driver.QueryBuilder.ReadColumns(
-                await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildDescribeTable(tableName), token).ConfigureAwait(false));
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildDescribeTable(tableName);
+            query.OperationName = RestDbTelemetryNames.DbOperationDescribeTable;
+            return _Driver.QueryBuilder.ReadColumns(await _Driver.ExecuteQueryAsync(query, token).ConfigureAwait(false));
         }
 
         /// <inheritdoc />
@@ -43,21 +46,27 @@ namespace RestDb.Storage.Implementations
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
             if (columns == null) throw new ArgumentNullException(nameof(columns));
-            await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildCreateTable(tableName, columns), token).ConfigureAwait(false);
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildCreateTable(tableName, columns);
+            query.OperationName = RestDbTelemetryNames.DbOperationCreateTable;
+            await RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteQueryAsync(query, token)).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task ClearTableAsync(string tableName, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
-            await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildClearTable(tableName), token).ConfigureAwait(false);
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildClearTable(tableName);
+            query.OperationName = RestDbTelemetryNames.DbOperationClearTable;
+            await RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteQueryAsync(query, token)).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
         public async Task DropTableAsync(string tableName, CancellationToken token = default)
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
-            await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildDropTable(tableName), token).ConfigureAwait(false);
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildDropTable(tableName);
+            query.OperationName = RestDbTelemetryNames.DbOperationDropTable;
+            await RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteQueryAsync(query, token)).ConfigureAwait(false);
         }
     }
 }

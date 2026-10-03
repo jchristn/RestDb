@@ -4,6 +4,7 @@ namespace RestDb
     using System.Linq;
     using System.Threading.Tasks;
     using RestDb.Classes;
+    using RestDb.Telemetry;
 
     partial class RestDbServer
     {
@@ -28,7 +29,7 @@ namespace RestDb
                 return;
             }
 
-            Table table = SerializationHelper.DeserializeJson<Table>(md.Http.Request.DataAsString);
+            Table table = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageParseRequest, () => SerializationHelper.DeserializeJson<Table>(md.Http.Request.DataAsString));
 
             if (!string.IsNullOrEmpty(table.PrimaryKey))
             {

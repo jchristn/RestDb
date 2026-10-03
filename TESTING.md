@@ -9,6 +9,10 @@ RestDb testing is organized into four projects:
 
 If you need to point tests at a specific database engine or a specific database instance, use `RestDb.Test.Automated`.
 
+## Telemetry Tests
+
+The shared `Telemetry` suite proves every telemetry point is emitted. It subscribes in-memory `MeterListener` and `ActivityListener` instances to the `RestDb` and `RestDb.McpServer` sources (`src/RestDb.Test.Shared/TelemetryCapture.cs`) and covers API operations and stages (including failures), database calls against a temporary SQLite file (including errors and rollbacks), authentication, configuration and gauges, Watson span naming, MCP tool calls over TCP, MCP proxy `traceparent` propagation and network failures, and Radiant host start, scrape, port release, and busy-port handling. `LiveExport` starts a RestDb process with a Prometheus port and asserts the exported series by name. No collector or Docker is required.
+
 ## Test Surfaces
 
 Default local runs:

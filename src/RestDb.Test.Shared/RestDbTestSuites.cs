@@ -102,7 +102,8 @@ public static class RestDbTestSuites
                 SerializationSuite(),
                 McpBridgeSuite(),
                 McpTransportSuite(),
-                McpAccessSuite()
+                McpAccessSuite(),
+                TelemetrySuite()
             };
 
             foreach (string providerName in TestData.ProviderNames)
@@ -269,6 +270,34 @@ public static class RestDbTestSuites
                 McpCase(suiteId, "TcpAcceptsFramed", "TCP serves Content-Length framed requests, with or without Content-Type", McpAccessAssertions.TcpAcceptsFramedRequestsAsync),
                 SyncCase(suiteId, "SettingsAccessOptions", "Settings default to loopback listeners and parse --allowed-origins and --mcp-token", McpAccessAssertions.SettingsDefaultToLoopbackAndParseAccessOptions),
                 SyncCase(suiteId, "InstallAuthorizationHeader", "install writes an Authorization header only when an MCP token is configured", McpAccessAssertions.InstallWritesAuthorizationHeaderOnlyWithToken)
+            });
+    }
+
+    private static TestSuiteDescriptor TelemetrySuite()
+    {
+        const string suiteId = "Telemetry";
+        return new TestSuiteDescriptor(
+            suiteId: suiteId,
+            displayName: "Telemetry",
+            cases: new List<TestCaseDescriptor>
+            {
+                SyncCase(suiteId, "NoListener", "RestDb instrumentation and an inert host never throw when nothing is listening", TelemetryAssertions.NoListenerPathDoesNotThrow),
+                McpCase(suiteId, "ApiOperation", "API operations record the request counter, duration, in-flight gauge, and an operation span with nested stage spans", TelemetryAssertions.ApiOperationEmitsMetricsAndNestedSpansAsync),
+                SyncCase(suiteId, "ApiOperationFailures", "Failed (exception) and rejected (4xx) operations record outcome, error.type, and span status without exception messages", TelemetryAssertions.ApiOperationFailurePathsAreRecorded),
+                McpCase(suiteId, "StageFailure", "A failing workflow stage records outcome=error and rethrows", TelemetryAssertions.StageFailureIsRecordedAndRethrownAsync),
+                McpCase(suiteId, "DatabaseClient", "Database calls record operations, durations, connection opens, rows, transactions, records written, and client spans without SQL text", TelemetryAssertions.DatabaseClientEmitsMetricsAndSpansAsync),
+                McpCase(suiteId, "DatabaseClientFailure", "Database failures record outcome=error, the provider error type and code, and transaction rollbacks", TelemetryAssertions.DatabaseClientFailurePathIsRecordedAsync),
+                SyncCase(suiteId, "AuthConfigGauges", "Auth decisions, config changes, build info, and configuration gauges are recorded", TelemetryAssertions.AuthConfigAndGaugesAreRecorded),
+                SyncCase(suiteId, "ServerSpanNaming", "Watson's server span is named with the route template, including requests rejected by authentication", TelemetryAssertions.WatsonServerSpanIsNamedWithRouteTemplate),
+                SyncCase(suiteId, "RouteTemplates", "Route templates are bounded and never contain database, table, or id values", TelemetryAssertions.RouteTemplatesAreBounded),
+                McpCase(suiteId, "HostLifecycle", "The Radiant host serves Prometheus, releases its port on dispose, and reports a busy port instead of throwing", TelemetryAssertions.TelemetryHostServesPrometheusAndReleasesPortAsync),
+                McpCase(suiteId, "LiveExport", "A live RestDb server exports operation, stage, database, auth, config, Watson, and runtime series to Prometheus", TelemetryAssertions.LiveServerExportsTelemetryAsync),
+                McpCase(suiteId, "McpNoListener", "MCP instrumentation and an inert host never throw when nothing is listening", McpTelemetryAssertions.NoListenerPathDoesNotThrowAsync),
+                McpCase(suiteId, "McpToolCalls", "MCP tool calls over TCP record calls, durations, and server spans by tool, transport, invocation, and outcome", McpTelemetryAssertions.ToolCallsOverTcpEmitMetricsAndSpansAsync),
+                McpCase(suiteId, "McpProxyPropagation", "The RestDb proxy emits client spans under the tool span, propagates traceparent, and records downstream outcomes", McpTelemetryAssertions.ProxyPropagatesTraceContextAndRecordsDownstreamAsync),
+                McpCase(suiteId, "McpProxyNetworkFailure", "A RestDb connection failure records outcome=error with the exception type", McpTelemetryAssertions.ProxyNetworkFailureIsRecordedAsync),
+                SyncCase(suiteId, "McpTemplatesAndSettings", "MCP route templates are bounded and telemetry settings default to loopback, with Prometheus off in stdio mode", McpTelemetryAssertions.RouteTemplatesAndSettingsAreBounded),
+                McpCase(suiteId, "McpHostLifecycle", "The MCP Radiant host serves tool, build-info, and config series without secrets and releases its port", McpTelemetryAssertions.HostServesPrometheusAndGaugesAsync)
             });
     }
 

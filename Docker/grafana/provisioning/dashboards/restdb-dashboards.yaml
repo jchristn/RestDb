@@ -1,0 +1,12 @@
+apiVersion: 1
+
+# Loads every dashboard JSON from assets/grafana into the RestDb folder.
+providers:
+  - name: 'RestDb'
+    orgId: 1
+    folder: 'RestDb'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards/restdb

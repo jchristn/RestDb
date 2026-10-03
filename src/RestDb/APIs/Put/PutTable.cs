@@ -6,6 +6,7 @@ namespace RestDb
     using System.Threading.Tasks;
     using ExpressionTree;
     using RestDb.Classes;
+    using RestDb.Telemetry;
 
     partial class RestDbServer
     {
@@ -45,7 +46,7 @@ namespace RestDb
 
             if (idVal == 0 && md.Http.Request.Url.Elements.Length == 2)
             {
-                Expr filter = SerializationHelper.DeserializeJsonExpression(md.Http.Request.DataAsBytes);
+                Expr filter = RestDbTelemetry.RunStage(RestDbTelemetryNames.StageParseRequest, () => SerializationHelper.DeserializeJsonExpression(md.Http.Request.DataAsBytes));
 
                 ResultOrder[] resultOrder = null;
                 if (!string.IsNullOrEmpty(currTable.PrimaryKey))
@@ -113,7 +114,7 @@ namespace RestDb
 
                 md.Http.Response.StatusCode = 200;
                 md.Http.Response.ContentType = Constants.JsonContentType;
-                await md.Http.Response.Send(SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true));
+                await md.Http.Response.Send(RestDbTelemetry.RunStage(RestDbTelemetryNames.StageSerialize, () => SerializationHelper.SerializeJson(Common.DataTableToListDynamic(result), true)));
                 return;
             }
 

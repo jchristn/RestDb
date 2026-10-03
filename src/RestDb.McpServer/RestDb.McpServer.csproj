@@ -9,13 +9,15 @@
     <AssemblyName>RestDb.McpServer</AssemblyName>
     <RootNamespace>RestDb.McpServer</RootNamespace>
     <PackageId>RestDb.McpServer</PackageId>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <Description>MCP server for RestDb. Exposes the RestDb HTTP API over MCP HTTP, TCP, WebSocket, and stdio transports.</Description>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageReleaseNotes>v2.1.0: built-in observability. Metrics and traces for every MCP tool call and every RestDb API request (with W3C traceparent propagation into RestDb), exported through Radiant over OTLP and a Prometheus endpoint. See TELEMETRY.md.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Radiant" Version="0.1.2" />
     <PackageReference Include="Voltaic" Version="2.1.0" />
   </ItemGroup>
 

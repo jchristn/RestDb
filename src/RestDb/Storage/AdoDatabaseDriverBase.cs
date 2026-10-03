@@ -3,10 +3,12 @@ namespace RestDb.Storage
     using System;
     using System.Data;
     using System.Data.Common;
+    using System.Diagnostics;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using RestDb.Storage.Interfaces;
+    using RestDb.Telemetry;
 
     /// <summary>
     /// Common ADO.NET-backed driver.
@@ -49,11 +51,23 @@ namespace RestDb.Storage
         internal override async Task InitializeAsync(CancellationToken token = default)
         {
             EnsureNotDisposed();
-            using (DbConnection connection = CreateConnection())
+
+            using (DbClientScope scope = RestDbTelemetry.BeginDbOperation(Settings, RestDbTelemetryNames.DbOperationInitialize, 0))
             {
-                await connection.OpenAsync(token).ConfigureAwait(false);
-                await OnConnectionOpenedAsync(connection, token).ConfigureAwait(false);
-                await connection.CloseAsync().ConfigureAwait(false);
+                try
+                {
+                    using (DbConnection connection = await OpenConnectionAsync(scope, token).ConfigureAwait(false))
+                    {
+                        await connection.CloseAsync().ConfigureAwait(false);
+                    }
+
+                    scope.Complete(-1);
+                }
+                catch (Exception e)
+                {
+                    scope.Fail(e);
+                    throw;
+                }
             }
         }
 
@@ -63,13 +77,23 @@ namespace RestDb.Storage
             EnsureNotDisposed();
             if (query == null) throw new ArgumentNullException(nameof(query));
 
-            using (DbConnection connection = CreateConnection())
+            using (DbClientScope scope = RestDbTelemetry.BeginDbOperation(Settings, query.OperationName, 1))
             {
-                await connection.OpenAsync(token).ConfigureAwait(false);
-                await OnConnectionOpenedAsync(connection, token).ConfigureAwait(false);
-                DataTable result = await ExecuteInternalAsync(connection, null, query, token).ConfigureAwait(false);
-                await connection.CloseAsync().ConfigureAwait(false);
-                return result;
+                try
+                {
+                    using (DbConnection connection = await OpenConnectionAsync(scope, token).ConfigureAwait(false))
+                    {
+                        DataTable result = await ExecuteInternalAsync(connection, null, query, token).ConfigureAwait(false);
+                        await connection.CloseAsync().ConfigureAwait(false);
+                        scope.Complete(result?.Rows.Count ?? 0);
+                        return result;
+                    }
+                }
+                catch (Exception e)
+                {
+                    scope.Fail(e);
+                    throw;
+                }
             }
         }
 
@@ -80,47 +104,85 @@ namespace RestDb.Storage
             if (batch == null) throw new ArgumentNullException(nameof(batch));
             if (batch.Queries == null || batch.Queries.Count < 1) return new DataTable();
 
-            using (DbConnection connection = CreateConnection())
+            using (DbClientScope scope = RestDbTelemetry.BeginDbOperation(Settings, batch.OperationName, batch.Queries.Count))
+            {
+                try
+                {
+                    using (DbConnection connection = await OpenConnectionAsync(scope, token).ConfigureAwait(false))
+                    {
+                        DbTransaction transaction = null;
+                        DataTable lastResult = new DataTable();
+
+                        try
+                        {
+                            if (batch.UseTransaction)
+                            {
+                                transaction = await connection.BeginTransactionAsync(token).ConfigureAwait(false);
+                            }
+
+                            foreach (SqlQueryDefinition query in batch.Queries)
+                            {
+                                lastResult = await ExecuteInternalAsync(connection, transaction, query, token).ConfigureAwait(false);
+                            }
+
+                            if (transaction != null)
+                            {
+                                await transaction.CommitAsync(token).ConfigureAwait(false);
+                                scope.Transaction(true);
+                            }
+
+                            await connection.CloseAsync().ConfigureAwait(false);
+                            scope.Complete(lastResult?.Rows.Count ?? 0);
+                            return lastResult;
+                        }
+                        catch
+                        {
+                            if (transaction != null)
+                            {
+                                await transaction.RollbackAsync(token).ConfigureAwait(false);
+                                scope.Transaction(false);
+                            }
+
+                            throw;
+                        }
+                        finally
+                        {
+                            if (transaction != null) transaction.Dispose();
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    scope.Fail(e);
+                    throw;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Create and open a connection, running the provider's post-open hook, and record the open time (including any
+        /// connection pool wait) on the supplied scope.
+        /// </summary>
+        /// <param name="scope">Telemetry scope for the calling operation.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>Open connection. The caller disposes it.</returns>
+        protected async Task<DbConnection> OpenConnectionAsync(DbClientScope scope, CancellationToken token)
+        {
+            long openStart = Stopwatch.GetTimestamp();
+            DbConnection connection = CreateConnection();
+
+            try
             {
                 await connection.OpenAsync(token).ConfigureAwait(false);
                 await OnConnectionOpenedAsync(connection, token).ConfigureAwait(false);
-
-                DbTransaction transaction = null;
-                DataTable lastResult = new DataTable();
-
-                try
-                {
-                    if (batch.UseTransaction)
-                    {
-                        transaction = await connection.BeginTransactionAsync(token).ConfigureAwait(false);
-                    }
-
-                    foreach (SqlQueryDefinition query in batch.Queries)
-                    {
-                        lastResult = await ExecuteInternalAsync(connection, transaction, query, token).ConfigureAwait(false);
-                    }
-
-                    if (transaction != null)
-                    {
-                        await transaction.CommitAsync(token).ConfigureAwait(false);
-                    }
-
-                    await connection.CloseAsync().ConfigureAwait(false);
-                    return lastResult;
-                }
-                catch
-                {
-                    if (transaction != null)
-                    {
-                        await transaction.RollbackAsync(token).ConfigureAwait(false);
-                    }
-
-                    throw;
-                }
-                finally
-                {
-                    if (transaction != null) transaction.Dispose();
-                }
+                scope?.ConnectionOpened(openStart, true);
+                return connection;
+            }
+            catch
+            {
+                scope?.ConnectionOpened(openStart, false);
+                await connection.DisposeAsync().ConfigureAwait(false);
+                throw;
             }
         }
 

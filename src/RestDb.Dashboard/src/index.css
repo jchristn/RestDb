@@ -1247,3 +1247,115 @@ code {
     min-width: 0;
   }
 }
+
+/* External services card (observability tools bundled with the Docker stack) */
+.external-services {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.external-services__row {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.4fr) minmax(14rem, 1.6fr) minmax(8rem, 0.8fr) minmax(7rem, 0.6fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 10px);
+  background: var(--color-surface-muted);
+}
+
+.external-services__row--head {
+  padding-top: 0;
+  padding-bottom: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-slate);
+}
+
+.external-services__service {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.external-services__service span,
+.external-services__muted {
+  font-size: 0.82rem;
+  color: var(--color-slate);
+}
+
+.external-services__url {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.mono-token {
+  font-family: "Cascadia Code", "Consolas", "SFMono-Regular", "Courier New", monospace;
+  font-size: 0.82rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 6px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+
+a.mono-token {
+  color: var(--color-accent-deep);
+  text-decoration: none;
+}
+
+a.mono-token:hover {
+  text-decoration: underline;
+}
+
+[data-theme='dark'] a.mono-token {
+  color: var(--color-accent);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid var(--color-border);
+  color: var(--color-slate);
+}
+
+.status-badge::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-badge--reachable {
+  color: var(--color-success);
+}
+
+.status-badge--unreachable {
+  color: var(--color-danger);
+}
+
+@media (max-width: 860px) {
+  .external-services__row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .external-services__row--head {
+    display: none;
+  }
+}

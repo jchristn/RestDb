@@ -7,6 +7,7 @@ namespace RestDb.Storage.Implementations
     using System.Threading.Tasks;
     using ExpressionTree;
     using RestDb.Storage.Interfaces;
+    using RestDb.Telemetry;
 
     /// <summary>
     /// Shared record methods implementation.
@@ -39,9 +40,11 @@ namespace RestDb.Storage.Implementations
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
             if (columns == null) throw new ArgumentNullException(nameof(columns));
 
-            DataTable result = await _Driver.ExecuteQueryAsync(
-                _Driver.QueryBuilder.BuildSelect(tableName, columns, indexStart, maxResults, returnFields, filter, resultOrder),
-                token).ConfigureAwait(false);
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildSelect(tableName, columns, indexStart, maxResults, returnFields, filter, resultOrder);
+            query.OperationName = RestDbTelemetryNames.DbOperationSelect;
+            DataTable result = await RestDbTelemetry.RunStageAsync(
+                RestDbTelemetryNames.StageQuery,
+                () => _Driver.ExecuteQueryAsync(query, token)).ConfigureAwait(false);
 
             if (includeRowNumber)
             {
@@ -63,7 +66,11 @@ namespace RestDb.Storage.Implementations
             if (values == null) throw new ArgumentNullException(nameof(values));
 
             InsertPlan plan = _Driver.QueryBuilder.BuildInsert(tableName, columns, values);
-            DataTable result = await _Driver.ExecuteBatchAsync(plan.Batch, token).ConfigureAwait(false);
+            plan.Batch.OperationName = RestDbTelemetryNames.DbOperationInsert;
+            DataTable result = await RestDbTelemetry.RunStageAsync(
+                RestDbTelemetryNames.StageQuery,
+                () => _Driver.ExecuteBatchAsync(plan.Batch, token)).ConfigureAwait(false);
+            RestDbTelemetry.RecordRecordsWritten(_Driver.Settings, 1);
 
             if (plan.ReturnsInsertedRow)
             {
@@ -85,7 +92,10 @@ namespace RestDb.Storage.Implementations
             if (valuesList == null) throw new ArgumentNullException(nameof(valuesList));
             if (valuesList.Count < 1) return;
 
-            await _Driver.ExecuteBatchAsync(_Driver.QueryBuilder.BuildInsertMultiple(tableName, columns, valuesList), token).ConfigureAwait(false);
+            SqlBatchDefinition batch = _Driver.QueryBuilder.BuildInsertMultiple(tableName, columns, valuesList);
+            batch.OperationName = RestDbTelemetryNames.DbOperationInsertMultiple;
+            await RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteBatchAsync(batch, token)).ConfigureAwait(false);
+            RestDbTelemetry.RecordRecordsWritten(_Driver.Settings, valuesList.Count);
         }
 
         /// <inheritdoc />
@@ -100,7 +110,9 @@ namespace RestDb.Storage.Implementations
             if (columns == null) throw new ArgumentNullException(nameof(columns));
             if (values == null) throw new ArgumentNullException(nameof(values));
 
-            await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildUpdate(tableName, columns, values, filter), token).ConfigureAwait(false);
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildUpdate(tableName, columns, values, filter);
+            query.OperationName = RestDbTelemetryNames.DbOperationUpdate;
+            await RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteQueryAsync(query, token)).ConfigureAwait(false);
         }
 
         /// <inheritdoc />
@@ -112,7 +124,9 @@ namespace RestDb.Storage.Implementations
         {
             if (string.IsNullOrWhiteSpace(tableName)) throw new ArgumentNullException(nameof(tableName));
             if (columns == null) throw new ArgumentNullException(nameof(columns));
-            await _Driver.ExecuteQueryAsync(_Driver.QueryBuilder.BuildDelete(tableName, columns, filter), token).ConfigureAwait(false);
+            SqlQueryDefinition query = _Driver.QueryBuilder.BuildDelete(tableName, columns, filter);
+            query.OperationName = RestDbTelemetryNames.DbOperationDelete;
+            await RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageQuery, () => _Driver.ExecuteQueryAsync(query, token)).ConfigureAwait(false);
         }
 
         private void AddRowNumbers(DataTable table, int firstRowNumber)

@@ -5,6 +5,7 @@ namespace RestDb
     using System.Linq;
     using System.Threading.Tasks;
     using RestDb.Storage;
+    using RestDb.Telemetry;
     using SyslogLogging;
 
     internal class DatabaseManager : IDisposable
@@ -73,10 +74,27 @@ namespace RestDb
             return _Settings.GetDatabaseByName(dbName);
         }
 
-        internal async Task<List<Table>> GetTablesAsync(string dbName, bool describe)
+        internal Task<List<Table>> GetTablesAsync(string dbName, bool describe)
         {
             if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+            return RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageDescribe, () => GetTablesInternalAsync(dbName, describe));
+        }
 
+        internal Task<List<string>> GetTableNamesAsync(string dbName)
+        {
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+            return RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageDescribe, () => GetTableNamesInternalAsync(dbName));
+        }
+
+        internal Task<Table> GetTableByNameAsync(string dbName, string tableName)
+        {
+            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
+            if (string.IsNullOrEmpty(tableName)) throw new ArgumentNullException(nameof(tableName));
+            return RestDbTelemetry.RunStageAsync(RestDbTelemetryNames.StageResolveTable, () => GetTableByNameInternalAsync(dbName, tableName));
+        }
+
+        private async Task<List<Table>> GetTablesInternalAsync(string dbName, bool describe)
+        {
             DatabaseDriverBase db = GetDatabaseDriver(dbName);
             if (db == null)
             {
@@ -126,10 +144,8 @@ namespace RestDb
             return ret;
         }
 
-        internal async Task<List<string>> GetTableNamesAsync(string dbName)
+        private async Task<List<string>> GetTableNamesInternalAsync(string dbName)
         {
-            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
-
             DatabaseDriverBase db = GetDatabaseDriver(dbName);
             if (db == null)
             {
@@ -147,11 +163,8 @@ namespace RestDb
             return tableNames;
         }
 
-        internal async Task<Table> GetTableByNameAsync(string dbName, string tableName)
+        private async Task<Table> GetTableByNameInternalAsync(string dbName, string tableName)
         {
-            if (string.IsNullOrEmpty(dbName)) throw new ArgumentNullException(nameof(dbName));
-            if (string.IsNullOrEmpty(tableName)) throw new ArgumentNullException(nameof(tableName));
-
             DatabaseDriverBase db = GetDatabaseDriver(dbName);
             if (db == null)
             {

@@ -1,0 +1,29 @@
+# Tempo configuration for the RestDb stack: receives OTLP traces from RestDb and RestDb.McpServer
+# (gRPC 4317, HTTP 4318) and serves the query API on 3200 for Grafana.
+
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: '0.0.0.0:4317'
+        http:
+          endpoint: '0.0.0.0:4318'
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    block_retention: 24h
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal
